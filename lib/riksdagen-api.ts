@@ -105,7 +105,7 @@ export async function fetchVotings(
 }
 
 // Hämta motioner - use sz=10000 for all records, supports both riksmote and date range
-export async function fetchMotions(riksmote?: string, fromDate?: string): Promise<Motion[]> {
+export async function fetchMotions(riksmote?: string, fromDate?: string, toDate?: string): Promise<Motion[]> {
   try {
     const params: any = {
       doktyp: 'mot',
@@ -116,9 +116,13 @@ export async function fetchMotions(riksmote?: string, fromDate?: string): Promis
     // Use date range if provided (format: YYYY-MM-DD), otherwise use riksmote
     if (fromDate) {
       params.from = fromDate
-      // If no toDate, set it to today
-      const today = new Date().toISOString().split('T')[0]
-      params.tom = today
+      // If toDate provided, use it; otherwise set it to today
+      if (toDate) {
+        params.tom = toDate
+      } else {
+        const today = new Date().toISOString().split('T')[0]
+        params.tom = today
+      }
     } else if (riksmote) {
       params.rm = riksmote
     }

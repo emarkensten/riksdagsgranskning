@@ -125,16 +125,18 @@ export async function POST(request: NextRequest) {
       // Fetch motions with date range pagination to get all data
       // API max is 10,000 per request, so we paginate by date ranges
       const dateRanges = [
-        '2022-01-01', '2022-06-01', '2022-12-01',
-        '2023-01-01', '2023-06-01', '2023-12-01',
-        '2024-01-01', '2024-06-01', '2024-12-01',
-        '2025-01-01'
+        { from: '2022-01-01', to: '2022-06-30' },
+        { from: '2022-07-01', to: '2022-12-31' },
+        { from: '2023-01-01', to: '2023-06-30' },
+        { from: '2023-07-01', to: '2023-12-31' },
+        { from: '2024-01-01', to: '2024-06-30' },
+        { from: '2024-07-01', to: '2024-12-31' },
+        { from: '2025-01-01', to: '2025-12-31' }
       ]
 
-      for (let i = 0; i < dateRanges.length; i++) {
-        const fromDate = dateRanges[i]
-        console.log(`  Fetching motions from ${fromDate}...`)
-        const motions = await fetchMotions(undefined, fromDate)
+      for (const range of dateRanges) {
+        console.log(`  Fetching motions from ${range.from} to ${range.to}...`)
+        const motions = await fetchMotions(undefined, range.from, range.to)
         allMotions.push(...motions)
         console.log(`    Found ${motions.length} motions (total: ${allMotions.length})`)
       }
