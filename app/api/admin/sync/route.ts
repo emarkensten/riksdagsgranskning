@@ -52,49 +52,65 @@ export async function POST(request: NextRequest) {
     }
     console.log(`✓ Members synced (${memberCount}/${members.length})\n`)
 
-    // Sync votings
+    // Sync votings - use sz=10000 to get all voting records
     console.log('Syncing votings...')
-    const riksmotes = getCurrentRiksmote()
     let votingCount = 0
 
-    for (const rm of riksmotes) {
-      console.log(`  Fetching votings for riksmöte ${rm}...`)
-      try {
-        const response = await fetch(
-          `https://data.riksdagen.se/voteringlista/?rm=${rm}&utformat=json`
-        )
-        const data = await response.json()
+    try {
+      console.log(`  Fetching all votings (sz=10000)...`)
+      const response = await fetch(
+        `https://data.riksdagen.se/voteringlista/?sz=10000&utformat=json`
+      )
+      const data = await response.json()
 
-        if (!data.voteringlista) continue
-
+      if (!data.voteringlista) {
+        console.log('  No votings found')
+      } else {
         // API returns votering as either an object or array
         let voterings = data.voteringlista.votering
-        if (!voterings) continue
+        if (!voterings) {
+          console.log('  No votings found')
+        } else {
+          // Normalize to array
+          if (!Array.isArray(voterings)) {
+            voterings = [voterings]
+          }
 
-        // Normalize to array
-        if (!Array.isArray(voterings)) {
-          voterings = [voterings]
-        }
+          console.log(`  Found ${voterings.length} votings`)
 
-        for (const voting of voterings) {
-          const { error } = await supabaseAdmin
-            .from('voteringar')
-            .insert({
+          // Batch insert for efficiency
+          const batchSize = 1000
+          for (let i = 0; i < voterings.length; i += batchSize) {
+            const batch = voterings.slice(i, i + batchSize).map((voting: any) => ({
               votering_id: voting.votering_id,
               dokument_id: voting.dok_id,
               ledamot_id: voting.intressent_id,
-              datum: data.voteringlista['@systemdatum'] || null,
+              datum: voting.datum,
               titel: voting.namn || 'N/A',
               rost: voting.rost,
-              riksmote: rm,
+              riksmote: voting.rm,
               beteckning: voting.beteckning,
-            })
+            }))
 
-          if (!error) votingCount++
+            const { error } = await supabaseAdmin
+              .from('voteringar')
+              .insert(batch)
+
+            if (!error) {
+              votingCount += batch.length
+            } else {
+              console.error(`Error inserting voting batch:`, error)
+            }
+
+            // Show progress
+            if (i % 5000 === 0) {
+              console.log(`  Processed ${i + batch.length}/${voterings.length} votings`)
+            }
+          }
         }
-      } catch (error) {
-        console.error(`Error processing votings for riksmöte ${rm}:`, error)
       }
+    } catch (error) {
+      console.error(`Error fetching votings:`, error)
     }
     console.log(`✓ Votings synced (${votingCount} records)\n`)
 

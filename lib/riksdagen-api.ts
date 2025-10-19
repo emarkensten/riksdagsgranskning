@@ -51,11 +51,11 @@ export interface Anforande {
   parti: string
 }
 
-// Hämta alla ledamöter
+// Hämta alla ledamöter - use sz=10000 for all records
 export async function fetchMembers(): Promise<RiksdagenMember[]> {
   try {
     const response = await axios.get(`${BASE_URL}/personlista/`, {
-      params: { utformat: 'json' },
+      params: { utformat: 'json', sz: 10000 },
       timeout: 30000,
     })
     return response.data.personlista?.person || []
@@ -65,14 +65,14 @@ export async function fetchMembers(): Promise<RiksdagenMember[]> {
   }
 }
 
-// Hämta voteringar för en specifik session
+// Hämta voteringar för en specifik session - use sz=10000
 export async function fetchVotings(
   riksmote: string,
   bet?: string,
   punkt?: string
 ): Promise<{ votings: Voting[], metadata: VotingMetadata }> {
   try {
-    const params: any = { utformat: 'json' }
+    const params: any = { utformat: 'json', sz: 10000 }
     if (bet) params.bet = bet
     if (punkt) params.punkt = punkt
 
@@ -99,7 +99,7 @@ export async function fetchVotings(
   }
 }
 
-// Hämta motioner
+// Hämta motioner - use sz=10000 for all records
 export async function fetchMotions(riksmote: string): Promise<Motion[]> {
   try {
     const response = await axios.get(`${BASE_URL}/dokumentlista/`, {
@@ -107,6 +107,7 @@ export async function fetchMotions(riksmote: string): Promise<Motion[]> {
         doktyp: 'mot',
         rm: riksmote,
         utformat: 'json',
+        sz: 10000,
       },
       timeout: 30000,
     })
@@ -131,13 +132,14 @@ export async function fetchMotionFulltext(dokId: string): Promise<string> {
   }
 }
 
-// Hämta anföranden
+// Hämta anföranden - use sz=10000 for all records
 export async function fetchAnforanden(riksmote: string): Promise<Anforande[]> {
   try {
     const response = await axios.get(`${BASE_URL}/anforandelista/`, {
       params: {
         rm: riksmote,
         utformat: 'json',
+        sz: 10000,
       },
       timeout: 30000,
     })
