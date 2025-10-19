@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: rgb(255, 255, 255);
+  color: rgb(0, 0, 0);
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: rgb(10, 10, 10);
+    color: rgb(255, 255, 255);
+  }
+}
