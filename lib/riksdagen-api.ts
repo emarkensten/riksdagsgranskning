@@ -4,12 +4,13 @@ const BASE_URL = 'https://data.riksdagen.se'
 
 export interface RiksdagenMember {
   intressent_id: string
-  namn: string
+  tilltalsnamn: string
+  efternamn: string
   parti: string
   valkrets: string
   kon: string
   fodd_ar: string
-  bild_url_97: string
+  bild_url_192: string
   status?: string
 }
 
@@ -140,21 +141,35 @@ export async function fetchAnforanden(riksmote: string): Promise<Anforande[]> {
       },
       timeout: 30000,
     })
-    return response.data.anforandelista?.anforande || []
+
+    const anforandeList = response.data.anforandelista?.anforande
+    if (!anforandeList) return []
+
+    // API returns anforande as either an object or array
+    if (Array.isArray(anforandeList)) {
+      return anforandeList
+    } else {
+      return [anforandeList]
+    }
   } catch (error) {
     console.error(`Error fetching anföranden for ${riksmote}:`, error)
-    throw error
+    return []
   }
 }
 
-// Get current and recent riksmöte values
+// Get all riksmöte values from the current mandate period (2022 election)
 export function getCurrentRiksmote(): string[] {
-  const year = new Date().getFullYear()
+  // Swedish election 2022, mandate 2022-2026
+  // Returns all riksmöte sessions from 2022/23 onwards
   const months = [
-    `${year}/25`,
-    `${year - 1}/25`,
-    `${year - 1}/24`,
-    `${year - 2}/25`,
+    // Current mandate (2022-2026)
+    '2025/25',
+    '2024/25',
+    '2024/24',
+    '2023/25',
+    '2023/24',
+    '2022/25',
+    '2022/24',
   ]
   return months
 }
