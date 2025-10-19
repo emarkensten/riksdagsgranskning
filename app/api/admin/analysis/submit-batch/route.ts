@@ -44,10 +44,13 @@ export async function POST(request: NextRequest) {
 }
 
 async function submitMotionQualityBatch(limit: number, confirm: boolean) {
-  // Fetch motions from database
+  // Fetch motions with fulltext from database (only analyze motions with actual content)
   const { data: motions, error } = await supabaseAdmin!
     .from('motioner')
     .select('*')
+    .not('fulltext', 'is', null)
+    .neq('fulltext', '')
+    .order('datum', { ascending: false })
     .limit(limit)
 
   if (error || !motions) {
