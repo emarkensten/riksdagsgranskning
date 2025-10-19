@@ -52,14 +52,14 @@ export async function POST(request: NextRequest) {
     }
     console.log(`✓ Members synced (${memberCount}/${members.length})\n`)
 
-    // Sync votings - use sz=10000 to get all voting records
+    // Sync votings - use sz=100000 to get maximum voting records (API max is 10000)
     console.log('Syncing votings...')
     let votingCount = 0
 
     try {
-      console.log(`  Fetching all votings (sz=10000)...`)
+      console.log(`  Fetching all votings (sz=100000, API max is 10000)...`)
       const response = await fetch(
-        `https://data.riksdagen.se/voteringlista/?sz=10000&utformat=json`
+        `https://data.riksdagen.se/voteringlista/?sz=100000&utformat=json`
       )
       const data = await response.json()
 
