@@ -113,18 +113,44 @@ export async function POST(request: NextRequest) {
     console.log(`✓ Votings synced (${votingCount} records)\n`)
 
     // Sync motions - fetch from 2022-01-01 onwards (current mandate period 2022-2026)
+    // Note: API returns max 10,000 records, so we need to paginate
     console.log('Syncing motions...')
     let motionCount = 0
+    let allMotions: any[] = []
 
     try {
       console.log(`  Fetching all motions from 2022-01-01 onwards (mandate period 2022-2026)...`)
-      const motions = await fetchMotions(undefined, '2022-01-01')
-      console.log(`  Found ${motions.length} motions`)
+      console.log(`  Note: API max 10,000 per request, will paginate if needed`)
+
+      // Fetch motions with date range pagination to get all data
+      // API max is 10,000 per request, so we paginate by date ranges
+      const dateRanges = [
+        '2022-01-01', '2022-06-01', '2022-12-01',
+        '2023-01-01', '2023-06-01', '2023-12-01',
+        '2024-01-01', '2024-06-01', '2024-12-01',
+        '2025-01-01'
+      ]
+
+      for (let i = 0; i < dateRanges.length; i++) {
+        const fromDate = dateRanges[i]
+        console.log(`  Fetching motions from ${fromDate}...`)
+        const motions = await fetchMotions(undefined, fromDate)
+        allMotions.push(...motions)
+        console.log(`    Found ${motions.length} motions (total: ${allMotions.length})`)
+      }
+
+      // Remove duplicates by motion ID
+      const uniqueMotions = Array.from(new Map(allMotions.map(m => [m.dok_id, m])).values())
+      console.log(`  After deduplication: ${uniqueMotions.length} unique motions`)
+      allMotions = uniqueMotions
+
+      console.log(`  Found ${allMotions.length} motions`)
+      const motions_to_sync = allMotions
 
       // First pass: insert motions with basic data (titel is correct field name)
       const batchSize = 1000
-      for (let i = 0; i < motions.length; i += batchSize) {
-        const batch = motions.slice(i, i + batchSize).map((motion: any) => ({
+      for (let i = 0; i < motions_to_sync.length; i += batchSize) {
+        const batch = motions_to_sync.slice(i, i + batchSize).map((motion: any) => ({
           id: motion.dok_id,
           titel: motion.titel, // FIX: Use 'titel' not 'dok_titel'
           datum: motion.publicerad,
@@ -145,15 +171,15 @@ export async function POST(request: NextRequest) {
 
         // Show progress
         if (i % 5000 === 0) {
-          console.log(`  Processed ${i + batch.length}/${motions.length} motions`)
+          console.log(`  Processed ${i + batch.length}/${motions_to_sync.length} motions`)
         }
       }
 
       // Second pass: fetch and update fulltext + titel for all motions
-      console.log(`\n  Fetching fulltext for all ${motions.length} motions...`)
+      console.log(`\n  Fetching fulltext for all ${motions_to_sync.length} motions...`)
       let fulltextCount = 0
-      for (let i = 0; i < motions.length; i++) {
-        const motion = motions[i]
+      for (let i = 0; i < motions_to_sync.length; i++) {
+        const motion = motions_to_sync[i]
         try {
           const { titel, fulltext } = await fetchMotionFulltext(motion.dok_id)
           if (fulltext || titel) {
@@ -174,7 +200,7 @@ export async function POST(request: NextRequest) {
           // Skip if fulltext not available
         }
         if (i % 50 === 0 && i > 0) {
-          console.log(`  Updated ${i}/${motions.length} records (${fulltextCount} with content)`)
+          console.log(`  Updated ${i}/${motions_to_sync.length} records (${fulltextCount} with content)`)
         }
       }
       console.log(`  ✓ Updated ${fulltextCount} motions with fulltext`)
