@@ -114,43 +114,41 @@ export async function POST(request: NextRequest) {
     }
     console.log(`✓ Votings synced (${votingCount} records)\n`)
 
-    // Sync motions
+    // Sync motions - fetch from 2020-01-01 onwards (historical data)
     console.log('Syncing motions...')
     let motionCount = 0
 
-    for (const rm of riksmotes) {
-      console.log(`  Fetching motions for riksmöte ${rm}...`)
-      try {
-        const motions = await fetchMotions(rm)
-        console.log(`  Found ${motions.length} motions`)
+    try {
+      console.log(`  Fetching all motions from 2020-01-01 onwards...`)
+      const motions = await fetchMotions(undefined, '2020-01-01')
+      console.log(`  Found ${motions.length} motions`)
 
-        for (const motion of motions) {
-          let fulltext = ''
-          try {
-            fulltext = await fetchMotionFulltext(motion.dok_id)
-          } catch (e) {
-            // Motion fulltext not available
-          }
-
-          const { error } = await supabaseAdmin
-            .from('motioner')
-            .upsert(
-              {
-                id: motion.dok_id,
-                titel: motion.dok_titel,
-                datum: motion.publicerad,
-                riksmote: rm,
-                dokument_typ: motion.doktyp,
-                fulltext: fulltext,
-              },
-              { onConflict: 'id' }
-            )
-
-          if (!error) motionCount++
+      for (const motion of motions) {
+        let fulltext = ''
+        try {
+          fulltext = await fetchMotionFulltext(motion.dok_id)
+        } catch (e) {
+          // Motion fulltext not available
         }
-      } catch (error) {
-        console.error(`Error processing motions for ${rm}:`, error)
+
+        const { error } = await supabaseAdmin
+          .from('motioner')
+          .upsert(
+            {
+              id: motion.dok_id,
+              titel: motion.dok_titel,
+              datum: motion.publicerad,
+              riksmote: motion.rm,
+              dokument_typ: motion.doktyp,
+              fulltext: fulltext,
+            },
+            { onConflict: 'id' }
+          )
+
+        if (!error) motionCount++
       }
+    } catch (error) {
+      console.error(`Error processing motions:`, error)
     }
     console.log(`✓ Motions synced (${motionCount} records)\n`)
 

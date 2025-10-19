@@ -51,11 +51,16 @@ export interface Anforande {
   parti: string
 }
 
-// Hämta alla ledamöter - use sz=10000 for all records
+// Hämta alla ledamöter (historisk data från 2018) - use sz=10000 for all records
 export async function fetchMembers(): Promise<RiksdagenMember[]> {
   try {
+    // Fetch all members from 2018 onwards without status filter (to get historical data)
     const response = await axios.get(`${BASE_URL}/personlista/`, {
-      params: { utformat: 'json', sz: 10000 },
+      params: {
+        utformat: 'json',
+        sz: 10000,
+        // Don't filter by status to get historical members
+      },
       timeout: 30000,
     })
     return response.data.personlista?.person || []
@@ -99,21 +104,32 @@ export async function fetchVotings(
   }
 }
 
-// Hämta motioner - use sz=10000 for all records
-export async function fetchMotions(riksmote: string): Promise<Motion[]> {
+// Hämta motioner - use sz=10000 for all records, supports both riksmote and date range
+export async function fetchMotions(riksmote?: string, fromDate?: string): Promise<Motion[]> {
   try {
+    const params: any = {
+      doktyp: 'mot',
+      utformat: 'json',
+      sz: 10000,
+    }
+
+    // Use date range if provided (format: YYYY-MM-DD), otherwise use riksmote
+    if (fromDate) {
+      params.from = fromDate
+      // If no toDate, set it to today
+      const today = new Date().toISOString().split('T')[0]
+      params.tom = today
+    } else if (riksmote) {
+      params.rm = riksmote
+    }
+
     const response = await axios.get(`${BASE_URL}/dokumentlista/`, {
-      params: {
-        doktyp: 'mot',
-        rm: riksmote,
-        utformat: 'json',
-        sz: 10000,
-      },
+      params,
       timeout: 30000,
     })
     return response.data.dokumentlista?.dokument || []
   } catch (error) {
-    console.error(`Error fetching motions for ${riksmote}:`, error)
+    console.error(`Error fetching motions:`, error)
     throw error
   }
 }
