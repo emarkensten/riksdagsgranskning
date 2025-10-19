@@ -123,16 +123,16 @@ export async function POST(request: NextRequest) {
       const motions = await fetchMotions(undefined, '2020-01-01')
       console.log(`  Found ${motions.length} motions`)
 
-      // Batch insert for efficiency (skip fulltext for now - too slow for 10k+ records)
+      // First pass: insert motions with basic data (titel is correct field name)
       const batchSize = 1000
       for (let i = 0; i < motions.length; i += batchSize) {
         const batch = motions.slice(i, i + batchSize).map((motion: any) => ({
           id: motion.dok_id,
-          titel: motion.dok_titel,
+          titel: motion.titel, // FIX: Use 'titel' not 'dok_titel'
           datum: motion.publicerad,
           riksmote: motion.rm,
           dokument_typ: motion.doktyp,
-          fulltext: '', // Skip fulltext in batch sync
+          fulltext: '', // Will be fetched in second pass
         }))
 
         const { error } = await supabaseAdmin
@@ -148,6 +148,29 @@ export async function POST(request: NextRequest) {
         // Show progress
         if (i % 5000 === 0) {
           console.log(`  Processed ${i + batch.length}/${motions.length} motions`)
+        }
+      }
+
+      // Second pass: fetch and update fulltext for first 100 motions (sample for testing)
+      console.log(`\n  Fetching fulltext for first 100 motions...`)
+      for (let i = 0; i < Math.min(100, motions.length); i++) {
+        const motion = motions[i]
+        try {
+          const fulltext = await fetchMotionFulltext(motion.dok_id)
+          if (fulltext) {
+            const { error } = await supabaseAdmin
+              .from('motioner')
+              .update({ fulltext })
+              .eq('id', motion.dok_id)
+            if (error) {
+              console.error(`Error updating fulltext for ${motion.dok_id}:`, error)
+            }
+          }
+        } catch (e) {
+          // Skip if fulltext not available
+        }
+        if (i % 20 === 0 && i > 0) {
+          console.log(`  Updated ${i}/100 fulltext records`)
         }
       }
     } catch (error) {
