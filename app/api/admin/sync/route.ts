@@ -152,9 +152,10 @@ export async function POST(request: NextRequest) {
     }
     console.log(`✓ Motions synced (${motionCount} records)\n`)
 
-    // Sync anföranden
+    // Sync anföranden - fetch from all riksmöten
     console.log('Syncing anföranden...')
     let anforandeCount = 0
+    const riksmotes = getCurrentRiksmote()
 
     for (const rm of riksmotes) {
       console.log(`  Fetching anföranden for riksmöte ${rm}...`)
