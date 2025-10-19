@@ -134,17 +134,37 @@ export async function fetchMotions(riksmote?: string, fromDate?: string): Promis
   }
 }
 
-// Hämta fulltext för en motion
-export async function fetchMotionFulltext(dokId: string): Promise<string> {
+// Hämta fulltext för en motion (titel + proposaltext från XML)
+export async function fetchMotionFulltext(dokId: string): Promise<{ titel: string; fulltext: string }> {
   try {
+    // Fetch from XML endpoint which has the actual content
     const response = await axios.get(
-      `${BASE_URL}/dokument/${dokId}.json`,
+      `${BASE_URL}/dokument/${dokId}/text`,
       { timeout: 30000 }
     )
-    return response.data.dokument?.[0]?.fulltext || ''
+
+    const xml = response.data
+
+    // Parse XML to extract titel
+    const titelMatch = xml.match(/<titel>([^<]*)<\/titel>/)
+    const titel = titelMatch ? titelMatch[1] : ''
+
+    // Extract all lydelse (proposal text) from dokforslag
+    const lydelser: string[] = []
+    const lydelseMatches = xml.matchAll(/<lydelse>([^<]*)<\/lydelse>/g)
+    for (const match of lydelseMatches) {
+      if (match[1]) {
+        lydelser.push(match[1])
+      }
+    }
+
+    // Combine into fulltext: titel + all proposals
+    const fulltext = [titel, ...lydelser].filter(Boolean).join('\n\n')
+
+    return { titel, fulltext }
   } catch (error) {
     console.error(`Error fetching motion fulltext for ${dokId}:`, error)
-    return ''
+    return { titel: '', fulltext: '' }
   }
 }
 

@@ -151,28 +151,35 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Second pass: fetch and update fulltext for first 100 motions (sample for testing)
-      console.log(`\n  Fetching fulltext for first 100 motions...`)
-      for (let i = 0; i < Math.min(100, motions.length); i++) {
+      // Second pass: fetch and update fulltext + titel for all motions
+      console.log(`\n  Fetching fulltext for all ${motions.length} motions...`)
+      let fulltextCount = 0
+      for (let i = 0; i < motions.length; i++) {
         const motion = motions[i]
         try {
-          const fulltext = await fetchMotionFulltext(motion.dok_id)
-          if (fulltext) {
+          const { titel, fulltext } = await fetchMotionFulltext(motion.dok_id)
+          if (fulltext || titel) {
             const { error } = await supabaseAdmin
               .from('motioner')
-              .update({ fulltext })
+              .update({
+                titel: titel || motion.titel, // Use fetched title if available
+                fulltext
+              })
               .eq('id', motion.dok_id)
             if (error) {
               console.error(`Error updating fulltext for ${motion.dok_id}:`, error)
+            } else {
+              fulltextCount++
             }
           }
         } catch (e) {
           // Skip if fulltext not available
         }
-        if (i % 20 === 0 && i > 0) {
-          console.log(`  Updated ${i}/100 fulltext records`)
+        if (i % 50 === 0 && i > 0) {
+          console.log(`  Updated ${i}/${motions.length} records (${fulltextCount} with content)`)
         }
       }
+      console.log(`  ✓ Updated ${fulltextCount} motions with fulltext`)
     } catch (error) {
       console.error(`Error processing motions:`, error)
     }
