@@ -123,29 +123,32 @@ export async function POST(request: NextRequest) {
       const motions = await fetchMotions(undefined, '2020-01-01')
       console.log(`  Found ${motions.length} motions`)
 
-      for (const motion of motions) {
-        let fulltext = ''
-        try {
-          fulltext = await fetchMotionFulltext(motion.dok_id)
-        } catch (e) {
-          // Motion fulltext not available
-        }
+      // Batch insert for efficiency (skip fulltext for now - too slow for 10k+ records)
+      const batchSize = 1000
+      for (let i = 0; i < motions.length; i += batchSize) {
+        const batch = motions.slice(i, i + batchSize).map((motion: any) => ({
+          id: motion.dok_id,
+          titel: motion.dok_titel,
+          datum: motion.publicerad,
+          riksmote: motion.rm,
+          dokument_typ: motion.doktyp,
+          fulltext: '', // Skip fulltext in batch sync
+        }))
 
         const { error } = await supabaseAdmin
           .from('motioner')
-          .upsert(
-            {
-              id: motion.dok_id,
-              titel: motion.dok_titel,
-              datum: motion.publicerad,
-              riksmote: motion.rm,
-              dokument_typ: motion.doktyp,
-              fulltext: fulltext,
-            },
-            { onConflict: 'id' }
-          )
+          .upsert(batch, { onConflict: 'id' })
 
-        if (!error) motionCount++
+        if (!error) {
+          motionCount += batch.length
+        } else {
+          console.error(`Error inserting motion batch:`, error)
+        }
+
+        // Show progress
+        if (i % 5000 === 0) {
+          console.log(`  Processed ${i + batch.length}/${motions.length} motions`)
+        }
       }
     } catch (error) {
       console.error(`Error processing motions:`, error)
