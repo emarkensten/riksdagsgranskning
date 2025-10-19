@@ -155,48 +155,10 @@ export async function POST(request: NextRequest) {
     }
     console.log(`✓ Motions synced (${motionCount} records)\n`)
 
-    // Sync anföranden - fetch from all riksmöten
-    console.log('Syncing anföranden...')
+    // Sync anföranden - fetch from all riksmöten (SKIPPED for now - too slow)
+    // TODO: Implement date-range based anföranden sync or async job
     let anforandeCount = 0
-    const riksmotes = getCurrentRiksmote()
-
-    for (const rm of riksmotes) {
-      console.log(`  Fetching anföranden for riksmöte ${rm}...`)
-      try {
-        const anforanden = await fetchAnforanden(rm)
-        console.log(`  Found ${anforanden.length} anföranden`)
-
-        for (const anforande of anforanden) {
-          // Check if ledamot exists in database
-          const { data: ledamotExists } = await supabaseAdmin
-            .from('ledamoter')
-            .select('id')
-            .eq('id', anforande.intressent_id)
-            .limit(1)
-
-          const { error } = await supabaseAdmin
-            .from('anforanden')
-            .insert({
-              anforande_id: anforande.anforande_id,
-              ledamot_id: ledamotExists && ledamotExists.length > 0 ? anforande.intressent_id : null,
-              debatt_id: anforande.rel_dok_id,
-              text: anforande.anforandetext || '',
-              datum: anforande.dok_datum || anforande.systemdatum?.split(' ')[0],
-              taltid: null,
-              parti: anforande.parti,
-            })
-
-          if (error) {
-            console.error(`Error inserting anförande ${anforande.anforande_id}:`, error)
-          } else {
-            anforandeCount++
-          }
-        }
-      } catch (error) {
-        console.error(`Error processing anföranden for ${rm}:`, error)
-      }
-    }
-    console.log(`✓ Anföranden synced (${anforandeCount} records)\n`)
+    console.log('Skipping anföranden sync (implement as separate job)\n')
 
     return NextResponse.json(
       {
