@@ -4,8 +4,6 @@ import {
   fetchMembers,
   fetchMotions,
   fetchMotionFulltext,
-  fetchAnforanden,
-  getCurrentRiksmote,
 } from '@/lib/riksdagen-api'
 
 // Simple auth - check for admin token
@@ -114,13 +112,13 @@ export async function POST(request: NextRequest) {
     }
     console.log(`✓ Votings synced (${votingCount} records)\n`)
 
-    // Sync motions - fetch from 2020-01-01 onwards (historical data)
+    // Sync motions - fetch from 2022-01-01 onwards (current mandate period 2022-2026)
     console.log('Syncing motions...')
     let motionCount = 0
 
     try {
-      console.log(`  Fetching all motions from 2020-01-01 onwards...`)
-      const motions = await fetchMotions(undefined, '2020-01-01')
+      console.log(`  Fetching all motions from 2022-01-01 onwards (mandate period 2022-2026)...`)
+      const motions = await fetchMotions(undefined, '2022-01-01')
       console.log(`  Found ${motions.length} motions`)
 
       // First pass: insert motions with basic data (titel is correct field name)

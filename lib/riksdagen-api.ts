@@ -32,7 +32,7 @@ export interface VotingMetadata {
 
 export interface Motion {
   dok_id: string
-  dok_titel: string
+  titel: string // Actual field from API
   beteckning: string
   publicerad: string
   rm: string
