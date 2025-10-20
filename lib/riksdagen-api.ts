@@ -105,12 +105,13 @@ export async function fetchVotings(
 }
 
 // Hämta motioner - use sz=10000 for all records, supports both riksmote and date range
-export async function fetchMotions(riksmote?: string, fromDate?: string, toDate?: string): Promise<Motion[]> {
+export async function fetchMotions(riksmote?: string, fromDate?: string, toDate?: string, page: number = 1): Promise<Motion[]> {
   try {
     const params: any = {
       doktyp: 'mot',
       utformat: 'json',
       sz: 10000,
+      p: page, // Pagination parameter
     }
 
     // Use date range if provided (format: YYYY-MM-DD), otherwise use riksmote
@@ -131,9 +132,82 @@ export async function fetchMotions(riksmote?: string, fromDate?: string, toDate?
       params,
       timeout: 30000,
     })
-    return response.data.dokumentlista?.dokument || []
+
+    const data = response.data.dokumentlista
+    if (!data) return []
+
+    // API returns dokument as either object or array
+    let dokument = data.dokument
+    if (!dokument) return []
+
+    // Normalize to array
+    if (!Array.isArray(dokument)) {
+      dokument = [dokument]
+    }
+
+    return dokument
   } catch (error) {
     console.error(`Error fetching motions:`, error)
+    throw error
+  }
+}
+
+// Fetch ALL motions for a riksmöte with automatic pagination
+export async function fetchAllMotionsForRiksmote(riksmote: string): Promise<Motion[]> {
+  try {
+    console.log(`  Fetching all motions for riksmöte ${riksmote}...`)
+
+    // First request to get total count and page info
+    const params: any = {
+      doktyp: 'mot',
+      utformat: 'json',
+      sz: 10000,
+      rm: riksmote,
+      p: 1
+    }
+
+    const firstResponse = await axios.get(`${BASE_URL}/dokumentlista/`, {
+      params,
+      timeout: 30000,
+    })
+
+    const metadata = firstResponse.data.dokumentlista
+    const totalHits = parseInt(metadata['@traffar'] || '0')
+
+    // IMPORTANT: API returns "@sidor" which is total pages needed
+    // API seems to return ~200 records per page regardless of sz parameter
+    const totalPages = parseInt(metadata['@sidor'] || '1')
+
+    console.log(`    Total motions: ${totalHits}, pages needed: ${totalPages}`)
+
+    let allMotions: Motion[] = []
+
+    // Add first page results
+    let firstPageMotions = firstResponse.data.dokumentlista.dokument
+    if (!firstPageMotions) {
+      return []
+    }
+    if (!Array.isArray(firstPageMotions)) {
+      firstPageMotions = [firstPageMotions]
+    }
+    allMotions.push(...firstPageMotions)
+
+    // Fetch remaining pages
+    for (let page = 2; page <= totalPages; page++) {
+      console.log(`    Fetching page ${page}/${totalPages}...`)
+      const motions = await fetchMotions(riksmote, undefined, undefined, page)
+      allMotions.push(...motions)
+
+      // Small delay to avoid rate limiting
+      if (page < totalPages) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+    }
+
+    console.log(`    ✓ Fetched ${allMotions.length} motions for ${riksmote}`)
+    return allMotions
+  } catch (error) {
+    console.error(`Error fetching all motions for ${riksmote}:`, error)
     throw error
   }
 }

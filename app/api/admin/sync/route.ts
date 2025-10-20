@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import {
   fetchMembers,
-  fetchMotions,
+  fetchAllMotionsForRiksmote,
   fetchMotionFulltext,
 } from '@/lib/riksdagen-api'
 
@@ -112,41 +112,35 @@ export async function POST(request: NextRequest) {
     }
     console.log(`✓ Votings synced (${votingCount} records)\n`)
 
-    // Sync motions - fetch from 2022-01-01 onwards (current mandate period 2022-2026)
-    // Note: API returns max 10,000 records, so we need to paginate
+    // Sync motions - fetch ALL motions for current mandate period 2022-2026
+    // Using riksmöte filter to ensure 100% data completeness
     console.log('Syncing motions...')
     let motionCount = 0
     let allMotions: any[] = []
 
     try {
-      console.log(`  Fetching all motions from 2022-01-01 onwards (mandate period 2022-2026)...`)
-      console.log(`  Note: API max 10,000 per request, will paginate if needed`)
+      console.log(`  Fetching ALL motions for mandate period 2022-2026...`)
+      console.log(`  Using riksmöte filter for 100% data completeness`)
 
-      // Fetch motions with date range pagination to get all data
-      // API max is 10,000 per request, so we paginate by date ranges
-      const dateRanges = [
-        { from: '2022-01-01', to: '2022-06-30' },
-        { from: '2022-07-01', to: '2022-12-31' },
-        { from: '2023-01-01', to: '2023-06-30' },
-        { from: '2023-07-01', to: '2023-12-31' },
-        { from: '2024-01-01', to: '2024-06-30' },
-        { from: '2024-07-01', to: '2024-12-31' },
-        { from: '2025-01-01', to: '2025-12-31' }
-      ]
+      // Fetch ALL motions for each riksmöte in current mandate period
+      // This ensures we get every single motion (critical for journalistic integrity)
+      const riksmoten = ['2022/23', '2023/24', '2024/25', '2025/26']
 
-      for (const range of dateRanges) {
-        console.log(`  Fetching motions from ${range.from} to ${range.to}...`)
-        const motions = await fetchMotions(undefined, range.from, range.to)
+      for (const rm of riksmoten) {
+        console.log(`\n  Fetching riksmöte ${rm}...`)
+        const motions = await fetchAllMotionsForRiksmote(rm)
         allMotions.push(...motions)
-        console.log(`    Found ${motions.length} motions (total: ${allMotions.length})`)
+        console.log(`    ✓ Added ${motions.length} motions (total so far: ${allMotions.length})`)
       }
 
-      // Remove duplicates by motion ID
+      // Remove duplicates (shouldn't be any, but safety check)
       const uniqueMotions = Array.from(new Map(allMotions.map(m => [m.dok_id, m])).values())
-      console.log(`  After deduplication: ${uniqueMotions.length} unique motions`)
+      if (uniqueMotions.length !== allMotions.length) {
+        console.log(`  Removed ${allMotions.length - uniqueMotions.length} duplicates`)
+      }
       allMotions = uniqueMotions
 
-      console.log(`  Found ${allMotions.length} motions`)
+      console.log(`\n  ✓ Total fetched: ${allMotions.length} unique motions`)
       const motions_to_sync = allMotions
 
       // First pass: insert motions with basic data (titel is correct field name)
