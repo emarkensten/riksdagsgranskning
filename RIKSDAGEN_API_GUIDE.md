@@ -45,13 +45,20 @@ The Riksdagen API provides access to data from the Swedish Parliament (Riksdagen
 ```
 
 **Critical for data completeness:**
-- Riksmöte 2022/23 has **2,405 motions** (1 page)
-- Riksmöte 2023/24 has **2,922 motions** (1 page)
-- Riksmöte 2024/25 has **3,449 motions** (1 page)
-- Riksmöte 2025/26 has **3,825 motions** (1 page)
+- Riksmöte 2022/23 has **2,405 motions** (13 pages @ ~200/page)
+- Riksmöte 2023/24 has **2,922 motions** (15 pages @ ~200/page)
+- Riksmöte 2024/25 has **3,449 motions** (18 pages @ ~200/page)
+- Riksmöte 2025/26 has **3,825 motions** (20 pages @ ~200/page)
 - **TOTAL: 12,601 motions** across current mandate (2022-2026)
+- **Total pages needed: 66 pages**
+
+**IMPORTANT:** API returns ~200 records per page regardless of `sz` parameter!
 
 **Without pagination, you miss 89% of the data!**
+
+**Real-world results:**
+- With pagination: 12,150 motions (96.4% coverage) ✅
+- Without pagination: 1,377 motions (10.9% coverage) ❌
 
 ### 3. Riksmöte Filter vs Date Range ⭐ CRITICAL
 
@@ -498,22 +505,29 @@ Timeout: 30-60 seconds for full dataset
 
 ## Data Availability Summary
 
-| Endpoint | Coverage | Max Records | Notes |
-|----------|----------|------------|-------|
-| **Personlista** | 2018-present | ~600+ | Includes current and historical members |
-| **Dokumentlista (motions)** | 2020-present | 10,000+ | Use `from=2020-01-01` |
-| **Voteringlista** | All time | 10,000 | API max appears to be 10,000 total |
-| **Anforandelista** | Per riksmöte | 10,000 | Good coverage for recent periods |
+| Endpoint | Coverage | Records/Page | Total Available | Notes |
+|----------|----------|--------------|-----------------|-------|
+| **Personlista** | 2018-present | Varies | ~600+ | Includes current and historical members |
+| **Dokumentlista (motions)** | 2020-present | **~200** | 12,601+ (mandate 2022-2026) | Use riksmöte filter + pagination |
+| **Voteringlista** | All time | Varies | 10,000+ | May need pagination |
+| **Anforandelista** | Per riksmöte | Varies | Varies | Good coverage for recent periods |
+
+**CRITICAL:** Dokumentlista returns ~200 records per page regardless of `sz` parameter. Always use pagination!
 
 ---
 
 ## Real-World Data Sizes
 
-From our testing:
+From our production testing (2025-10-20):
 
 - **Members (personlista):** ~349 current + ~250+ historical = 600+
-- **Motions (2020-present):** 10,000+ records available
-- **Votings:** 10,000 records max (API limitation)
+- **Motions (mandate 2022-2026):** 12,601 total available
+  - 2022/23: 2,405 motions (13 pages)
+  - 2023/24: 2,922 motions (15 pages)
+  - 2024/25: 3,449 motions (18 pages)
+  - 2025/26: 3,825 motions (20 pages)
+  - **Achieved coverage:** 12,150 motions (96.4%) with pagination
+- **Votings:** 10,000+ records (may need pagination)
 - **Speeches:** Varies by period (1-1000+ per riksmöte)
 
 ---
@@ -619,7 +633,15 @@ async function fetchAllVotings() {
 
 ## Last Updated
 
-October 2025 - Riksdagsgranskning Development
+**October 2025** - Riksdagsgranskning Development
+
+**Major Updates (2025-10-20):**
+- ⭐ Discovered pagination parameter `p` (first documentation)
+- ⭐ Discovered `@sidor` metadata for page count
+- ⭐ Confirmed ~200 records/page limit (regardless of `sz`)
+- ⭐ Validated riksmöte filter gives 96.4% coverage vs 10.9% with date ranges
+- ⭐ Tested full mandate period sync: 12,150/12,601 motions (96.4%)
 
 **Discovered by:** Testing and API exploration during MVP development
 **Compiled for:** Riksdagsgranskning project
+**GitHub:** https://github.com/emarkensten/riksdagsgranskning
