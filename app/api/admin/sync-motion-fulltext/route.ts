@@ -65,15 +65,16 @@ export async function POST(request: NextRequest) {
       try {
         console.log(`⏳ [${i + 1}/${motions.length}] Fetching ${motion.dok_id}...`)
 
-        const { titel, fulltext } = await fetchMotionFulltext(motion.dok_id)
+        const { titel, fulltext } = await fetchMotionFulltext(motion.id)
 
-        if (fulltext && fulltext.length > 0) {
+        // Always try to update if we got any data
+        if (titel || fulltext) {
           // Update database
           const { error: updateError } = await supabaseAdmin!
             .from('motioner')
             .update({
               titel: titel || motion.titel,
-              fulltext: fulltext,
+              fulltext: fulltext || null,
             })
             .eq('id', motion.id)
 
@@ -81,11 +82,11 @@ export async function POST(request: NextRequest) {
             console.warn(`  ⚠️ Failed to update DB: ${updateError.message}`)
             failed++
           } else {
-            console.log(`  ✅ Updated (${fulltext.length} chars)`)
+            console.log(`  ✅ Updated (titre: ${titel.length}, fulltext: ${fulltext.length} chars)`)
             updated++
           }
         } else {
-          console.log(`  ⚠️ No fulltext found`)
+          console.log(`  ⚠️ No data returned from API`)
           failed++
         }
 
