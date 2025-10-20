@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { OpenAIBatchClient } from '@/lib/openai-batch'
-import { createMotionAnalysisPrompt, createBatchRequest } from '@/lib/llm-prompts'
+import { createMotionAnalysisPrompt, createAbsenceAnalysisPrompt, createBatchRequest } from '@/lib/llm-prompts'
 
 /**
  * Submit LLM batch jobs to OpenAI for analysis
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (type === 'motion_quality') {
       return await submitMotionQualityBatch(limit, confirm)
     } else if (type === 'absence_detection') {
-      return NextResponse.json({ error: 'Not yet implemented' }, { status: 501 })
+      return await submitAbsenceAnalysisBatch(limit, confirm)
     } else if (type === 'rhetoric_analysis') {
       return NextResponse.json({ error: 'Not yet implemented' }, { status: 501 })
     } else {
@@ -134,6 +134,120 @@ async function submitMotionQualityBatch(limit: number, confirm: boolean) {
         message:
           'Batch submitted successfully! Check status with /api/admin/analysis/batch-status?batch_id=' +
           batchResponse.id,
+      },
+      { status: 200 }
+    )
+  } catch (error) {
+    console.error('❌ Error submitting batch:', error)
+    return NextResponse.json({ error: String(error) }, { status: 500 })
+  }
+}
+
+async function submitAbsenceAnalysisBatch(limit: number, confirm: boolean) {
+  // Fetch members and their voting data
+  const { data: members, error: membersError } = await supabaseAdmin!
+    .from('ledamoter')
+    .select('*')
+    .limit(limit)
+
+  if (membersError || !members) {
+    return NextResponse.json({ error: `Failed to fetch members: ${membersError?.message}` }, { status: 500 })
+  }
+
+  console.log(`📊 Found ${members.length} members to analyze for absence patterns`)
+
+  // Create batch requests
+  const batchRequests = []
+  for (let i = 0; i < members.length; i++) {
+    const member = members[i]
+
+    // Fetch voting data for this member
+    const { data: votes, error: votesError } = await supabaseAdmin!
+      .from('voteringar')
+      .select('titel, rost, datum')
+      .eq('ledamot_id', member.id)
+      .limit(100) // Limit votes per member for analysis
+
+    if (votesError || !votes) {
+      console.warn(`Warning: Could not fetch votes for ${member.namn}`)
+      continue
+    }
+
+    // Transform votes to absence analysis format
+    const votingData = votes.map((v: any) => ({
+      title: v.titel || 'Unknown',
+      absent: v.rost === 'Frånvarande' || v.rost === 'Jämförd' || !v.rost,
+    }))
+
+    const prompt = createAbsenceAnalysisPrompt(member.namn, member.parti || 'Unknown', votingData)
+    batchRequests.push(createBatchRequest(`absence_analysis_${member.id}_${i}`, prompt))
+  }
+
+  if (batchRequests.length === 0) {
+    return NextResponse.json({ error: 'No valid members to analyze' }, { status: 400 })
+  }
+
+  // Calculate cost
+  const totalChars = batchRequests.reduce((acc, req) => {
+    const promptChars = req.body.messages.reduce((sum, msg) => sum + msg.content.length, 0)
+    return acc + promptChars
+  }, 0)
+  const estimatedTokens = Math.ceil(totalChars / 4)
+  const inputTokens = Math.ceil(estimatedTokens * 0.5)
+  const outputTokens = Math.ceil(estimatedTokens * 0.5)
+  // GPT-5 Nano Batch API pricing (50% discount)
+  const inputCost = (inputTokens / 1000000) * 0.0125
+  const outputCost = (outputTokens / 1000000) * 0.1
+  const totalCost = inputCost + outputCost
+
+  console.log(`💰 Estimated cost: $${totalCost.toFixed(4)}`)
+  console.log(`📈 Tokens: ~${estimatedTokens} (input: ${inputTokens}, output: ${outputTokens})`)
+
+  if (!confirm) {
+    return NextResponse.json({
+      warning: 'This will cost money! Review and confirm by adding ?confirm=yes to the request',
+      estimated_cost_usd: totalCost.toFixed(4),
+      members_count: batchRequests.length,
+      tokens_estimated: estimatedTokens,
+      example_request: `/api/admin/analysis/submit-batch?type=absence_detection&limit=${limit}&confirm=yes`,
+    })
+  }
+
+  // Submit batch
+  try {
+    const batchClient = new OpenAIBatchClient()
+
+    console.log('📤 Uploading batch file...')
+    const fileId = await batchClient.uploadBatchFile(batchRequests, 'absence_analysis_batch.jsonl')
+    console.log(`✅ File uploaded: ${fileId}`)
+
+    console.log('📨 Creating batch job...')
+    const batchResponse = await batchClient.createBatch(fileId)
+    console.log(`✅ Batch created: ${batchResponse.id}`)
+
+    // Store batch info in database
+    const { error: insertError } = await supabaseAdmin!.from('batch_jobs').insert({
+      batch_id: batchResponse.id,
+      type: 'absence_detection',
+      status: 'submitted',
+      motions_count: batchRequests.length,
+      estimated_cost_usd: totalCost,
+      created_at: new Date(),
+    })
+
+    if (insertError) {
+      console.warn('Warning: Could not store batch job info:', insertError)
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        batch_id: batchResponse.id,
+        type: 'absence_detection',
+        members_count: batchRequests.length,
+        estimated_cost_usd: totalCost.toFixed(4),
+        status: batchResponse.status,
+        message: 'Batch submitted successfully! Check status with /api/admin/analysis/batch-status?batch_id=' + batchResponse.id,
       },
       { status: 200 }
     )
