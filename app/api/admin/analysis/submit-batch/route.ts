@@ -71,7 +71,7 @@ async function submitMotionQualityBatch(limit: number, confirm: boolean) {
     return createBatchRequest(`motion_quality_${motion.id}_${idx}`, prompt)
   })
 
-  // Calculate cost
+  // Calculate cost using GPT-5 Nano Batch API pricing
   const totalChars = batchRequests.reduce((acc, req) => {
     const promptChars = req.body.messages.reduce((sum, msg) => sum + msg.content.length, 0)
     return acc + promptChars
@@ -79,8 +79,9 @@ async function submitMotionQualityBatch(limit: number, confirm: boolean) {
   const estimatedTokens = Math.ceil(totalChars / 4)
   const inputTokens = Math.ceil(estimatedTokens * 0.5)
   const outputTokens = Math.ceil(estimatedTokens * 0.5)
-  const inputCost = (inputTokens / 1000) * 0.0025
-  const outputCost = (outputTokens / 1000) * 0.01
+  // GPT-5 Nano Batch API pricing (50% discount): $0.0000125 input, $0.0001 output
+  const inputCost = (inputTokens / 1000000) * 0.0125
+  const outputCost = (outputTokens / 1000000) * 0.1
   const totalCost = inputCost + outputCost
 
   console.log(`💰 Estimated cost: $${totalCost.toFixed(4)}`)

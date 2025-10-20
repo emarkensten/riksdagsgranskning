@@ -70,14 +70,19 @@ export async function fetchMembers(): Promise<RiksdagenMember[]> {
   }
 }
 
-// Hämta voteringar för en specifik session - use sz=10000
+// Hämta voteringar för en specifik session - use sz=10000 + pagination
 export async function fetchVotings(
   riksmote: string,
+  page: number = 1,
   bet?: string,
   punkt?: string
 ): Promise<{ votings: Voting[], metadata: VotingMetadata }> {
   try {
-    const params: any = { utformat: 'json', sz: 10000 }
+    const params: any = {
+      utformat: 'json',
+      sz: 10000,
+      p: page  // Pagination parameter
+    }
     if (bet) params.bet = bet
     if (punkt) params.punkt = punkt
 
@@ -100,6 +105,65 @@ export async function fetchVotings(
     }
   } catch (error) {
     console.error(`Error fetching votings for ${riksmote}:`, error)
+    throw error
+  }
+}
+
+// Fetch ALL votings for a riksmöte with automatic pagination
+// IMPORTANT: Voteringar can be 50,000+ per riksmöte, so pagination is critical
+export async function fetchAllVotingsForRiksmote(riksmote: string): Promise<any[]> {
+  try {
+    console.log(`  Fetching all votings for riksmöte ${riksmote}...`)
+
+    let allVotings: any[] = []
+    let page = 1
+    let hasMore = true
+
+    // Voteringar API doesn't have @sidor, so we keep fetching until we get <10000 records
+    while (hasMore) {
+      console.log(`    Fetching page ${page}...`)
+
+      const params: any = {
+        utformat: 'json',
+        sz: 10000,
+        p: page,
+        rm: riksmote
+      }
+
+      const response = await axios.get(`${BASE_URL}/voteringlista/`, {
+        params,
+        timeout: 30000,
+      })
+
+      const data = response.data.voteringlista
+      if (!data || !data.votering) {
+        console.log(`    No more votings found on page ${page}`)
+        break
+      }
+
+      let votings = data.votering
+      // Normalize to array
+      if (!Array.isArray(votings)) {
+        votings = [votings]
+      }
+
+      allVotings.push(...votings)
+      console.log(`    Got ${votings.length} votings (total so far: ${allVotings.length})`)
+
+      // If we got less than 10000, this is the last page
+      if (votings.length < 10000) {
+        hasMore = false
+      } else {
+        page++
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+    }
+
+    console.log(`    ✓ Fetched ${allVotings.length} votings for ${riksmote}`)
+    return allVotings
+  } catch (error) {
+    console.error(`Error fetching all votings for ${riksmote}:`, error)
     throw error
   }
 }

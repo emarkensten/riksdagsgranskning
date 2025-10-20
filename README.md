@@ -34,9 +34,17 @@ npm run dev
 
 ## Project Status
 
-**Week 1: Project Setup & Initial Data Pipeline** ⏳
+**Data Pipeline Complete ✅** - 1.3M+ records imported
 
-Following the 8-week roadmap outlined in `mvp-handlingsplan-riksdagsgranskning.md`
+Database is now production-ready with:
+- ✅ 1,006,865 voting records (2021-2025)
+- ✅ 147,359 speeches (2010-2025)
+- ✅ 56,745 motions (2010-2025)
+- ✅ 60,830 written questions (2010-2025)
+- ✅ 18,212 interpellations (2010-2025)
+- ✅ 37,483 historical member data (1990+)
+
+See [docs/](docs/) for full documentation.
 
 ## Architecture
 

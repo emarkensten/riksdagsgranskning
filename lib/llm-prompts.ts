@@ -185,7 +185,7 @@ export interface BatchRequestItem {
   method: 'POST'
   url: '/v1/chat/completions'
   body: {
-    model: 'gpt-4o'
+    model: 'gpt-5-nano'
     messages: Array<{
       role: 'user' | 'system'
       content: string
@@ -198,7 +198,7 @@ export interface BatchRequestItem {
 export function createBatchRequest(
   customId: string,
   prompt: string,
-  model: 'gpt-4o' = 'gpt-4o'
+  model: 'gpt-5-nano' = 'gpt-5-nano'
 ): BatchRequestItem {
   return {
     custom_id: customId,

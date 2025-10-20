@@ -254,9 +254,11 @@ export function calculateBatchCost(requestCount: number, estimatedInputTokens = 
   outputCost: number
   totalCost: number
 } {
-  // GPT-4o Batch API pricing (50% discount from regular)
-  const batchInputPrice = 2.5 / 1_000_000 // $2.50 per 1M input tokens
-  const batchOutputPrice = 10 / 1_000_000 // $10 per 1M output tokens
+  // GPT-5 Nano Batch API pricing (50% discount from regular)
+  // Regular: $0.000025 input, $0.0002 output
+  // Batch (50% off): $0.0000125 input, $0.0001 output
+  const batchInputPrice = 0.0000125 / 1 // $0.0000125 per token
+  const batchOutputPrice = 0.0001 / 1 // $0.0001 per token
 
   const totalInputTokens = requestCount * estimatedInputTokens
   const totalOutputTokens = requestCount * estimatedOutputTokens

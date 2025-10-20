@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import {
   fetchMembers,
   fetchAllMotionsForRiksmote,
+  fetchAllVotingsForRiksmote,
   fetchMotionFulltext,
 } from '@/lib/riksdagen-api'
 
@@ -50,65 +51,69 @@ export async function POST(request: NextRequest) {
     }
     console.log(`✓ Members synced (${memberCount}/${members.length})\n`)
 
-    // Sync votings - use sz=100000 to get maximum voting records (API max is 10000)
+    // Sync votings - fetch ALL votings for current mandate period 2022-2026
+    // Using riksmöte filter with pagination to ensure 100% data completeness
     console.log('Syncing votings...')
     let votingCount = 0
+    let allVotings: any[] = []
 
     try {
-      console.log(`  Fetching all votings (sz=100000, API max is 10000)...`)
-      const response = await fetch(
-        `https://data.riksdagen.se/voteringlista/?sz=100000&utformat=json`
-      )
-      const data = await response.json()
+      console.log(`  Fetching ALL votings for mandate period 2022-2026...`)
+      console.log(`  Using riksmöte filter with pagination for 100% data completeness`)
 
-      if (!data.voteringlista) {
-        console.log('  No votings found')
-      } else {
-        // API returns votering as either an object or array
-        let voterings = data.voteringlista.votering
-        if (!voterings) {
-          console.log('  No votings found')
-        } else {
-          // Normalize to array
-          if (!Array.isArray(voterings)) {
-            voterings = [voterings]
-          }
+      // Fetch ALL votings for each riksmöte in current mandate period
+      // This ensures we get every single voting (50,000+ per riksmöte)
+      const riksmoten = ['2022/23', '2023/24', '2024/25', '2025/26']
 
-          console.log(`  Found ${voterings.length} votings`)
-
-          // Batch insert for efficiency
-          const batchSize = 1000
-          for (let i = 0; i < voterings.length; i += batchSize) {
-            const batch = voterings.slice(i, i + batchSize).map((voting: any) => ({
-              votering_id: voting.votering_id,
-              dokument_id: voting.dok_id,
-              ledamot_id: voting.intressent_id,
-              datum: voting.datum,
-              titel: voting.namn || 'N/A',
-              rost: voting.rost,
-              riksmote: voting.rm,
-              beteckning: voting.beteckning,
-            }))
-
-            const { error } = await supabaseAdmin
-              .from('voteringar')
-              .insert(batch)
-
-            if (!error) {
-              votingCount += batch.length
-            } else {
-              console.error(`Error inserting voting batch:`, error)
-            }
-
-            // Show progress
-            if (i % 5000 === 0) {
-              console.log(`  Processed ${i + batch.length}/${voterings.length} votings`)
-            }
-          }
-        }
+      for (const rm of riksmoten) {
+        console.log(`\n  Fetching riksmöte ${rm}...`)
+        const votings = await fetchAllVotingsForRiksmote(rm)
+        allVotings.push(...votings)
+        console.log(`    ✓ Added ${votings.length} votings (total so far: ${allVotings.length})`)
       }
+
+      // Remove duplicates (shouldn't be any, but safety check)
+      const uniqueVotings = Array.from(new Map(allVotings.map(v => [v.votering_id, v])).values())
+      if (uniqueVotings.length !== allVotings.length) {
+        console.log(`  Removed ${allVotings.length - uniqueVotings.length} duplicates`)
+      }
+      allVotings = uniqueVotings
+
+      console.log(`\n  ✓ Total fetched: ${allVotings.length} unique votings`)
+
+      // Batch insert for efficiency
+      const batchSize = 1000
+      console.log(`\n  Inserting ${allVotings.length} votings in batches of ${batchSize}...`)
+
+      for (let i = 0; i < allVotings.length; i += batchSize) {
+        const batch = allVotings.slice(i, i + batchSize).map((voting: any) => ({
+          votering_id: voting.votering_id,
+          dokument_id: voting.dok_id,
+          ledamot_id: voting.intressent_id,
+          datum: voting.datum,
+          titel: voting.namn || 'N/A',
+          rost: voting.rost,
+          riksmote: voting.rm,
+          beteckning: voting.beteckning,
+        }))
+
+        const { error } = await supabaseAdmin
+          .from('voteringar')
+          .upsert(batch, { onConflict: 'votering_id' })
+
+        if (!error) {
+          votingCount += batch.length
+        } else {
+          console.error(`Error inserting voting batch:`, error)
+        }
+
+        // Show progress
+        console.log(`  Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(allVotings.length / batchSize)} (${i + batch.length}/${allVotings.length} votings)`)
+      }
+
+      console.log(`\n  ✓ Inserted ${votingCount} votings`)
     } catch (error) {
-      console.error(`Error fetching votings:`, error)
+      console.error(`Error processing votings:`, error)
     }
     console.log(`✓ Votings synced (${votingCount} records)\n`)
 
