@@ -143,8 +143,12 @@ export async function POST(request: NextRequest) {
       console.log(`\n  ✓ Total fetched: ${allMotions.length} unique motions`)
       const motions_to_sync = allMotions
 
-      // First pass: insert motions with basic data (titel is correct field name)
+      // Insert motions with basic data (titel is correct field name)
+      // NOTE: Fulltext fetching is skipped here - too slow for sync endpoint
+      // Use /api/admin/fetch-fulltext endpoint separately to fetch fulltext
       const batchSize = 1000
+      console.log(`\n  Inserting ${motions_to_sync.length} motions in batches of ${batchSize}...`)
+
       for (let i = 0; i < motions_to_sync.length; i += batchSize) {
         const batch = motions_to_sync.slice(i, i + batchSize).map((motion: any) => ({
           id: motion.dok_id,
@@ -152,7 +156,7 @@ export async function POST(request: NextRequest) {
           datum: motion.publicerad,
           riksmote: motion.rm,
           dokument_typ: motion.doktyp,
-          fulltext: '', // Will be fetched in second pass
+          fulltext: '', // Fulltext will be fetched separately
         }))
 
         const { error } = await supabaseAdmin
@@ -166,40 +170,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Show progress
-        if (i % 5000 === 0) {
-          console.log(`  Processed ${i + batch.length}/${motions_to_sync.length} motions`)
-        }
+        console.log(`  Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(motions_to_sync.length / batchSize)} (${i + batch.length}/${motions_to_sync.length} motions)`)
       }
 
-      // Second pass: fetch and update fulltext + titel for all motions
-      console.log(`\n  Fetching fulltext for all ${motions_to_sync.length} motions...`)
-      let fulltextCount = 0
-      for (let i = 0; i < motions_to_sync.length; i++) {
-        const motion = motions_to_sync[i]
-        try {
-          const { titel, fulltext } = await fetchMotionFulltext(motion.dok_id)
-          if (fulltext || titel) {
-            const { error } = await supabaseAdmin
-              .from('motioner')
-              .update({
-                titel: titel || motion.titel, // Use fetched title if available
-                fulltext
-              })
-              .eq('id', motion.dok_id)
-            if (error) {
-              console.error(`Error updating fulltext for ${motion.dok_id}:`, error)
-            } else {
-              fulltextCount++
-            }
-          }
-        } catch (e) {
-          // Skip if fulltext not available
-        }
-        if (i % 50 === 0 && i > 0) {
-          console.log(`  Updated ${i}/${motions_to_sync.length} records (${fulltextCount} with content)`)
-        }
-      }
-      console.log(`  ✓ Updated ${fulltextCount} motions with fulltext`)
+      console.log(`\n  ✓ Inserted ${motionCount} motions with basic data`)
+      console.log(`  NOTE: Fulltext not fetched (too slow for sync endpoint)`)
+      console.log(`  Run /api/admin/fetch-fulltext separately to fetch fulltext content`)
     } catch (error) {
       console.error(`Error processing motions:`, error)
     }
