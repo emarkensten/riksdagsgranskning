@@ -44,12 +44,12 @@ export async function POST(request: NextRequest) {
 }
 
 async function submitMotionQualityBatch(limit: number, confirm: boolean) {
-  // Fetch motions with fulltext from database (only analyze motions with actual content)
+  // Fetch motions - prefer fulltext, but accept any with title for POC testing
   const { data: motions, error } = await supabaseAdmin!
     .from('motioner')
     .select('*')
-    .not('fulltext', 'is', null)
-    .neq('fulltext', '')
+    .not('titel', 'is', null)
+    .neq('titel', '')
     .order('datum', { ascending: false })
     .limit(limit)
 
@@ -57,7 +57,7 @@ async function submitMotionQualityBatch(limit: number, confirm: boolean) {
     return NextResponse.json({ error: `Failed to fetch motions: ${error?.message}` }, { status: 500 })
   }
 
-  console.log(`📊 Found ${motions.length} motions to analyze`)
+  console.log(`📊 Found ${motions.length} motions to analyze (${motions.filter((m: any) => m.fulltext).length} with fulltext)`)
 
   // Create batch requests
   const batchRequests = motions.map((motion, idx) => {
