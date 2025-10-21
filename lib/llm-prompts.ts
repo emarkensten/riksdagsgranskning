@@ -189,10 +189,13 @@ export function createBatchRequest(
   prompt: string,
   model: 'gpt-5-nano' = 'gpt-5-nano'
 ): BatchRequestItem {
-  // Absence analysis needs more tokens to complete full analysis
-  // Motion quality can work with less
+  // Different analysis types need different token limits
   const isAbsenceAnalysis = customId.includes('absence_analysis')
-  const maxTokens = isAbsenceAnalysis ? 5000 : 3000
+  const isRhetoricAnalysis = customId.includes('rhetoric_analysis')
+
+  let maxTokens = 3000 // Motion quality default
+  if (isAbsenceAnalysis) maxTokens = 5000
+  if (isRhetoricAnalysis) maxTokens = 6000 // Rhetoric needs more for detailed analysis
 
   return {
     custom_id: customId,

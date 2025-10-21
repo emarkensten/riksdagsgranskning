@@ -149,6 +149,27 @@ export async function POST(request: NextRequest) {
             console.error(`Error storing franvaro_analys for ${memberId}:`, error)
             errorCount++
           }
+        } else if (batchType === 'rhetoric_analysis') {
+          // Handle rhetoric vs voting analysis results
+          const parts = customId.split('_')
+          const memberId = parts[2]
+
+          const { error } = await supabaseAdmin
+            .from('retorik_analys')
+            .insert({
+              ledamot_id: memberId,
+              topics_analyzed: analysis.topics_analyzed || [],
+              overall_gap_score: analysis.overall_gap_score || 0,
+              assessment: analysis.assessment || '',
+              credibility_issues: analysis.credibility_issues || [],
+            })
+
+          if (!error) {
+            storedCount++
+          } else {
+            console.error(`Error storing retorik_analys for ${memberId}:`, error)
+            errorCount++
+          }
         }
       } catch (e) {
         console.error('Error processing result line:', e)
