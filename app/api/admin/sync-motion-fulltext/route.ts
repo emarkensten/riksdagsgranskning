@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < motions.length; i++) {
       const motion = motions[i]
       try {
-        console.log(`⏳ [${i + 1}/${motions.length}] Fetching ${motion.dok_id}...`)
+        console.log(`⏳ [${i + 1}/${motions.length}] Fetching ${motion.id}...`)
 
         const { titel, fulltext } = await fetchMotionFulltext(motion.id)
 
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
             console.warn(`  ⚠️ Failed to update DB: ${updateError.message}`)
             failed++
           } else {
-            console.log(`  ✅ Updated (titre: ${titel.length}, fulltext: ${fulltext.length} chars)`)
+            console.log(`  ✅ Updated (titel: ${(titel || '').length}, fulltext: ${(fulltext || '').length} chars)`)
             updated++
           }
         } else {
