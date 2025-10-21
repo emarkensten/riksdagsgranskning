@@ -69,21 +69,23 @@ export function MotionSearch() {
   return (
     <div className="space-y-6">
       {/* Search Form */}
-      <form onSubmit={handleSearch} className="space-y-4">
+      <form onSubmit={handleSearch} className="space-y-4" role="search" aria-label="Sök motioner">
         <div className="relative flex items-center gap-2">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" aria-hidden="true" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Sök motioner..."
+              aria-label="Sökfält för motioner"
               className="w-full pl-10 pr-4 py-3 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-50 placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
             />
           </div>
           <Button
             type="submit"
             disabled={loading || !hasActiveFilters}
+            aria-label="Sök motioner"
             className="px-6"
           >
             {loading ? 'Söker...' : 'Sök'}
@@ -93,9 +95,11 @@ export function MotionSearch() {
             variant="outline"
             size="icon"
             onClick={() => setShowFilters(!showFilters)}
+            aria-label={showFilters ? 'Dölj filter' : 'Visa filter'}
+            aria-expanded={showFilters}
             className="gap-2"
           >
-            <Filter className="h-4 w-4" />
+            <Filter className="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
 
