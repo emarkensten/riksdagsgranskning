@@ -63,22 +63,22 @@ Real-time tracking of all analysis costs vs estimates to determine viability of 
 
 ### Staged Rollout Recommended
 
-**Stage 1: Validate Primary Analyses (THIS WEEK)**
+**Stage 1: Validate Primary Analyses (THIS WEEK)** ✅ PROCEED
 - Fix Motion Quality output format
 - Fix Absence Analysis parsing
 - Run Motion Quality Full (17k motions)
 - Validate results quality with sample review
 
-**Stage 2: High-Value Sample (NEXT WEEK IF STAGE 1 SUCCEEDS)**
+**Stage 2: High-Value Sample (NEXT WEEK IF STAGE 1 SUCCEEDS)** ✅ PROCEED
 - Rhetoric Analysis on 200 top members only
 - Cost: ~$5 (vs $22 for full)
 - Identifies biggest hypocrites for media impact
 - Lower risk than full 2,086 member analysis
 
-**Stage 3: Full Rhetoric (LATER)**
-- Only if Stage 1 & 2 prove data quality
-- Full cost: $2-22 depending on efficiency
-- Maximum investigative impact
+**Stage 3: Full Rhetoric (2,086 members)** ❌ SKIP
+- **Decision**: Do not run full Rhetoric analysis
+- Rationale: 200-member sample is sufficient for media impact
+- Resource allocation: Focus on perfecting primary analyses instead
 
 ---
 
