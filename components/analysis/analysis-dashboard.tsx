@@ -34,15 +34,26 @@ export function AnalysisDashboard() {
 
   useEffect(() => {
     const fetchAnalysisData = async () => {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+
       try {
-        const res = await fetch('/api/analys/overview')
+        const res = await fetch('/api/analys/overview', { signal: controller.signal })
+        clearTimeout(timeoutId)
+
         if (!res.ok) throw new Error('Misslyckades att hämta analysdata')
 
         const data = await res.json()
         setStats(data)
       } catch (err) {
+        clearTimeout(timeoutId)
         console.error('Error fetching analysis data:', err)
-        setError('Kunde inte ladda analysdata')
+
+        // Only show error if it's not due to timeout
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setError('Kunde inte ladda analysdata')
+        }
+
         // Set mock data for demo
         setStats({
           motionQuality: {
