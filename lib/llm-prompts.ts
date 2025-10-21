@@ -31,42 +31,31 @@ export function createAbsenceAnalysisPrompt(
     {} as Record<string, { total: number; absent: number }>
   )
 
-  return `You are an expert political analyst. Analyze the voting absence pattern for a Swedish politician.
+  return `Analyze voting absences for ${memberName} (${party}): ${absences}/${totalVotes} absent (${absenceRate}%)
 
-MEMBER: ${memberName} (${party})
-OVERALL: ${absences} absences out of ${totalVotes} votes (${absenceRate}%)
-
-ABSENCES BY CATEGORY:
+Top categories by absence rate:
 ${Object.entries(votingsByCategory)
   .sort(([, a], [, b]) => (b.absent / b.total) * 100 - (a.absent / a.total) * 100)
-  .slice(0, 10)
+  .slice(0, 5)
   .map(([cat, data]) => {
     const rate = ((data.absent / data.total) * 100).toFixed(1)
-    return `- ${cat}: ${data.absent}/${data.total} absent (${rate}%)`
+    return `- ${cat}: ${data.absent}/${data.total} (${rate}%)`
   })
   .join('\n')}
 
-TASK:
-1. Categorize the voting records by political topic (e.g., "HBTQ-frågor", "Klimat", "Försvar", "Skatter", etc.)
-2. For each category with >5 votes, calculate absence percentage
-3. Identify suspicious patterns (e.g., systematically absent for specific topics)
-4. Estimate a "baseline" absence rate (typical for the party average, around 12-15%)
-
-RESPOND ONLY WITH VALID JSON (no markdown, no code blocks):
+Identify topic categories, absences, patterns. Baseline: ~13%. Respond as JSON only:
 {
-  "kategorier": [
-    {
-      "name": "category name in Swedish",
-      "voting_count": number,
-      "absence_count": number,
-      "absence_percent": number,
-      "baseline_percent": number,
-      "deviation": "significantly higher" | "slightly higher" | "normal" | "lower",
-      "pattern_note": "Optional note about suspicious patterns"
-    }
-  ],
-  "overall_assessment": "Brief assessment of this member's absence patterns",
-  "red_flags": ["List", "of", "concerning", "patterns", "if", "any"]
+  "kategorier": [{
+    "name": "topic",
+    "voting_count": N,
+    "absence_count": N,
+    "absence_percent": N.N,
+    "baseline_percent": 13,
+    "deviation": "higher"|"normal"|"lower",
+    "pattern_note": "optional"
+  }],
+  "overall_assessment": "brief summary",
+  "red_flags": ["pattern1", "pattern2"]
 }`
 }
 
@@ -200,6 +189,11 @@ export function createBatchRequest(
   prompt: string,
   model: 'gpt-5-nano' = 'gpt-5-nano'
 ): BatchRequestItem {
+  // Absence analysis needs more tokens to complete full analysis
+  // Motion quality can work with less
+  const isAbsenceAnalysis = customId.includes('absence_analysis')
+  const maxTokens = isAbsenceAnalysis ? 5000 : 3000
+
   return {
     custom_id: customId,
     method: 'POST',
@@ -218,7 +212,7 @@ export function createBatchRequest(
       ],
       // GPT-5 Nano only supports temperature: 1 (default)
       // Do not include temperature parameter as it defaults to 1
-      max_completion_tokens: 3000, // Increased to 3000 - some analyses (especially absence_analysis) need more tokens
+      max_completion_tokens: maxTokens,
     },
   }
 }
