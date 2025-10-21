@@ -101,60 +101,73 @@ export function MotionSearch() {
 
         {/* Filters */}
         {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700">
-            <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-50 mb-2">
-                Parti
-              </label>
-              <select
-                value={party}
-                onChange={(e) => setParty(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Alla partier</option>
-                <option value="Moderaterna">Moderaterna</option>
-                <option value="Socialdemokraterna">Socialdemokraterna</option>
-                <option value="Sverigedemokraterna">Sverigedemokraterna</option>
-                <option value="Vänsterpartiet">Vänsterpartiet</option>
-                <option value="Miljöpartiet">Miljöpartiet de gröna</option>
-                <option value="Centerpartiet">Centerpartiet</option>
-                <option value="Folkpartiet">Liberalerna</option>
-                <option value="Kristdemokraterna">Kristdemokraterna</option>
-                <option value="Piratpartiet">Piratpartiet</option>
-                <option value="Övriga">Övriga</option>
-              </select>
+          <div className="space-y-4 p-4 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700">
+            {/* Main Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-50 mb-2">
+                  Parti
+                </label>
+                <select
+                  value={party}
+                  onChange={(e) => setParty(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Alla partier</option>
+                  <option value="Moderaterna">Moderaterna</option>
+                  <option value="Socialdemokraterna">Socialdemokraterna</option>
+                  <option value="Sverigedemokraterna">Sverigedemokraterna</option>
+                  <option value="Vänsterpartiet">Vänsterpartiet</option>
+                  <option value="Miljöpartiet">Miljöpartiet de gröna</option>
+                  <option value="Centerpartiet">Centerpartiet</option>
+                  <option value="Folkpartiet">Liberalerna</option>
+                  <option value="Kristdemokraterna">Kristdemokraterna</option>
+                  <option value="Piratpartiet">Piratpartiet</option>
+                  <option value="Övriga">Övriga</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-50 mb-2">
+                  Motionkvalitet
+                </label>
+                <select
+                  value={quality}
+                  onChange={(e) => setQuality(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Alla kvaliteter</option>
+                  <option value="7-10">Högt (7-10)</option>
+                  <option value="5-6">Medel (5-6)</option>
+                  <option value="0-4">Lågt (0-4)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-50 mb-2">
+                  Riksmöte
+                </label>
+                <select
+                  value={riksmote}
+                  onChange={(e) => setRiksmote(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Alla riksmöten</option>
+                  <option value="2022/23">2022/23</option>
+                  <option value="2023/24">2023/24</option>
+                  <option value="2024/25">2024/25</option>
+                </select>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-50 mb-2">
-                Kvalitet
-              </label>
-              <select
-                value={quality}
-                onChange={(e) => setQuality(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Alla kvaliteter</option>
-                <option value="7-10">Högt (7-10)</option>
-                <option value="5-6">Medel (5-6)</option>
-                <option value="0-4">Lågt (0-4)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-neutral-900 dark:text-neutral-50 mb-2">
-                Riksmöte
-              </label>
-              <select
-                value={riksmote}
-                onChange={(e) => setRiksmote(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Alla riksmöten</option>
-                <option value="2022/23">2022/23</option>
-                <option value="2023/24">2023/24</option>
-                <option value="2024/25">2024/25</option>
-              </select>
+            {/* Filter Tips */}
+            <div className="text-xs text-neutral-600 dark:text-neutral-400 pt-2 border-t border-neutral-200 dark:border-neutral-700">
+              <p className="font-medium text-neutral-900 dark:text-neutral-50 mb-1">Filtreringstips:</p>
+              <ul className="list-disc list-inside space-y-0.5">
+                <li>Kombinera filter för mer preciserad sökning</li>
+                <li>Använd både textsökning och filteralternativ tillsammans</li>
+                <li>Kvalitetsfilter visar motioner baserade på AI-analys</li>
+              </ul>
             </div>
           </div>
         )}
