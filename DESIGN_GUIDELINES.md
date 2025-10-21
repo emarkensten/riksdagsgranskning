@@ -1,34 +1,86 @@
 # Design Guidelines - Riksdagsgranskning
 
-## Overview
-All UI components follow clean, minimal design principles using **shadcn/ui** with full **dark mode support**. This ensures a consistent, professional appearance across the application.
+## Design Philosophy
+
+Every app should feel like it was designed by a professional team, not thrown together. These guidelines ensure consistency, readability, and usability across the entire application.
+
+**Core Principle:** Substance over style. Professionalism through discipline.
 
 ## Core Principles
 
-### 1. **Dark Mode First**
+### 1. **Color with Discipline**
+- **Maximum 3-5 colors total** - never more
+- 1 primary color (brand), 2-3 neutral tones, 1-2 accent colors
+- Use semantic design tokens (`bg-background`, `text-foreground`) instead of hardcoded colors
+- **Avoid purple/violet** unless explicitly requested
+- **No gradients** unless specifically requested - solid colors look more professional
 - All components must support both light and dark modes seamlessly
-- Use Tailwind CSS dark mode classes (`dark:` prefix)
-- Test all components in both themes before shipping
 
-### 2. **shadcn/ui Standard**
-- Leverage shadcn/ui component library for consistency
-- Use Radix UI primitives as foundation
-- Maintain Tailwind CSS for all custom styling
-- Never override component base styles without strong justification
+### 2. **Typography that Breathes**
+- Maximum 2 typefaces: one for headings, one for body text
+- Use `leading-relaxed` or `leading-6` for readability (1.4-1.6 line-height minimum)
+- Apply `text-balance` or `text-pretty` to headings for better breaks
+- Never use decorative typefaces for body text or text under 14px
+- Use semantic HTML heading tags (`<h1>`, `<h2>`, etc.) - never style `<p>` as headings
 
-### 3. **Accessibility (WCAG 2.1 AA)**
+### 3. **Layout with Flexbox First**
+- Flexbox for 95% of layouts: `flex items-center justify-between`
+- CSS Grid only for complex 2D layouts
+- Use `gap-4`, `gap-x-2` for spacing - never use `space-*` classes
+- Mobile-first approach: design for mobile, enhance for desktop
+- No margin/padding on same element that has gap
+
+### 4. **Tailwind CSS Precision**
+- Use Tailwind's spacing scale: `p-4`, `mx-2` (never `p-[16px]`)
+- Semantic classes: `items-center`, `justify-between`
+- Responsive prefixes: `md:grid-cols-2`, `lg:text-xl`
+- Never hardcode pixel values - use the scale
+- Consistent spacing through entire app
+
+### 5. **Accessibility (WCAG 2.1 AA)**
 - All interactive elements must be keyboard accessible
-- Use semantic HTML (`<button>`, `<a>`, `<form>`, etc.)
+- Use semantic HTML (`<button>`, `<a>`, `<form>`, `<header>`, `<nav>`, etc.)
 - Maintain proper color contrast (4.5:1 for text)
-- Include proper ARIA labels where needed
+- Include proper ARIA labels and roles
+- Use `sr-only` for screen reader text
+- Alt-text for all meaningful images (except decorative)
 
-### 4. **Clean & Minimal**
-- Whitespace > decoration
-- Clear information hierarchy
-- No unnecessary visual elements
-- Swedish language consistent throughout
+### 6. **Components That Scale**
+- Break everything into small, reusable components
+- Never create giant `page.tsx` files - extract separate components
+- Use shadcn/ui components as foundation (Button, Card, Dialog, etc.)
+- Server Components as default, Client Components only when necessary
+- Prop-based configuration for flexibility
+
+### 7. **Images and Icons with Purpose**
+- Use real images to create engagement (not blurry stock photos)
+- Consistent icon sizes: 16px, 20px, or 24px - no in-between
+- Never use emojis as UI icons
+- Real icons from icon libraries (lucide-react, etc.)
+- Decorative vs functional - always intentional
+
+### 8. **Whitespace is Design**
+- Generous padding and margins
+- Let content breathe - tight = unprofessional
+- Consistent spacing throughout the app
+- No "floating" elements without context
+
+### 9. **Interaction Feels Good**
+- Hover-states on all clickable elements
+- Loading-states for async operations
+- Smooth transitions: `transition-colors`, `transition-transform`
+- Feedback on user interactions (no silent failures)
+- Clear focus indicators for keyboard navigation
+
+### 10. **Interesting Over Boring**
+- Be creative within the framework
+- Professional doesn't mean boring
+- But always prioritize usability
+- Polish every detail - ship quality, not MVP
 
 ## Color Palette
+
+**Maximum 3-5 total colors. Stick to it.**
 
 ### Light Mode
 - **Background**: `white` (#FFFFFF)
@@ -36,7 +88,7 @@ All UI components follow clean, minimal design principles using **shadcn/ui** wi
 - **Border**: `neutral-200` (#E5E7EB)
 - **Text Primary**: `neutral-900` (#111827)
 - **Text Secondary**: `neutral-600` (#4B5563)
-- **Accent**: `blue-600` (#2563EB)
+- **Accent (Primary)**: `blue-600` (#2563EB)
 - **Success**: `green-600` (#16A34A)
 - **Warning**: `yellow-600` (#CA8A04)
 - **Danger**: `red-600` (#DC2626)
@@ -47,10 +99,12 @@ All UI components follow clean, minimal design principles using **shadcn/ui** wi
 - **Border**: `neutral-800` (#1F2937)
 - **Text Primary**: `neutral-50` (#F9FAFB)
 - **Text Secondary**: `neutral-400` (#9CA3AF)
-- **Accent**: `blue-500` (#3B82F6)
+- **Accent (Primary)**: `blue-500` (#3B82F6)
 - **Success**: `green-500` (#22C55E)
 - **Warning**: `yellow-500` (#EAB308)
 - **Danger**: `red-500` (#EF4444)
+
+**No other colors. Ever.**
 
 ## Typography
 
