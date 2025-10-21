@@ -191,7 +191,7 @@ export interface BatchRequestItem {
       content: string
     }>
     temperature: number
-    max_tokens: number
+    max_completion_tokens: number
   }
 }
 
@@ -217,7 +217,7 @@ export function createBatchRequest(
         },
       ],
       temperature: 0.3, // Lower temperature for consistent, precise analysis
-      max_tokens: 1000,
+      max_completion_tokens: 1000, // GPT-5 Nano requires max_completion_tokens instead of max_tokens
     },
   }
 }
