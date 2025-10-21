@@ -40,11 +40,14 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { fileId, batchId } = await request.json()
+    const { fileId, batchId, type } = await request.json()
 
     if (!fileId) {
       return NextResponse.json({ error: 'Missing fileId' }, { status: 400 })
     }
+
+    // Detect batch type from custom_id if not provided
+    let batchType = type
 
     console.log(`Fetching batch results from file ${fileId}...`)
 
@@ -66,9 +69,21 @@ export async function POST(request: NextRequest) {
         const customId = result.custom_id
         const content = result.response.body.choices[0].message.content
 
-        // Extract motion ID from custom_id (e.g., "motion_quality_HB022911_0")
-        const parts = customId.split('_')
-        const motionId = parts[2]
+        // Skip empty responses (token limit hit)
+        if (!content || content.trim().length === 0) {
+          console.warn(`Skipping empty response for ${customId}`)
+          errorCount++
+          continue
+        }
+
+        // Detect batch type from custom_id if not provided
+        if (!batchType) {
+          if (customId.includes('motion_quality')) {
+            batchType = 'motion_quality'
+          } else if (customId.includes('absence_analysis')) {
+            batchType = 'absence_detection'
+          }
+        }
 
         // Parse the JSON analysis from the content
         let jsonStr = content
@@ -78,26 +93,52 @@ export async function POST(request: NextRequest) {
 
         const analysis = JSON.parse(jsonStr.trim())
 
-        // Store in database
-        const { error } = await supabaseAdmin
-          .from('motion_kvalitet')
-          .insert({
-            motion_id: motionId,
-            har_konkreta_forslag: analysis.scores.concrete_proposals,
-            har_kostnader: analysis.scores.cost_analysis,
-            har_specifika_mal: analysis.scores.specific_goals,
-            har_lagtext: analysis.scores.legal_text,
-            har_implementation: analysis.scores.implementation,
-            substantiell_score: analysis.overall_substantiality_score,
-            kategori: analysis.category,
-            sammanfattning: analysis.assessment,
-          })
+        if (batchType === 'motion_quality') {
+          // Handle motion quality results
+          const parts = customId.split('_')
+          const motionId = parts[2]
 
-        if (!error) {
-          storedCount++
-        } else {
-          console.error(`Error storing motion_kvalitet for ${motionId}:`, error)
-          errorCount++
+          const { error } = await supabaseAdmin
+            .from('motion_kvalitet')
+            .insert({
+              motion_id: motionId,
+              har_konkreta_forslag: analysis.scores.concrete_proposals,
+              har_kostnader: analysis.scores.cost_analysis,
+              har_specifika_mal: analysis.scores.specific_goals,
+              har_lagtext: analysis.scores.legal_text,
+              har_implementation: analysis.scores.implementation,
+              substantiell_score: analysis.overall_substantiality_score,
+              kategori: analysis.category,
+              sammanfattning: analysis.assessment,
+            })
+
+          if (!error) {
+            storedCount++
+          } else {
+            console.error(`Error storing motion_kvalitet for ${motionId}:`, error)
+            errorCount++
+          }
+        } else if (batchType === 'absence_detection') {
+          // Handle absence analysis results
+          const parts = customId.split('_')
+          const memberId = parts[2]
+
+          const { error } = await supabaseAdmin
+            .from('franvaro_analys')
+            .insert({
+              ledamot_id: memberId,
+              kategorier: analysis.categories || {},
+              total_voteringar: analysis.total_votes,
+              total_franvaro: analysis.total_absences,
+              franvaro_procent: analysis.absence_percentage,
+            })
+
+          if (!error) {
+            storedCount++
+          } else {
+            console.error(`Error storing franvaro_analys for ${memberId}:`, error)
+            errorCount++
+          }
         }
       } catch (e) {
         console.error('Error processing result line:', e)
