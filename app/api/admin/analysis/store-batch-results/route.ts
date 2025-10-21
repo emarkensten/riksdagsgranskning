@@ -123,14 +123,24 @@ export async function POST(request: NextRequest) {
           const parts = customId.split('_')
           const memberId = parts[2]
 
+          // Calculate totals from kategorier array
+          let totalVotes = 0
+          let totalAbsent = 0
+          if (analysis.kategorier && Array.isArray(analysis.kategorier)) {
+            analysis.kategorier.forEach((kat: any) => {
+              totalVotes += kat.voting_count || 0
+              totalAbsent += kat.absence_count || 0
+            })
+          }
+
           const { error } = await supabaseAdmin
             .from('franvaro_analys')
             .insert({
               ledamot_id: memberId,
-              kategorier: analysis.categories || {},
-              total_voteringar: analysis.total_votes,
-              total_franvaro: analysis.total_absences,
-              franvaro_procent: analysis.absence_percentage,
+              kategorier: analysis.kategorier || [],
+              total_voteringar: totalVotes,
+              total_franvaro: totalAbsent,
+              franvaro_procent: totalVotes > 0 ? Math.round((totalAbsent / totalVotes) * 100 * 10) / 10 : 0,
             })
 
           if (!error) {
