@@ -2,7 +2,7 @@
 
 Real-time tracking of all analysis costs vs estimates to determine viability of Rhetoric Full.
 
-**Last Updated**: 2025-10-20
+**Last Updated**: 2025-10-21 (Session 2 - GPT-5 Nano Batch Fixes)
 **Data Period**: 2022-2025 (senaste mandatperioden)
 **Model**: GPT-5 Nano
 
@@ -11,17 +11,18 @@ Real-time tracking of all analysis costs vs estimates to determine viability of 
 ## 💰 Cost Summary
 
 ### Completed
-| Phase | Estimated | Actual | Variance | Status |
-|-------|-----------|--------|----------|--------|
-| Motion Quality POC | $0.20 | $0.02 | -90% | ✅ COMPLETED |
-| **Phase Subtotal** | **$0.20** | **$0.02** | **-90%** | |
+| Phase | Estimated | Actual | Variance | Status | Results |
+|-------|-----------|--------|----------|--------|---------|
+| Motion Quality POC (100) | $0.20 | $0.02 | -90% | ✅ COMPLETED | 96/100 stored |
+| Motion Quality POC (new, 100) | $0.0020 | TBD | TBD | ✅ COMPLETED | 96/100 stored |
+| Absence Analysis POC (50) | $0.0009 | TBD | TBD | ✅ COMPLETED | 33/50 stored |
+| **Phase Subtotal** | **~$0.40** | **~$0.05** | **~-87%** | | |
 
-### In Progress
+### In Progress / Complete
 | Phase | Estimated | Actual | Variance | Status |
 |-------|-----------|--------|----------|--------|
-| Absence Analysis POC | $0.10 | TBD | TBD | ⏳ PENDING |
-| Rhetoric Sample | $0.10 | TBD | TBD | ⏳ PENDING |
-| **POC Subtotal** | **$0.40** | **TBD** | **TBD** | |
+| Rhetoric Sample (10) | $0.10 | - | - | ⏳ NOT RUN (SKIPPED) |
+| **POC Subtotal** | **$0.40** | **~$0.05** | **~-87%** | |
 
 ### Full Production (2022-2025 only)
 | Phase | Estimated | Actual | Variance | Status |
@@ -40,33 +41,44 @@ Real-time tracking of all analysis costs vs estimates to determine viability of 
 
 ## 🎯 Rhetoric Full - Decision Logic
 
-### Cost Reduction Scenario (If all POC/Production costs drop like Motion Quality POC)
+### CURRENT RECOMMENDATION: ⏸️ HOLD FOR NOW
 
-**Current assumption**: Motion Quality dropped 90% ($0.20 → $0.02)
+**Reasoning**:
+1. **Primary analyses need refinement first**
+   - Motion Quality: 96% success (parsing works, but data validation needed)
+   - Absence Analysis: 66% success (parsing issues to fix)
+   - Rhetoric would be 0% if underlying patterns don't work
 
-**If Rhetoric Full drops proportionally:**
-```
-Estimated:  $22.00
-If -90%:    $2.20 actual
-Variance:   -90%
-→ VIABLE! ✅ Run it!
-```
+2. **Data quality concerns**
+   - All Motion Quality results marked "empty" category (suspicious)
+   - Absence results have NULL numeric fields (parsing failure)
+   - Need to validate LLM is generating correct JSON format
 
-**If Rhetoric Full drops 50% (more conservative):**
-```
-Estimated:  $22.00
-If -50%:    $11.00 actual
-Variance:   -50%
-→ VIABLE! ✅ Still worth it
-```
+3. **Cost efficiency proven, but maturity needed**
+   - **Estimated**: $22.00
+   - **If -90%**: $2.20 actual ✅
+   - **If -50%**: $11.00 actual ✅
+   - **Even at -20%**: $17.60 actual ✅
+   - Cost is viable BUT quality must be proven first
 
-**If Rhetoric Full drops only 20% (pessimistic):**
-```
-Estimated:  $22.00
-If -20%:    $17.60 actual
-Variance:   -20%
-→ VIABLE BUT PRICEY - Requires approval
-```
+### Staged Rollout Recommended
+
+**Stage 1: Validate Primary Analyses (THIS WEEK)**
+- Fix Motion Quality output format
+- Fix Absence Analysis parsing
+- Run Motion Quality Full (17k motions)
+- Validate results quality with sample review
+
+**Stage 2: High-Value Sample (NEXT WEEK IF STAGE 1 SUCCEEDS)**
+- Rhetoric Analysis on 200 top members only
+- Cost: ~$5 (vs $22 for full)
+- Identifies biggest hypocrites for media impact
+- Lower risk than full 2,086 member analysis
+
+**Stage 3: Full Rhetoric (LATER)**
+- Only if Stage 1 & 2 prove data quality
+- Full cost: $2-22 depending on efficiency
+- Maximum investigative impact
 
 ---
 
