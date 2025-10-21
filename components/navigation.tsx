@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import Link from 'next/link'
 import { useTheme } from 'next-themes'
 import { Menu } from 'lucide-react'
@@ -22,12 +23,13 @@ export function Navigation() {
   if (!mounted) return null
 
   return (
-    <nav className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+    <nav aria-label="Huvudnavigering" className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link
             href="/"
+            aria-label="Gå till startsidan"
             className="text-xl font-bold text-neutral-900 dark:text-neutral-50 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           >
             Riksdagsgranskning
@@ -65,6 +67,7 @@ export function Navigation() {
               variant="ghost"
               size="sm"
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              aria-label={theme === 'dark' ? 'Växla till ljust läge' : 'Växla till mörkt läge'}
               className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-50"
             >
               {theme === 'dark' ? '☀️' : '🌙'}
@@ -77,6 +80,7 @@ export function Navigation() {
               variant="ghost"
               size="sm"
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              aria-label={theme === 'dark' ? 'Växla till ljust läge' : 'Växla till mörkt läge'}
               className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-50"
             >
               {theme === 'dark' ? '☀️' : '🌙'}
@@ -86,9 +90,10 @@ export function Navigation() {
                 <Button
                   variant="ghost"
                   size="sm"
+                  aria-label="Öppna navigeringsmeny"
                   className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-50"
                 >
-                  <Menu className="h-5 w-5" />
+                  <Menu className="h-5 w-5" aria-hidden="true" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
