@@ -218,7 +218,7 @@ export function createBatchRequest(
       ],
       // GPT-5 Nano only supports temperature: 1 (default)
       // Do not include temperature parameter as it defaults to 1
-      max_completion_tokens: 1000, // GPT-5 Nano requires max_completion_tokens instead of max_tokens
+      max_completion_tokens: 2000, // Increased from 1000 - LLM was hitting token limit before completing response
     },
   }
 }
