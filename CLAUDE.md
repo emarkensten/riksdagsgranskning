@@ -10,11 +10,11 @@
 4. Ask what to work on
 
 ## Bash Commands
-- `npm run dev` - Start development server (usually port 3001)
-- `node scripts/check_coverage.js` - Check motion analysis coverage
-- `node scripts/check_batch_status_simple.js` - Check OpenAI batch status
-- `node scripts/store_round3_batches.js` - Store Round 3 results (when ready)
-- `node scripts/verify_before_submit.js` - Verify motions needing analysis
+- `npm run dev` - Start development server (port varies: 3000-3002)
+- `node scripts/check_coverage.js` - Check analysis coverage (all types)
+- `node scripts/retrieve_all_submitted_batches.js` - ⭐ **RETRIEVE ALL batches** from database
+- `node scripts/submit_large_batch.js` - Submit new batches
+- See `scripts/INDEX.txt` for full script documentation
 
 ## Database Access - CRITICAL
 

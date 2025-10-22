@@ -1,9 +1,34 @@
 # Active Scripts - Use These
 
-check_coverage.js                    - Show analysis coverage (motion/absence/rhetoric)
-submit_large_batch.js                - Submit large batches (auto-chunks to 1000 each)
-check_and_store_current_batches.js   - Check & store specific batches (update batch IDs from PROJECT_STATE.md)
-get_batch_file_id.js                 - Get batch info from OpenAI (helper)
+check_coverage.js                       - Show analysis coverage (motion/absence/rhetoric)
+retrieve_all_submitted_batches.js       - ⭐ RETRIEVE ALL batches from database (queries batch_jobs table)
+submit_large_batch.js                   - Submit large batches (auto-chunks to 1000 each)
+check_and_store_current_batches.js      - Check & store specific batches (update batch IDs manually)
+get_batch_file_id.js                    - Get batch info from OpenAI (helper)
+
+## Key Script: retrieve_all_submitted_batches.js
+
+**Purpose**: One-stop solution to retrieve ALL submitted batches that were never checked/stored
+
+**How it works**:
+1. Queries batch_jobs table for all batches with status='submitted'
+2. Checks each batch at OpenAI API
+3. Downloads and stores completed batches automatically
+4. Runs coverage check at the end
+
+**When to use**:
+- After submitting batches, wait 15-24h, then run this to retrieve everything
+- If you suspect batches were submitted but never retrieved
+- To get from partial coverage to 100%
+
+**Usage**:
+```bash
+node scripts/retrieve_all_submitted_batches.js
+```
+
+**No setup needed** - it queries the database directly for batch IDs!
+
+**Output**: Summary of stored analyses + automatic coverage check
 
 # Deprecated - Don't Use
 
