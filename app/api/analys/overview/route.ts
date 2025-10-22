@@ -1,31 +1,77 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
-    // Call backend API for analysis overview data
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3002'
-    const response = await fetch(
-      `${backendUrl}/api/analys/overview`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.BACKEND_API_KEY || 'dev-secret-key-2025'}`,
-        },
-      }
-    )
-
-    if (!response.ok) {
-      throw new Error(`Backend request failed: ${response.statusText}`)
+    if (!supabaseAdmin) {
+      throw new Error('Supabase admin client not configured')
     }
 
-    const data = await response.json()
+    // Get motion quality stats
+    const { data: motionStats, error: motionError } = await supabaseAdmin
+      .from('motion_kvalitet')
+      .select('substantiell_score')
+      .not('substantiell_score', 'is', null)
 
-    return NextResponse.json(data)
+    if (motionError) throw motionError
+
+    // Get absence detection stats
+    const { data: absenceStats, error: absenceError } = await supabaseAdmin
+      .from('franvaro_analys')
+      .select('franvaro_procent')
+
+    if (absenceError) throw absenceError
+
+    // Get rhetoric analysis stats
+    const { data: rhetoricStats, error: rhetoricError } = await supabaseAdmin
+      .from('retorik_analys')
+      .select('overall_gap_score')
+      .not('overall_gap_score', 'is', null)
+
+    if (rhetoricError) throw rhetoricError
+
+    // Calculate statistics
+    const motionQuality = {
+      total: motionStats?.length || 0,
+      averageScore: motionStats && motionStats.length > 0
+        ? motionStats.reduce((sum, m) => sum + (m.substantiell_score || 0), 0) / motionStats.length
+        : 0,
+      high: motionStats?.filter(m => (m.substantiell_score || 0) >= 7).length || 0,
+      medium: motionStats?.filter(m => (m.substantiell_score || 0) >= 4 && (m.substantiell_score || 0) < 7).length || 0,
+      low: motionStats?.filter(m => (m.substantiell_score || 0) < 4).length || 0,
+    }
+
+    const absenceDetection = {
+      total: absenceStats?.length || 0,
+      averageAbsenceRate: absenceStats && absenceStats.length > 0
+        ? absenceStats.reduce((sum, a) => sum + (a.franvaro_procent || 0), 0) / absenceStats.length
+        : 0,
+    }
+
+    const rhetoricAnalysis = {
+      total: rhetoricStats?.length || 0,
+      averageGapScore: rhetoricStats && rhetoricStats.length > 0
+        ? rhetoricStats.reduce((sum, r) => sum + (r.overall_gap_score || 0), 0) / rhetoricStats.length
+        : 0,
+    }
+
+    return NextResponse.json({
+      motionQuality,
+      absenceDetection,
+      rhetoricAnalysis,
+    })
   } catch (error) {
     console.error('Analysis overview error:', error)
+    const errorMessage = error instanceof Error
+      ? error.message
+      : typeof error === 'object'
+        ? JSON.stringify(error)
+        : String(error)
     return NextResponse.json(
-      { error: 'Failed to fetch analysis overview data' },
+      {
+        error: 'Failed to fetch analysis overview data',
+        details: errorMessage
+      },
       { status: 500 }
     )
   }
