@@ -32,33 +32,36 @@ export async function GET(request: NextRequest) {
 
     // Calculate statistics
     const motionQuality = {
-      total: motionStats?.length || 0,
-      averageScore: motionStats && motionStats.length > 0
+      analyzed: motionStats?.length || 0,
+      substantial: motionStats?.filter(m => (m.substantiell_score || 0) >= 7).length || 0,
+      medium: motionStats?.filter(m => (m.substantiell_score || 0) >= 4 && (m.substantiell_score || 0) < 7).length || 0,
+      empty: motionStats?.filter(m => (m.substantiell_score || 0) < 4).length || 0,
+      avgScore: motionStats && motionStats.length > 0
         ? motionStats.reduce((sum, m) => sum + (m.substantiell_score || 0), 0) / motionStats.length
         : 0,
-      high: motionStats?.filter(m => (m.substantiell_score || 0) >= 7).length || 0,
-      medium: motionStats?.filter(m => (m.substantiell_score || 0) >= 4 && (m.substantiell_score || 0) < 7).length || 0,
-      low: motionStats?.filter(m => (m.substantiell_score || 0) < 4).length || 0,
     }
 
-    const absenceDetection = {
-      total: absenceStats?.length || 0,
-      averageAbsenceRate: absenceStats && absenceStats.length > 0
-        ? absenceStats.reduce((sum, a) => sum + (a.franvaro_procent || 0), 0) / absenceStats.length
-        : 0,
+    const absenceAnalysis = {
+      analyzed: absenceStats?.length || 0,
+      highAbsence: absenceStats?.filter(a => (a.franvaro_procent || 0) > 20).length || 0,
+      normalAbsence: absenceStats?.filter(a => (a.franvaro_procent || 0) >= 5 && (a.franvaro_procent || 0) <= 20).length || 0,
+      lowAbsence: absenceStats?.filter(a => (a.franvaro_procent || 0) < 5).length || 0,
     }
 
-    const rhetoricAnalysis = {
-      total: rhetoricStats?.length || 0,
-      averageGapScore: rhetoricStats && rhetoricStats.length > 0
+    const rhetoricsAnalysis = {
+      analyzed: rhetoricStats?.length || 0,
+      highGap: rhetoricStats?.filter(r => (r.overall_gap_score || 0) >= 7).length || 0,
+      mediumGap: rhetoricStats?.filter(r => (r.overall_gap_score || 0) >= 4 && (r.overall_gap_score || 0) < 7).length || 0,
+      lowGap: rhetoricStats?.filter(r => (r.overall_gap_score || 0) < 4).length || 0,
+      avgGapScore: rhetoricStats && rhetoricStats.length > 0
         ? rhetoricStats.reduce((sum, r) => sum + (r.overall_gap_score || 0), 0) / rhetoricStats.length
         : 0,
     }
 
     return NextResponse.json({
       motionQuality,
-      absenceDetection,
-      rhetoricAnalysis,
+      absenceAnalysis,
+      rhetoricsAnalysis,
     })
   } catch (error) {
     console.error('Analysis overview error:', error)
