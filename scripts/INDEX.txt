@@ -1,0 +1,23 @@
+# Active Scripts - Use These
+
+check_coverage.js                    - Show analysis coverage (motion/absence/rhetoric)
+submit_large_batch.js                - Submit large batches (auto-chunks to 1000 each)
+check_and_store_current_batches.js   - Check & store specific batches (update batch IDs from PROJECT_STATE.md)
+get_batch_file_id.js                 - Get batch info from OpenAI (helper)
+
+# Deprecated - Don't Use
+
+check_all_batch_status.js      - BROKEN (looks for deleted CURRENT_BATCH_STATUS.md)
+store_all_completed_batches.js - BROKEN (same issue)
+batch_pipeline.js              - BROKEN (same issue)
+init-database-final.js         - Use Supabase migrations instead
+init-db-pg.js                  - Use Supabase migrations instead
+init-supabase-db.js            - Use Supabase migrations instead
+run-sql-schema.js              - Use Supabase dashboard instead
+run-sql-via-supabase.js        - Use Supabase MCP instead
+check-tables.js                - Utility (rarely needed)
+
+# Archived - Old Versions
+
+archive/check_batch_status.js  - Old version
+archive/store_all_batches.js   - Old version

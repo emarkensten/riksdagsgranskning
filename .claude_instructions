@@ -1,0 +1,101 @@
+# Claude Instructions - DEPRECATED
+
+**NOTE**: This file is deprecated. All instructions have been moved to `CLAUDE.md` in the project root, which follows Claude Code's official memory system.
+
+**New workflow**:
+- Claude Code automatically loads `CLAUDE.md` at startup
+- All project memory, commands, and workflows are documented there
+- See `CLAUDE.md` for current instructions
+
+## Before Ending a Session
+User will say: **"Save state and end session"**
+
+You should:
+1. Update PROJECT_STATE.md with latest status
+2. Update docs/BATCH_ANALYSIS_SYSTEM.md if batch system changed
+3. Confirm what was done
+4. Say: "State saved. Next session: 'Read PROJECT_STATE.md and check coverage'"
+
+## Critical Context: Batch Analysis System
+
+**IMPORTANT**: Round 3 is currently processing at OpenAI (submitted 2025-10-22 14:48 CET)
+
+**Current Status** (as of 2025-10-22):
+- Motion Quality Analysis: 2,671/8,706 (30.7%)
+- Round 3: 7 batches submitted (7,000 motions)
+- Expected completion: 2025-10-23 evening
+- After Round 3: Should reach ~100% coverage
+
+**Key Lesson Learned**:
+- UPSERT counts updates as "stored" even if not new rows
+- ALWAYS verify with SQL/MCP before trusting script output
+- Check `analyzed_at` timestamps to see what's truly new
+- Supabase JS client has 1000 row limit by default
+
+**Active Scripts** (scripts/):
+- check_batch_status_simple.js - Check Round 3 batch status (updated for Round 3)
+- store_round3_batches.js - Store Round 3 results when ready
+- check_coverage.js - Check analysis coverage
+- verify_before_submit.js - Verify count before submitting new batches
+
+**Batch IDs** (Round 3):
+```
+batch_68f8d67bee4081908d0ea1c62b432732
+batch_68f8d6888f908190be58aefa878f5538
+batch_68f8d69407c88190a7fc9d87ab83f6be
+batch_68f8d69f2c1c8190b99f9b78e0356f33
+batch_68f8d6aa5f548190befe250db8c3ec5c
+batch_68f8d6b7c5948190b5c02e1fd8e5a7dc
+batch_68f8d6c33fc88190af21f1830e121803
+```
+
+## When Round 3 Completes
+
+User will likely say: "hur går det nu? klart ännu?"
+
+You should:
+1. Run: `node scripts/check_batch_status_simple.js`
+2. If completed: Run `node scripts/store_round3_batches.js`
+3. Verify with: `node scripts/check_coverage.js`
+4. Check `analyzed_at` timestamps:
+   ```sql
+   SELECT DATE(analyzed_at), COUNT(*)
+   FROM motion_kvalitet
+   GROUP BY DATE(analyzed_at);
+   ```
+5. Update PROJECT_STATE.md with results
+
+## Database Access - CRITICAL
+
+**ALWAYS use Supabase MCP for SQL queries**, NOT Supabase JS client!
+
+✅ **Correct approach**:
+```
+mcp__supabase__execute_sql with query:
+SELECT COUNT(*) FROM motion_kvalitet;
+```
+
+❌ **Wrong approaches** (will cause errors):
+- Supabase JS client (has 1000 row limit, doesn't work well for large queries)
+- Node.js scripts with createClient() (unreliable for verification)
+- Python scripts (adds unnecessary complexity)
+
+**Why MCP is better**:
+- No row limits
+- Direct SQL access
+- No auth/connection issues
+- Faster and more reliable
+- Returns exact data
+
+**When to use each**:
+- **MCP**: Checking counts, verifying data, debugging (PREFERRED)
+- **Node scripts**: Running batch jobs, submitting to OpenAI, application logic
+- **API endpoints**: Storing batch results, submitting new batches
+
+## Rules
+- DON'T create new scripts without checking if one exists
+- DON'T trust script output "X stored" - verify with SQL/MCP
+- DON'T use Supabase JS client for verification queries - use MCP instead
+- DO verify actual state with MCP before assuming anything
+- DO update PROJECT_STATE.md when major changes happen
+- DO check docs/BATCH_ANALYSIS_SYSTEM.md for detailed troubleshooting

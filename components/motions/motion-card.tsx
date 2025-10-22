@@ -1,6 +1,3 @@
-import Link from 'next/link'
-import { ArrowRight, TrendingUp, AlertCircle } from 'lucide-react'
-
 interface Motion {
   id: string
   titel: string

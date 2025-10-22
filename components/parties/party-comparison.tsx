@@ -97,7 +97,7 @@ export function PartyComparison() {
     } else {
       return sorted.sort((a, b) => b.members - a.members)
     }
-  }, [sortBy])
+  }, [sortBy, parties])
 
   if (loading) {
     return (

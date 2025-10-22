@@ -44,14 +44,14 @@ export async function POST(request: NextRequest) {
 }
 
 async function submitMotionQualityBatch(limit: number, confirm: boolean) {
-  // Fetch motions - prefer fulltext, but accept any with title for POC testing
+  // CRITICAL FIX: Only fetch motions that DON'T have analysis yet
+  // Use RPC function to get motions without analysis efficiently
+
   const { data: motions, error } = await supabaseAdmin!
-    .from('motioner')
-    .select('*')
-    .not('titel', 'is', null)
-    .neq('titel', '')
-    .order('datum', { ascending: false })
-    .limit(limit)
+    .rpc('get_motions_without_analysis', {
+      limit_count: limit,
+      riksmote_filter: ['2022/23', '2023/24', '2024/25']
+    })
 
   if (error || !motions) {
     return NextResponse.json({ error: `Failed to fetch motions: ${error?.message}` }, { status: 500 })
@@ -302,7 +302,7 @@ async function submitRhetoricAnalysisBatch(limit: number, confirm: boolean) {
 
     const voteData = (votes || []).map((v: any) => ({
       topic: v.titel || 'Unknown',
-      voted: v.rost === 'Ja' ? 'ja' : v.rost === 'Nej' ? 'nej' : 'avstar',
+      voted: (v.rost === 'Ja' ? 'ja' : v.rost === 'Nej' ? 'nej' : 'avstar') as 'ja' | 'nej' | 'avstar',
       date: v.datum || 'Unknown',
     }))
 

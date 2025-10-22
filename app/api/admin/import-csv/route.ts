@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       if (values.length === columns.length) {
         const row: any = {}
         columns.forEach((col, i) => {
-          let value = values[i]
+          let value: string | null = values[i]
           // Convert empty strings to null
           if (value === '' || value === '-' || value === '0') {
             value = null

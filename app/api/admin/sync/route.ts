@@ -4,7 +4,6 @@ import {
   fetchMembers,
   fetchAllMotionsForRiksmote,
   fetchAllVotingsForRiksmote,
-  fetchMotionFulltext,
 } from '@/lib/riksdagen-api'
 
 // Simple auth - check for admin token

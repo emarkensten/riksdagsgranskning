@@ -213,8 +213,7 @@ export function createBatchRequest(
           content: prompt,
         },
       ],
-      // GPT-5 Nano only supports temperature: 1 (default)
-      // Do not include temperature parameter as it defaults to 1
+      temperature: 1,
       max_completion_tokens: maxTokens,
     },
   }

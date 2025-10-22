@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { fileId, batchId, type } = await request.json()
+    const { fileId, type } = await request.json()
 
     if (!fileId) {
       return NextResponse.json({ error: 'Missing fileId' }, { status: 400 })
@@ -98,18 +98,33 @@ export async function POST(request: NextRequest) {
           const parts = customId.split('_')
           const motionId = parts[2]
 
+          // Validate motion exists before inserting
+          const { data: motionExists } = await supabaseAdmin
+            .from('motioner')
+            .select('id')
+            .eq('id', motionId)
+            .single()
+
+          if (!motionExists) {
+            console.warn(`Skipping motion_kvalitet for non-existent motion: ${motionId}`)
+            errorCount++
+            continue
+          }
+
           const { error } = await supabaseAdmin
             .from('motion_kvalitet')
-            .insert({
+            .upsert({
               motion_id: motionId,
-              har_konkreta_forslag: analysis.scores.concrete_proposals,
-              har_kostnader: analysis.scores.cost_analysis,
-              har_specifika_mal: analysis.scores.specific_goals,
-              har_lagtext: analysis.scores.legal_text,
-              har_implementation: analysis.scores.implementation,
-              substantiell_score: analysis.overall_substantiality_score,
+              har_konkreta_forslag: Math.round(Number(analysis.scores.concrete_proposals)),
+              har_kostnader: Math.round(Number(analysis.scores.cost_analysis)),
+              har_specifika_mal: Math.round(Number(analysis.scores.specific_goals)),
+              har_lagtext: Math.round(Number(analysis.scores.legal_text)),
+              har_implementation: Math.round(Number(analysis.scores.implementation)),
+              substantiell_score: Math.round(Number(analysis.overall_substantiality_score)),
               kategori: analysis.category,
               sammanfattning: analysis.assessment,
+            }, {
+              onConflict: 'motion_id'
             })
 
           if (!error) {
@@ -123,6 +138,19 @@ export async function POST(request: NextRequest) {
           const parts = customId.split('_')
           const memberId = parts[2]
 
+          // Validate member exists before inserting
+          const { data: memberExists } = await supabaseAdmin
+            .from('ledamoter')
+            .select('id')
+            .eq('id', memberId)
+            .single()
+
+          if (!memberExists) {
+            console.warn(`Skipping franvaro_analys for non-existent member: ${memberId}`)
+            errorCount++
+            continue
+          }
+
           // Calculate totals from kategorier array
           let totalVotes = 0
           let totalAbsent = 0
@@ -135,12 +163,14 @@ export async function POST(request: NextRequest) {
 
           const { error } = await supabaseAdmin
             .from('franvaro_analys')
-            .insert({
+            .upsert({
               ledamot_id: memberId,
               kategorier: analysis.kategorier || [],
               total_voteringar: totalVotes,
               total_franvaro: totalAbsent,
               franvaro_procent: totalVotes > 0 ? Math.round((totalAbsent / totalVotes) * 100 * 10) / 10 : 0,
+            }, {
+              onConflict: 'ledamot_id'
             })
 
           if (!error) {
@@ -154,14 +184,29 @@ export async function POST(request: NextRequest) {
           const parts = customId.split('_')
           const memberId = parts[2]
 
+          // Validate member exists before inserting
+          const { data: memberExists } = await supabaseAdmin
+            .from('ledamoter')
+            .select('id')
+            .eq('id', memberId)
+            .single()
+
+          if (!memberExists) {
+            console.warn(`Skipping retorik_analys for non-existent member: ${memberId}`)
+            errorCount++
+            continue
+          }
+
           const { error } = await supabaseAdmin
             .from('retorik_analys')
-            .insert({
+            .upsert({
               ledamot_id: memberId,
               topics_analyzed: analysis.topics_analyzed || [],
-              overall_gap_score: analysis.overall_gap_score || 0,
+              overall_gap_score: Math.round(Number(analysis.overall_gap_score)) || 0,
               assessment: analysis.assessment || '',
               credibility_issues: analysis.credibility_issues || [],
+            }, {
+              onConflict: 'ledamot_id'
             })
 
           if (!error) {

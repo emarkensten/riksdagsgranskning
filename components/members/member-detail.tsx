@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Briefcase, Calendar, MapPin, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Briefcase, MapPin, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 
 interface MemberStats {
@@ -166,7 +166,7 @@ export function MemberDetail({ memberId }: { memberId: string }) {
       {/* Info Box */}
       <div className="p-4 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50">
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          <span className="font-semibold text-neutral-900 dark:text-neutral-50">Medlemsdetaljer:</span> Den här sidan visar en överblick av denna parlamentariker's aktivitet. Mer detaljerad information om individuella motioner och röstningar hittar du genom att söka på{' '}
+          <span className="font-semibold text-neutral-900 dark:text-neutral-50">Medlemsdetaljer:</span> Den här sidan visar en överblick av denna parlamentarikers aktivitet. Mer detaljerad information om individuella motioner och röstningar hittar du genom att söka på{' '}
           <Link href="/motioner" className="text-blue-600 dark:text-blue-400 hover:underline">
             motionssidan
           </Link>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TrendingUp, AlertCircle, BarChart3, PieChart } from 'lucide-react'
+import { TrendingUp, AlertCircle, BarChart3 } from 'lucide-react'
 
 interface AnalysisStats {
   motionQuality: {

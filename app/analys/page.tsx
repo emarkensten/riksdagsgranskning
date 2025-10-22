@@ -1,6 +1,10 @@
 import { Metadata } from 'next'
-import { AnalysisDashboard } from '@/components/analysis/analysis-dashboard'
-import { Suspense } from 'react'
+import dynamic from 'next/dynamic'
+
+const AnalysisDashboard = dynamic(
+  () => import('@/components/analysis/analysis-dashboard').then(mod => ({ default: mod.AnalysisDashboard })),
+  { ssr: false, loading: () => <div className="text-neutral-400">Laddar...</div> }
+)
 
 export const metadata: Metadata = {
   title: 'Analys | Riksdagsgranskning',
@@ -20,9 +24,7 @@ export default function AnalysPage() {
           </p>
         </div>
 
-        <Suspense fallback={<div className="text-neutral-400">Laddar...</div>}>
-          <AnalysisDashboard />
-        </Suspense>
+        <AnalysisDashboard />
       </div>
     </div>
   )

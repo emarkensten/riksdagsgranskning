@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
     // Flush batch helper
     async function flushBatch(table: string) {
       if (batch.length === 0) return
+      if (!supabaseAdmin) throw new Error('Supabase admin client not initialized')
 
       try {
         const { error, count } = await supabaseAdmin
