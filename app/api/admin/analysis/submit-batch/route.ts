@@ -49,8 +49,8 @@ async function submitMotionQualityBatch(limit: number, confirm: boolean) {
 
   const { data: motions, error } = await supabaseAdmin!
     .rpc('get_motions_without_analysis', {
-      limit_count: limit,
-      riksmote_filter: ['2022/23', '2023/24', '2024/25']
+      riksmote_filter: ['2024/25'],  // ⭐ Only 2024/25 for now
+      limit_count: limit
     })
 
   if (error || !motions) {

@@ -276,34 +276,57 @@ export async function fetchAllMotionsForRiksmote(riksmote: string): Promise<Moti
   }
 }
 
-// Hämta fulltext för en motion (titel + proposaltext från XML)
+// Hämta fulltext för en motion (hela texten från HTML)
 export async function fetchMotionFulltext(dokId: string): Promise<{ titel: string; fulltext: string }> {
   try {
-    // Fetch from XML endpoint which has the actual content
+    // Fetch from HTML endpoint which has the complete motion text
+    // IMPORTANT: Must explicitly request HTML, otherwise API returns XML
     const response = await axios.get(
-      `${BASE_URL}/dokument/${dokId}/text`,
-      { timeout: 30000 }
+      `${BASE_URL}/dokument/${dokId}.html`,
+      {
+        timeout: 30000,
+        headers: {
+          'Accept': 'text/html'
+        }
+      }
     )
 
-    const xml = response.data
+    const html = response.data
 
-    // Parse XML to extract titel
-    const titelMatch = xml.match(/<titel>([^<]*)<\/titel>/)
-    const titel = titelMatch ? titelMatch[1] : ''
+    // Extract titel from first h1 tag
+    const titelMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/)
+    const titel = titelMatch ? titelMatch[1].trim() : ''
 
-    // Extract all lydelse (proposal text) from dokforslag
-    const lydelser: string[] = []
-    const lydelseMatches = xml.matchAll(/<lydelse>([^<]*)<\/lydelse>/g)
-    for (const match of lydelseMatches) {
-      if (match[1]) {
-        lydelser.push(match[1])
-      }
+    // Extract only the content div (class="pconf") which contains the actual motion text
+    // This avoids getting XML metadata from the beginning
+    const pconfStart = html.indexOf('<div class="pconf">')
+    let contentHtml = html
+    if (pconfStart > -1) {
+      // Extract everything from pconf div onwards
+      contentHtml = html.substring(pconfStart)
+      // Remove the opening div tag itself
+      contentHtml = contentHtml.replace(/<div class="pconf">/, '')
     }
 
-    // Combine into fulltext: titel + all proposals
-    const fulltext = [titel, ...lydelser].filter(Boolean).join('\n\n')
+    // Remove script and style tags completely
+    contentHtml = contentHtml.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    contentHtml = contentHtml.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
 
-    return { titel, fulltext }
+    // Remove all HTML tags
+    let text = contentHtml.replace(/<[^>]*>/g, ' ')
+
+    // Decode HTML entities
+    text = text.replace(/&nbsp;/g, ' ')
+    text = text.replace(/&amp;/g, '&')
+    text = text.replace(/&lt;/g, '<')
+    text = text.replace(/&gt;/g, '>')
+    text = text.replace(/&quot;/g, '"')
+    text = text.replace(/&#39;/g, "'")
+
+    // Clean up whitespace (collapse multiple spaces, normalize line breaks)
+    text = text.replace(/\s+/g, ' ').trim()
+
+    return { titel, fulltext: text }
   } catch (error) {
     console.error(`Error fetching motion fulltext for ${dokId}:`, error)
     return { titel: '', fulltext: '' }

@@ -124,16 +124,17 @@ export function createMotionAnalysisPrompt(
   author: string,
   party: string
 ): string {
-  const textSample = motionText.substring(0, 1500)
+  // ⭐ CRITICAL FIX: Send FULL text, not just 1500 char sample!
+  // GPT-5 Mini context limit is 200K tokens (~800K chars), so we can safely send full motions
+  // Average motion: 6,492 chars, Max: ~80,000 chars
 
   return `You are an expert Swedish legislator. Evaluate the quality and substantiality of a parliamentary motion.
 
 MOTION TITLE: ${motionTitle}
 AUTHOR: ${author} (${party})
 
-MOTION TEXT (sample):
-${textSample}
-${motionText.length > 1500 ? '[... text truncated ...]' : ''}
+MOTION TEXT:
+${motionText}
 
 TASK:
 Score this motion on each criterion (1-10 scale where 10 = excellent):
@@ -187,7 +188,7 @@ export interface BatchRequestItem {
 export function createBatchRequest(
   customId: string,
   prompt: string,
-  model: 'gpt-5-nano' = 'gpt-5-nano'
+  model: 'gpt-5-mini-2025-08-07' | 'gpt-5-nano' = 'gpt-5-mini-2025-08-07'
 ): BatchRequestItem {
   // Different analysis types need different token limits
   const isAbsenceAnalysis = customId.includes('absence_analysis')

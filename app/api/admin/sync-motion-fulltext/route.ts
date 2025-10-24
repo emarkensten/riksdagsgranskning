@@ -23,13 +23,13 @@ export async function POST(request: NextRequest) {
   const confirm = request.nextUrl.searchParams.get('confirm') === 'yes'
 
   try {
-    console.log(`\n🚀 Fetching fulltext for motions from 2022-2024 (limit: ${limit})`)
+    console.log(`\n🚀 Fetching HTML fulltext for 2024/25 motions (limit: ${limit})`)
 
-    // Fetch motions without fulltext from 2022-2024 (riksmöten HA-HC)
+    // Fetch motions without fulltext from 2024/25 ONLY
     const { data: motions, error } = await supabaseAdmin!
       .from('motioner')
       .select('id, titel, riksmote')
-      .in('riksmote', ['2022/23', '2023/24', '2024/25'])
+      .eq('riksmote', '2024/25')  // ⭐ Only 2024/25
       .or('fulltext.is.null,fulltext.eq.""')
       .order('datum', { ascending: false })
       .limit(limit)
@@ -40,12 +40,12 @@ export async function POST(request: NextRequest) {
 
     if (!motions || motions.length === 0) {
       return NextResponse.json({
-        message: 'No motions need fulltext update (2022-2024)',
+        message: 'No motions need fulltext update (2024/25)',
         motions_count: 0,
       })
     }
 
-    console.log(`📊 Found ${motions.length} motions without fulltext (2022-2024)`)
+    console.log(`📊 Found ${motions.length} motions without fulltext (2024/25)`)
 
     if (!confirm) {
       return NextResponse.json({

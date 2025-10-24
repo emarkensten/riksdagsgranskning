@@ -1,7 +1,34 @@
 # Batch Analysis System - How It Works
 
-**Last Updated**: 2025-10-22
-**Status**: System is working correctly, but reporting was misleading
+**Last Updated**: 2025-10-24
+**Status**: Technical system works, but prompt design needs rethinking
+
+## ⚠️ CRITICAL LESSONS LEARNED
+
+### Session 5 (2025-10-24): Prompt Design > Technical Fixes
+
+**What we learned the hard way:**
+
+1. **Sending full data ≠ Getting useful results**
+   - Fixed: XML → HTML (760 chars → 80,000 chars)
+   - Fixed: Removed 1500 char truncation
+   - Result: Still 94% scored as "empty"
+   - Lesson: The prompt was measuring the wrong thing
+
+2. **Test prompts on samples BEFORE batch processing**
+   - Cost wasted: $1.33 on analyses that don't measure what we want
+   - Should have: Tested 20 motions manually first
+   - Always: Verify prompt logic before spending money
+
+3. **Understand domain before designing metrics**
+   - Swedish motions are "tillkännagivanden" (investigation requests)
+   - They're not meant to be complete legislative packages
+   - Current prompt penalizes normal Swedish parliamentary practice
+
+4. **Know your goal before choosing metrics**
+   - What are we exposing? Symbolpolitik? Contradictions? Quality gaps?
+   - Different goals need different prompts
+   - Generic "quality" score doesn't work for political analysis
 
 ## Overview
 

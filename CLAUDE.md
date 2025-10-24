@@ -49,29 +49,34 @@ mcp__supabase__execute_sql with query:
 
 ## Batch Analysis Workflow
 
-**Current Round**: Round 3 - PARTIALLY COMPLETE
-- Submitted: 2025-10-22 14:48 CET
-- Stored: 2025-10-22 16:23 CET
-- Result: 6/7 batches (5,976 motions)
-- Stuck: batch_68f8d6888f908190be58aefa878f5538 (992/1000)
+**⚠️ PROJECT PAUSED**: 2025-10-24 - Prompt design issue discovered
 
-**When user asks "hur går det nu? klart ännu?"**:
-1. Run `node scripts/check_batch_status_simple.js`
-2. If completed: Run `node scripts/store_round3_batches.js`
-3. Verify with MCP:
-   ```sql
-   SELECT DATE(analyzed_at), COUNT(*)
-   FROM motion_kvalitet
-   GROUP BY DATE(analyzed_at);
-   ```
-4. Run `node scripts/check_coverage.js`
-5. Update PROJECT_STATE.md
+**Current Status**:
+- Technical system: Working ✅
+- Data quality: Good (HTML fulltext, 100% coverage for 2024/25) ✅
+- Prompt design: Broken ❌ (94% scored as "empty" even with full text)
 
-**IMPORTANT Lessons**:
-- UPSERT counts both INSERT and UPDATE as "stored"
-- Script saying "7,007 stored" ≠ 7,007 new rows
-- ALWAYS verify with MCP `analyzed_at` timestamps
-- Supabase JS client has 1000 row default limit
+**Why paused:**
+The current prompt measures "legal completeness" (cost analysis, legal text, implementation). Most Swedish motions are "tillkännagivanden" (investigation requests) - they ask government to study something, not provide complete legislative packages. This is NORMAL for Swedish parliament, but the prompt penalizes it.
+
+**Before resuming:**
+1. Define what we're actually trying to expose (symbolpolitik? contradictions? quality gaps?)
+2. Design appropriate prompt for Swedish political context
+3. Test on 20 sample motions manually
+4. Only then submit new batches
+
+**Current data** (3,215 motions, 2024/25):
+- Technically correct (full text analyzed)
+- Just measures wrong thing (legal completeness vs political substance)
+- Can still be used as baseline or for finding rare detailed proposals
+
+**CRITICAL LESSONS ($22 spent in 2 days)**:
+- ALWAYS test prompts on 20+ samples BEFORE batch processing
+- Domain knowledge > Technical fixes (Swedish motions ≠ US bills)
+- Know your SPECIFIC goal before choosing metrics
+- ONE clear goal > generic "quality" score
+- Batch API is cheap but still adds up fast ($22 in 2 days)
+- When in doubt, PAUSE and ask user to clarify goal
 
 ## Code Style
 - Use TypeScript for API routes and components
