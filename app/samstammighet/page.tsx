@@ -33,7 +33,13 @@ async function hamta(amne: string) {
     karta.set(`${r.parti_2}|${r.parti_1}`, r.samstammighet)
   }
 
-  return { karta, par, gemensamma: par[0]?.gemensamma ?? 0 }
+  // Största värdet, inte första radens. Alla par delar nämnare så länge varje
+  // parti har en linje i varje votering — men listan är sorterad på
+  // samstämmighet, och att läsa ett annat fält ur dess topp gör talet beroende
+  // av en sortering det inte har med att göra.
+  const gemensamma = par.length ? Math.max(...par.map((p) => p.gemensamma)) : 0
+
+  return { karta, par, gemensamma }
 }
 
 /** Färgskala från neutral till accent. Inga partifärger — det är relationen som mäts. */
@@ -96,7 +102,7 @@ export default async function Samstammighet({
       </section>
 
       <section className="regel mt-16 pt-8">
-        <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">Alla 28 par</h2>
+        <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">Alla {heltal(par.length)} par</h2>
         <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
           Andelen av {heltal(gemensamma)} voteringar där de två partierna hade
           samma linje. Ingen höger–vänsteraxel, ingen viktning, inget par valt i
