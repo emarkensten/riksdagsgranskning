@@ -50,6 +50,21 @@ export async function rakna(
 export const PARTIER = ['S', 'M', 'SD', 'C', 'V', 'KD', 'MP', 'L'] as const
 export type Parti = (typeof PARTIER)[number]
 
+/** URL-segmentet för en partisida: /partier/sd. */
+export function slug(parti: string) {
+  return parti.toLowerCase()
+}
+
+/**
+ * Partikoden bakom ett URL-segment, eller undefined för allt annat.
+ *
+ * Går aldrig förbi den här funktionen och in i en fråga: partikoden
+ * interpoleras i PostgREST:s or-filter, och där duger inte otvättad indata.
+ */
+export function partiFranSlug(segment: string): Parti | undefined {
+  return PARTIER.find((p) => p.toLowerCase() === segment.toLowerCase())
+}
+
 /**
  * Regeringen 2022–2026. Vilka partier som styr är en politisk omständighet och
  * finns inte i röstdata.
