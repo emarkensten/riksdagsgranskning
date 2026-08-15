@@ -79,10 +79,52 @@ Mönstret som eftersöks beskrivs nu också uttryckligen: talaren argumenterar f
 en åtgärd, partiet röstar Ja till att avslå motionerna om den, och partiet står
 inte bakom någon reservation i den riktningen.
 
-## Nästa steg
+## A/B-resultatet: instruktionen tystade fyndet
 
-A/B mellan gammal och rättad instruktion på oberoende portioner ur 2022/23.
-Slutsatsen om idé 1 dras först när det utfallet finns.
+Samma modell, samma underlagstyp, oberoende portioner ur 2022/23:
+
+| Instruktion | Bedömningar | Andel "motsäger" |
+|---|---:|---:|
+| Gammal — "var återhållsam, använd sparsamt" | 704 | **0,3 %** |
+| Rättad — "utelämna aldrig, gradera osäkerheten" | 134 | **12,7 %** |
+
+Fyrtiofaldig skillnad. Slutsatsen "idé 1 hittar inget" var alltså ett artefakt av
+formuleringen, inte ett faktum om riksdagen.
+
+Fallen som den rättade instruktionen fångar är substantiella. Exempel: en
+KD-talare argumenterar för en äldreboendegaranti för alla över 85 år, och
+partiet röstar för att avslå Vänsterpartiets reservation om exakt det, utan eget
+alternativ. En MP-talare säger uttryckligen att han vill se en utredning om
+älvdalskan, och partiet röstar för avslag på SD:s reservation om just en sådan
+utredning.
+
+## Men nu finns motsatt risk
+
+Den rättade instruktionen säger "tveka inte att använda etiketten". Den kan
+alltså över-flagga lika lätt som den gamla under-flaggade. Sanningen ligger
+någonstans mellan 0,3 % och 12,7 %, och ingen tredje promptformulering kan
+avgöra var — den skulle bara vara en tredje gissning.
+
+## Åtgärd: adversariell verifiering
+
+Varje flaggat fall granskas av en oberoende agent vars uppgift är att
+**motbevisa** påståendet, med instruktionen att utgå från att det är fel.
+Kända avfärdningsgrunder anges uttryckligen: allmän sympati snarare än konkret
+krav, reservation som innehåller mer än talaren begärde, frågan hanteras i annan
+ordning, partiet står bakom reservationen trots att `motforslag_partier` inte
+listar det, talaren är statsråd, eller voteringsordningen.
+
+Endast fall som överlever granskningen publiceras. Detta namnger verkliga
+politiker — ett felaktigt påstående är värre än ett missat fynd.
+
+## Lärdom
+
+En instruktion om försiktighet kan tysta exakt det fynd man letar efter, och en
+instruktion om vaksamhet kan framkalla fynd som inte finns. Ingen av dem går att
+upptäcka genom att titta på resultatet — bara genom att köra båda och jämföra.
+
+Att agenterna redovisade sina resonemang var det enda skälet till att detta
+upptäcktes. En batchkörning hade levererat 0,3 % utan att någonsin berätta varför.
 
 **Lärdomen oavsett utfall:** en instruktion om försiktighet kan tysta exakt det
 fynd man letar efter. Att agenterna redovisade sitt resonemang var det enda
