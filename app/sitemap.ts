@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
-import { db, rader, slug, PARTIER } from '@/lib/db'
+import { db, slug, PARTIER } from '@/lib/db'
+import { allaRader } from '@/lib/block'
 import { SAJT_URL } from '@/lib/sajt'
 
 /**
@@ -27,22 +28,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // /voteringar faktiskt visar, och en sitemap ska peka på sidor som finns.
   // Se #olika-tal på metodsidan för varför de två talen skiljer sig åt.
   //
-  // Tusentals rader, alltså över PostgREST:s takgräns på 1 000. `range` läser
-  // dem i block — utan den kapas listan tyst och de senaste voteringarna
-  // saknas i sitemapen utan att något går sönder.
-  const punkter: { forslagspunkt_id: number; datum: string }[] = []
-  const BLOCK = 1000
-  for (let start = 0; ; start += BLOCK) {
-    const block = await rader<{ forslagspunkt_id: number; datum: string }>(
+  // Tusentals rader, alltså över PostgREST:s takgräns på 1 000 — utan blocken
+  // kapas listan tyst och de senaste voteringarna saknas i sitemapen utan att
+  // något går sönder.
+  const punkter = await allaRader<{ forslagspunkt_id: number; datum: string }>(
+    (fran, till) =>
       db()
         .from('votering_lista')
         .select('forslagspunkt_id, datum')
         .order('forslagspunkt_id')
-        .range(start, start + BLOCK - 1),
-    )
-    punkter.push(...block)
-    if (block.length < BLOCK) break
-  }
+        .range(fran, till),
+  )
 
   const senast = punkter.reduce<string | undefined>(
     (m, p) => (!m || p.datum > m ? p.datum : m),
