@@ -1,98 +1,139 @@
 # Namnupprop
 
-En granskningsapp som avslöjar dolda mönster i svenska riksdagspolitikers beteende genom att kombinera öppna data med AI-analys.
+**Varje votering i riksdagen, på vanlig svenska.**
 
-## Syfte
+Sveriges riksdags öppna data är fritt tillgängligt och nästan oläsbart.
+Voteringarna heter saker som `SfU16 punkt 3`, och utfallet är ett ja eller nej
+mot ett procedurförslag — inte mot sakfrågan. Namnupprop översätter varje sådan
+votering under mandatperioden 2022–2026 till klarspråk, med originaltexten öppen
+bredvid.
 
-Skapa rubrikgaranti genom faktabaserad granskning som avslöjar:
+Sajten är privat och har ingen koppling till Sveriges riksdag.
 
-1. **Strategisk Frånvaro** - Politiker som systematiskt undviker vissa debatter
-2. **Retorik vs. Handling** - Gapet mellan vad politiker säger och hur de röstar
-3. **Tomma Motioner** - Motioner utan konkreta förslag eller lösningar
+---
 
-## Teknisk Stack
+## Det viktigaste att förstå om materialet
 
-- **Frontend**: Next.js 14 + TypeScript + Tailwind CSS
-- **UI Components**: shadcn/ui + Recharts för visualisering
-- **Backend**: Next.js API Routes
-- **Database**: Supabase (PostgreSQL)
-- **LLM**: OpenAI GPT-4o (Batch API)
-- **Hosting**: Vercel (frontend) + Supabase (database)
+I en svensk votering ställs **utskottets förslag alltid som ja och reservationen
+som nej**. Ett parti som röstar nej till mer pengar till skolan har därför oftast
+röstat för *sitt eget* förslag om mer pengar till skolan.
 
-## Getting Started
+Det är den enskilt farligaste fällan i riksdagsdata. Ett verktyg som läser varje
+nej som motstånd mot sakfrågan producerar hundratals falska anklagelser. Därför
+står det på varje voteringssida utskrivet vad ett ja innebar, vad ett nej
+innebar, och vilka partier som stod bakom reservationen.
 
-See [SETUP.md](SETUP.md) for detailed installation instructions.
+---
 
-Quick start:
+## Huvudfyndet är negativt
+
+Projektet började som något annat: en jakt på hyckleri, alltså politiker som
+säger en sak i talarstolen och röstar tvärtom. **Den idén är utredd och
+nedlagd.** Tre resultat sänkte den:
+
+1. **Enskilda ledamöter avviker inte.** 1 070 av 770 029 avlagda röster avvek
+   från det egna partiets linje — 0,14 %. Det finns ingen population av ledamöter
+   som röstar mot sitt parti, och därmed ingen berättelse på individnivå.
+2. **På partinivå mätte måttet formuleringen.** Samma modell på samma underlag
+   gav fyrtio gånger fler träffar när instruktionen bad om vaksamhet i stället
+   för försiktighet.
+3. **Ingen träff överlevde granskning.** De nio starkaste fallen prövades av en
+   bedömare med uppgift att motbevisa dem. Sju föll, två blev osäkra, inget höll.
+
+Verktyget byggdes aldrig. Det negativa resultatet publicerades i stället, med
+räkningen öppen — se `/metod#hyckleri` på sajten. Namnupprop lovar alltså inga
+avslöjanden, och det är ett resultat och inte en brist.
+
+---
+
+## Vad sajten faktiskt visar
+
+Ovanpå översättningen ligger fyra mått, alla räknade ur samma röstdata:
+
+- **Vem röstar med vem** — alla 28 partipar, mätta likadant, utan
+  höger–vänsteraxel.
+- **Var kammaren är oenig** — enigheten ämne för ämne.
+- **Vem som inte var på plats** — frånvaron per riksmöte och parti.
+- **Vem som stod ensam** — voteringar där ett parti var det enda med sin linje.
+
+Varje tal står bredvid sitt förbehåll, och varje definition finns på `/metod`.
+
+---
+
+## Siffrorna i materialet
+
+Kontrollerade mot databasen 2026-08-15. Sajten räknar fram dem live vid varje
+rendering — tabellen nedan är en ögonblicksbild, inte en sanning som ska
+underhållas för hand.
+
+| | |
+|---|---|
+| Förslagspunkter med klarspråksförklaring | 2 587 |
+| …varav avgjorda med namnupprop om sakfrågan | 2 569 |
+| Förslagspunkter totalt 2022–2026 | 8 977 |
+| Betänkanden | 1 442 |
+| Anföranden (hämtade, inte sammanfattade) | 56 177 |
+| Voteringar där nej-sidan vann | 2 |
+
+Skillnaden mellan 2 587 och 2 569 är punkter där namnuppropet gällde
+motivfrågan, alltså hur beslutet skulle motiveras — inte vad som beslutades. De
+rösterna säger inget om partiernas hållning i sakfrågan och räknas därför inte in
+i något mått.
+
+**De flesta beslut syns inte alls här.** 6 390 av 8 977 förslagspunkter
+avgjordes genom acklamation, alltså utan att någon begärde namnupprop. Enighet i
+kammaren är därför systematiskt underrepresenterad.
+
+---
+
+## Teknik
+
+- **Next.js 14** (App Router, server components) + TypeScript + Tailwind
+- **Supabase** (PostgreSQL) — läses med den publika nyckeln; RLS släpper igenom
+  `select` och blockerar all skrivning
+- **OpenAI Batch API** — klarspråksförklaringarna, körda en gång och sparade
+
+Inga API-routes: sidorna läser databasen direkt i server components. Inget
+komponentbibliotek och inget diagrambibliotek — `components/system.tsx` bär
+byggstenarna och `components/ikoner.tsx` de åtta ikonerna.
+
+Sajten är inte publicerad ännu.
+
+### Kör lokalt
 
 ```bash
 npm install
 cp .env.example .env.local
-# Fill in your environment variables
 npm run dev
 ```
 
-## Project Status
+ETL-skripten ligger i `scripts/etl/`. `run.mjs` är kommenterad, och funktionen
+`aggregat_vyer()` i databasen styr vilka materialiserade vyer som uppdateras och
+i vilken ordning.
 
-**Data Pipeline Complete ✅** - 1.3M+ records imported
+---
 
-Database is now production-ready with:
-- ✅ 1,006,865 voting records (2021-2025)
-- ✅ 147,359 speeches (2010-2025)
-- ✅ 56,745 motions (2010-2025)
-- ✅ 60,830 written questions (2010-2025)
-- ✅ 18,212 interpellations (2010-2025)
-- ✅ 37,483 historical member data (1990+)
+## Läs vidare
 
-See [docs/](docs/) for full documentation.
+| Dokument | Vad |
+|---|---|
+| [CLAUDE.md](CLAUDE.md) | Arbetsregler, verifierade API-begränsningar och mätta grundfakta |
+| [docs/LAGE_2026-08.md](docs/LAGE_2026-08.md) | Vad sajten är i dag och vad som återstår |
+| [docs/DESIGN_GUIDELINES.md](docs/DESIGN_GUIDELINES.md) | Formspråk och copy-regler |
+| [docs/BESLUT_2026-08.md](docs/BESLUT_2026-08.md) | Varför hyckleriidén lades ned |
+| [docs/PITCH.md](docs/PITCH.md) | Sajten i pitchform, med demo-rutt |
 
-## Architecture
+Dokumenten under `docs/` som beskriver ett åtta veckors MVP-upplägg —
+`SETUP.md`, `QUICKSTART.md`, `API.md` och `DEVELOPMENT.md` — är från projektets
+första vecka och beskriver en produkt som inte längre finns. Läs dem som
+historik.
 
-### Data Pipeline
-1. **Data Sync** (Daily at 02:00 CET)
-   - Fetch from Riksdagen API
-   - Store in Supabase PostgreSQL
-   - Backup to Supabase Storage
+## Källa
 
-2. **LLM Analysis** (Monthly batch)
-   - Process with OpenAI Batch API
-   - Save analysis results
+All data kommer från [data.riksdagen.se](https://data.riksdagen.se). Hittar du
+ett fel,
+[öppna ett ärende](https://github.com/emarkensten/riksdagsgranskning/issues/new).
 
-3. **API & Frontend** (Real-time)
-   - Serve pre-computed results
-   - Fast responses (<100ms)
-
-## Costs
-
-- **MVP Setup**: ~$25-30 (one-time)
-- **Monthly Operation**: $12-57 depending on traffic
-- **Hosting**: Free tier sufficient for launch
-
-## Data Sources
-
-All data from public sources:
-- Riksdagen API: `data.riksdagen.se`
-- Political programs: SND (Swedish National Data Service)
-- Open data: Offentlighetsprincipen (Public Access Principle)
-
-## Legal Foundation
-
-All analysis is based on publicly available data and follows:
-- TF 1 kap. 1-10 §§ (Public Access Principle)
-- BrB 5:1 (Justification principle)
-
-## Contributing
-
-This is part of a 8-week MVP sprint. See issues for current priorities.
-
-## Timeline
-
-- **Week 1-2**: Data collection and setup
-- **Week 3-4**: LLM analysis implementation
-- **Week 5**: Backend API
-- **Week 6-7**: Frontend and visualizations
-- **Week 8**: Testing and launch
-
-## License
+## Licens
 
 MIT
