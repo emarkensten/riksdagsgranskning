@@ -12,7 +12,6 @@ export const REPO = 'https://github.com/emarkensten/riksdagsgranskning'
 export const NYTT_ARENDE = `${REPO}/issues/new`
 
 export const SAJT = 'Namnupprop'
-export const UNDERTITEL = 'Varje votering i riksdagen, på vanlig svenska.'
 
 /** Den som svarar för innehållet. Utan namn är sajtens hållning inte någons. */
 export const AVSANDARE = 'Erik Markensten'

@@ -2,9 +2,11 @@ import { Etikett, Forbehall, Textlank } from '@/components/system'
 import { AVSANDARE, NYTT_ARENDE, REPO, SAJT } from '@/lib/sajt'
 
 export const metadata = {
-  title: 'Vem ligger bakom sajten? — Namnupprop',
+  title: `Vem ligger bakom sajten? — ${SAJT}`,
   description:
-    'Namnupprop är byggd av Erik Markensten, privat och utan koppling till Sveriges riksdag. Ingen finansiering, inget partiuppdrag, ingen annonsering — och källkoden ligger öppen.',
+    `${SAJT} är byggd av ${AVSANDARE}, privat och utan koppling till Sveriges ` +
+    'riksdag. Ingen finansiering, inget partiuppdrag, ingen annonsering — och ' +
+    'källkoden ligger öppen.',
 }
 
 /**
