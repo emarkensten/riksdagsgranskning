@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get the Riksdagsgranskning app running in 5 minutes.
+Get the Namnupprop app running in 5 minutes.
 
 ## Prerequisites
 
@@ -69,7 +69,7 @@ You should see:
   - Local:        http://localhost:3000
 ```
 
-Open http://localhost:3000 in your browser. You should see "Riksdagsgranskning" placeholder page.
+Open http://localhost:3000 in your browser. You should see "Namnupprop" placeholder page.
 
 ## 5. Done! ✓
 

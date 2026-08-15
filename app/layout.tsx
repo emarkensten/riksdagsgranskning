@@ -24,9 +24,9 @@ const mono = IBM_Plex_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Riksdagsgranskning — så röstade riksdagen',
+  title: 'Namnupprop — så röstade riksdagen',
   description:
-    'Varje votering i Sveriges riksdag, förklarad på vanlig svenska. Byggt på öppna data från Sveriges riksdag.',
+    'Varje votering i riksdagen, på vanlig svenska. Mandatperioden 2022–2026, byggd på Sveriges riksdags öppna data.',
 }
 
 const FOTLANKAR = [
@@ -51,7 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               href="/"
               className="shrink-0 text-[17px] font-extrabold tracking-[-0.03em] transition-opacity duration-150 hover:opacity-70"
             >
-              Riksdags<span style={{ color: 'var(--accent)' }}>granskning</span>
+              Namn<span style={{ color: 'var(--accent)' }}>upprop</span>
             </Link>
             <Navigation />
           </header>

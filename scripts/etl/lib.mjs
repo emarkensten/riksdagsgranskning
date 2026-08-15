@@ -11,7 +11,7 @@ import { config } from 'dotenv'
 
 config({ path: '.env.local' })
 
-const UA = 'riksdagsgranskning/1.0 (+https://github.com/emarkensten/riksdagsgranskning)'
+const UA = 'namnupprop/1.0 (+https://github.com/emarkensten/riksdagsgranskning)'
 const BASE = 'https://data.riksdagen.se'
 
 export const PARTIER = ['S', 'SD', 'M', 'C', 'V', 'KD', 'MP', 'L', '-']

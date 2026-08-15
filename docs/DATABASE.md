@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Riksdagsgranskning database is built on Supabase (PostgreSQL) and contains comprehensive Swedish parliamentary data from 2010-2025, with voting records extending to 1990+ for historical context.
+The Namnupprop database is built on Supabase (PostgreSQL) and contains comprehensive Swedish parliamentary data from 2010-2025, with voting records extending to 1990+ for historical context.
 
 **Total Data: 1.3+ million records**
 
