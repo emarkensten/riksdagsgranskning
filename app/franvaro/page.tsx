@@ -180,7 +180,7 @@ export default async function Franvaro() {
         </table>
       </section>
 
-      <section className="regel mt-16 pt-7">
+      <section id="avgjorde" className="regel mt-16 scroll-mt-6 pt-7">
         <h2 className="display text-2xl">När frånvaron avgjorde</h2>
         <p className="mt-2 max-w-[62ch] text-[14px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
           I {avgjorde.length === 0 ? 'inget' : avgjorde.length} fall{avgjorde.length === 1 ? '' : ''} hade

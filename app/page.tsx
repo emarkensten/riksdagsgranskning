@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { db, lista, namn, tal, REGERINGSPARTIERNA } from '@/lib/db'
+import { db, heltal, lista, namn, tal, REGERINGSPARTIERNA } from '@/lib/db'
 import { Linjeetikett } from '@/components/rostrad'
 
 export const revalidate = 3600
@@ -32,8 +32,9 @@ async function hamta() {
       .eq('amne', 'alla').order('samstammighet', { ascending: false }).limit(1),
     klient.from('parti_ensam').select('parti, ensam, av, andel').order('ensam', { ascending: false }),
     klient.from('utskottet_forlorade').select('*').order('datum'),
-    // Fyra rader. Frånvaron för hela perioden måste summeras ur dem — den
-    // enskilda raden för ett riksmöte är en annan siffra (10,6–14,9 %).
+    // En rad per riksmöte. Frånvaron för hela perioden måste summeras ur dem;
+    // den enskilda raden är en helt annan siffra, och spannet mellan dem räknas
+    // fram nedan och skrivs ut bredvid totalen.
     klient.from('riksmote_summering').select('rm, roster, franvarande'),
     klient.from('amne_oversikt').select('*').order('avvikande_delta').limit(1),
     klient.from('jamn_votering').select('*', { count: 'exact', head: true }).lte('marginal', 3),
@@ -54,6 +55,12 @@ async function hamta() {
   const roster = (riksmoten ?? []).reduce((n, r: any) => n + Number(r.roster), 0)
   const franvarande = (riksmoten ?? []).reduce((n, r: any) => n + Number(r.franvarande), 0)
 
+  // Spannet mellan riksmötena. Talet för hela perioden är den vanligaste
+  // förväxlingen i materialet — den som klickar vidare till frånvarosidan möts
+  // av ett annat tal, och behöver veta varför redan här.
+  const perRiksmote = (riksmoten ?? [])
+    .map((r: any) => (Number(r.roster) > 0 ? (100 * Number(r.franvarande)) / Number(r.roster) : 0))
+
   const a = (amnen ?? [])[0] as any
 
   return {
@@ -63,6 +70,8 @@ async function hamta() {
     ensamExempel: (ensamExempel ?? []) as Exempel[],
     forluster: (forluster ?? []) as unknown as Forlust[],
     franvaroandel: roster > 0 ? (100 * franvarande) / roster : 0,
+    lagstaRiksmote: perRiksmote.length ? Math.min(...perRiksmote) : 0,
+    hogstaRiksmote: perRiksmote.length ? Math.max(...perRiksmote) : 0,
     roster,
     jamna: jamna.count ?? 0,
     avgjorde: avgjorde.count ?? 0,
@@ -113,15 +122,17 @@ export default async function Start() {
     },
     {
       tal: `${tal(d.franvaroandel)} %`,
-      text: `av ${d.roster.toLocaleString('sv-SE')} röstningstillfällen stod tomma. Att rösta i kammaren är ledamotens mest grundläggande uppgift.`,
+      text: `av ${heltal(d.roster)} röstningstillfällen stod tomma. Andelen varierar kraftigt mellan riksmötena, från ${tal(d.lagstaRiksmote)} till ${tal(d.hogstaRiksmote)} %.`,
       href: '/franvaro',
       lank: 'Se frånvaron per parti',
     },
+    // Nyheten är de tolv, inte de hundra elva. Talet som leder ett fynd ska
+    // vara det som är värt att veta, inte det största som råkar finnas.
     {
-      tal: d.jamna.toLocaleString('sv-SE'),
-      text: `voteringar avgjordes med tre rösters marginal eller mindre. I ${d.avgjorde} av dem hade utfallet blivit ett annat om alla frånvarande röstat med sitt parti.`,
-      href: '/franvaro',
-      lank: 'Se de jämna voteringarna',
+      tal: heltal(d.avgjorde),
+      text: `voteringar hade kunnat sluta annorlunda om alla frånvarande röstat med sitt parti — av ${heltal(d.jamna)} som avgjordes med tre rösters marginal eller mindre.`,
+      href: '/franvaro#avgjorde',
+      lank: `Se de ${heltal(d.avgjorde)} fallen`,
     },
   ]
 
@@ -197,7 +208,7 @@ export default async function Start() {
             mätta likadant i alla 16 ämnen, utan att något par valts ut i förväg.
             {utbytbara(d.amne) && (
               <>
-                {' '}Vilket av dem som hamnar i meningen avgörs dock av tiondelar:
+                {' '}Vilket av de tre som står här avgörs av tiondelar:
                 Moderaterna, Kristdemokraterna och Liberalerna röstar lika i
                 99,9–100 % av alla voteringar, så fyndet gäller alla tre.
               </>
