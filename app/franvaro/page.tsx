@@ -17,8 +17,26 @@ type Riksmote = { rm: string; roster: number; franvarande: number; franvaroandel
 type PartiRad = { parti: string; rm: string; roster: number; franvarande: number }
 type LedamotRad = { intressent_id: string; parti: string; voteringar: number; franvarande: number; andel: number }
 type Jamn = {
-  votering_id: string; ja: number; nej: number; marginal: number
-  franvarande: number; franvaron_avgjorde: boolean
+  votering_id: string; ja: number; nej: number; marginal: number; franvarande: number
+}
+
+/**
+ * Voteringens förslagspunkt, för länk och sakfråga.
+ *
+ * punkt_klartext är en till-en-relation, men utan genererade databastyper kan
+ * supabase-js inte veta det och infererar en array. PostgREST svarar med ett
+ * objekt. Båda formerna hanteras här i stället för att typen castas bort — då
+ * skulle ett formskifte bli ett tomt fält på sidan i stället för ett typfel.
+ */
+type Klartext = { sakfraga: string }
+type Punkt = {
+  id: number; rm: string; beteckning: string; punkt: string; votering_id: string
+  punkt_klartext: Klartext | Klartext[] | null
+}
+
+function sakfragan(p: Punkt) {
+  const k = p.punkt_klartext
+  return (Array.isArray(k) ? k[0]?.sakfraga : k?.sakfraga) ?? '—'
 }
 
 async function hamta() {
@@ -33,7 +51,9 @@ async function hamta() {
     // urval som startsidans femte fynd länkar hit med.
     rader<Jamn>(
       klient.from('jamn_votering')
-        .select('votering_id, ja, nej, marginal, franvarande, franvaron_avgjorde')
+        // franvaron_avgjorde selectas inte: frågan filtrerar redan på den, så
+        // varje rad har samma värde.
+        .select('votering_id, ja, nej, marginal, franvarande')
         .lte('marginal', 3).eq('franvaron_avgjorde', true).order('marginal')),
     // Räknas i databasen, inte som listans längd: en punkt som saknar klarspråk
     // faller bort i joinen nedan och skulle annars sänka talet tyst.
@@ -46,10 +66,18 @@ async function hamta() {
   // hade blivit tyst inaktuell vid nästa import.
   const senaste = riksmoten[riksmoten.length - 1]?.rm ?? ''
 
-  const ledamoter = await rader<LedamotRad>(
-    klient.from('ledamot_franvaro')
-      .select('intressent_id, parti, voteringar, franvarande, andel')
-      .eq('rm', senaste).order('andel', { ascending: false }).range(0, 4999))
+  // punkter beror bara på jamna, som redan är upplöst — den behöver inte vänta
+  // på ledamotsfrågan.
+  const [ledamoter, punkter] = await Promise.all([
+    rader<LedamotRad>(
+      klient.from('ledamot_franvaro')
+        .select('intressent_id, parti, voteringar, franvarande, andel')
+        .eq('rm', senaste).order('andel', { ascending: false }).range(0, 4999)),
+    rader<Punkt>(
+      klient.from('forslagspunkt')
+        .select('id, rm, beteckning, punkt, votering_id, punkt_klartext(sakfraga)')
+        .in('votering_id', jamna.map((j) => j.votering_id))),
+  ])
 
   // Hämta bara de ledamöter som faktiskt förekommer. Tabellen har 2 898 rader
   // och en rak select() skulle kapas vid takgränsen.
@@ -70,12 +98,6 @@ async function hamta() {
       return person ? [{ ...l, person }] : []
     })
 
-  const ider = jamna.map((j) => j.votering_id)
-  const punkter = await rader<any>(
-    klient.from('forslagspunkt')
-      .select('id, rm, beteckning, punkt, votering_id, punkt_klartext(sakfraga)')
-      .in('votering_id', ider))
-
   const perVotering = new Map(punkter.map((p) => [p.votering_id?.toUpperCase(), p]))
   const jamnaMedText = jamna
     .map((j) => ({ ...j, punkt: perVotering.get(j.votering_id?.toUpperCase()) }))
@@ -95,7 +117,6 @@ async function hamta() {
     riksmoten: riksmoten.map((r) => ({ ...r, franvaroandel: Number(r.franvaroandel) })),
     hela: summa(riksmoten),
     partier,
-    perParti,
     senaste,
     relevanta,
     flest,
@@ -294,7 +315,7 @@ export default async function Franvaro() {
                   <span>{j.punkt.rm}</span>
                 </div>
                 <p className="mt-1.5 max-w-[68ch] text-[15px] leading-snug transition-opacity group-hover:opacity-60">
-                  {j.punkt.punkt_klartext?.sakfraga ?? '—'}
+                  {sakfragan(j.punkt)}
                 </p>
                 <p className="tabular mt-2 text-[13px]" style={{ color: 'var(--black-svag)' }}>
                   {heltal(Number(j.ja))} ja mot {heltal(Number(j.nej))} nej — marginal{' '}
