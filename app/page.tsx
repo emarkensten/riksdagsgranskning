@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { db, lista, namn, tal } from '@/lib/db'
+import { db, lista, namn, tal, REGERINGSPARTIERNA } from '@/lib/db'
 import { Linjeetikett } from '@/components/rostrad'
 
 export const revalidate = 3600
@@ -76,7 +76,7 @@ async function hamta() {
  * dem gäller det i praktiken alla tre, och det måste stå bredvid siffran.
  */
 function utbytbara(amne: { avvikande_1: string; avvikande_2: string }) {
-  return ['M', 'KD', 'L'].some((p) => p === amne.avvikande_1 || p === amne.avvikande_2)
+  return REGERINGSPARTIERNA.some((p) => p === amne.avvikande_1 || p === amne.avvikande_2)
 }
 
 export default async function Start() {

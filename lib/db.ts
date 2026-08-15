@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type PostgrestError, type SupabaseClient } from '@supabase/supabase-js'
 
 /**
  * Läsklient för server components.
@@ -15,8 +15,51 @@ export function db() {
   return createClient(url, key, { auth: { persistSession: false } })
 }
 
+/**
+ * supabase-js kastar inte vid fel — den svarar med tom lista och ett `error`
+ * som är lätt att glömma. En vy som slår i anons statement_timeout på tre
+ * sekunder blev därför "0 av 0" på metodsidan i stället för ett synligt fel.
+ * Läs alltid felet: kör frågan genom den här.
+ */
+export async function rader<T>(
+  fraga: PromiseLike<{ data: T[] | null; error: PostgrestError | null }>,
+): Promise<T[]> {
+  const { data, error } = await fraga
+  if (error) throw new Error(error.message)
+  return data ?? []
+}
+
+/** Frågan som räknar rader utan att läsa dem. Filtrera vidare, skicka till `rakna`. */
+export function antal(klient: SupabaseClient, tabell: string) {
+  return klient.from(tabell).select('*', { count: 'exact', head: true })
+}
+
+/**
+ * Exakt antal. En vanlig select() kapas tyst vid PostgREST:s takgräns, så
+ * ingenting som ska bli en siffra på sidan får räknas genom att läsa rader.
+ */
+export async function rakna(
+  fraga: PromiseLike<{ count: number | null; error: PostgrestError | null }>,
+  vad: string,
+): Promise<number> {
+  const { count, error } = await fraga
+  if (error) throw new Error(`${vad}: ${error.message}`)
+  return count ?? 0
+}
+
 export const PARTIER = ['S', 'M', 'SD', 'C', 'V', 'KD', 'MP', 'L'] as const
 export type Parti = (typeof PARTIER)[number]
+
+/**
+ * Regeringen 2022–2026. Vilka partier som styr är en politisk omständighet och
+ * finns inte i röstdata.
+ *
+ * Samma tre partier är också de som röstar närmast identiskt (99,9–100 %), och
+ * de två egenskaperna används om vartannat i koden. Det är ingen tillfällighet
+ * — de röstar lika därför att de regerar tillsammans — men skulle de någon gång
+ * skilja sig åt är det två listor, inte en. Räkna alltid ut likheten ur data.
+ */
+export const REGERINGSPARTIERNA = ['M', 'KD', 'L'] as const
 
 const PARTINAMN: Record<string, string> = {
   S: 'Socialdemokraterna', M: 'Moderaterna', SD: 'Sverigedemokraterna',
@@ -76,6 +119,30 @@ export function tal(n: number, decimaler = 1) {
   })
 }
 
+/** Heltal med tunt mellanrum i tusental: 2 569, 896 581. */
+export function heltal(n: number) {
+  return tal(n, 0)
+}
+
+/**
+ * "6 oktober 2022" — svenska månadsnamn, inte ISO.
+ *
+ * Zonen sätts uttryckligen, annars avgörs datumet av var servern står. En ren
+ * datumkolumn ("2022-10-06") parsas av Date som UTC-midnatt, och formateras den
+ * i en zon väster om UTC blir det gårdagens datum: samma sträng gav "6 oktober"
+ * i Europe/Stockholm och "5 oktober" i America/New_York.
+ */
+export function datum(iso?: string) {
+  if (!iso) return '—'
+  const rentDatum = /^\d{4}-\d{2}-\d{2}$/.test(iso)
+  return new Date(iso).toLocaleDateString('sv-SE', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: rentDatum ? 'UTC' : 'Europe/Stockholm',
+  })
+}
+
 export type PartiRost = {
   parti: string
   ja: number
@@ -90,7 +157,11 @@ export type PartiRost = {
  *
  * Frånvaro räknas medvetet inte med. Ett parti med 30 Ja och 40 frånvarande
  * hade positionen Ja — att redovisa "Frånvarande" som partiets hållning vore
- * ett sakfel. Det inträffar i ~0,5 % av partigrupperna.
+ * ett sakfel.
+ *
+ * Fallet där ingen enda ledamot röstade har inte inträffat: 0 av 20 552
+ * partigrupper i mandatperioden. Grenen finns för att den annars skulle
+ * returnera fel linje den dagen det händer.
  */
 export function partilinje(r: Omit<PartiRost, 'parti' | 'linje'>): PartiRost['linje'] {
   const avlagda: [PartiRost['linje'], number][] = [
