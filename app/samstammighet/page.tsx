@@ -132,9 +132,12 @@ export default async function Samstammighet({
 
       <section className="regel mt-14 pt-7">
         <h2 className="display text-2xl">Paren, rangordnade</h2>
+        <p className="mt-2 text-[13px]" style={{ color: 'var(--black-svag)' }}>
+          Samtliga {par.length} partipar, från mest till minst samstämmiga.
+        </p>
         <table className="mt-5 w-full max-w-xl text-[14px]">
           <tbody>
-            {par.slice(0, 14).map((p) => (
+            {par.map((p) => (
               <tr key={`${p.parti_1}${p.parti_2}`} className="regel">
                 <td className="py-2 font-semibold">
                   <span className="inline-flex items-center gap-1.5">

@@ -86,7 +86,7 @@ export default async function Franvaro() {
           Att rösta i kammaren är riksdagsledamotens mest grundläggande uppgift.
           I riksmötet {RM} uteblev ledamöterna från{' '}
           <strong style={{ color: 'var(--black)' }}>
-            {summering?.franvaroandel ?? '—'} %
+            {summering ? `${tal(Number(summering.franvaroandel))} %` : '—'}
           </strong>{' '}
           av röstningstillfällena.
         </p>
