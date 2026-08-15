@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db, PARTIFARG, ROSTFARG, partilinje } from '@/lib/db'
+import { db, heltal, namn, rader, tal, PARTIFARG, ROSTFARG, partilinje } from '@/lib/db'
 
 export const revalidate = 3600
+
+type Debatt = { parti: string; anforanden: number; talare: number }
 
 async function hamta(id: number) {
   const klient = db()
@@ -16,19 +18,26 @@ async function hamta(id: number) {
   if (!k) return null
 
   const f = (k as any).forslagspunkt
-  const [{ data: roster }, { data: reservationer }] = await Promise.all([
+  const [{ data: roster }, { data: reservationer }, debatt] = await Promise.all([
     klient.from('parti_rost').select('*').eq('votering_id', f.votering_id ?? ''),
     klient.from('reservation').select('nummer, partier, text')
       .eq('bet_dok_id', f.bet_dok_id).eq('punkt', f.punkt).order('nummer'),
+    // Debatten hör till betänkandet, inte till den enskilda förslagspunkten.
+    // Se kommentaren i vyn — och i copyn nedan, som måste skriva ut det.
+    rader<Debatt>(
+      klient.from('betankande_debatt').select('parti, anforanden, talare')
+        .eq('bet_dok_id', f.bet_dok_id).order('anforanden', { ascending: false })),
   ])
-  return { k: k as any, f, roster: roster ?? [], reservationer: reservationer ?? [] }
+  return { k: k as any, f, roster: roster ?? [], reservationer: reservationer ?? [], debatt }
 }
 
 export default async function Votering({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const data = await hamta(Number(id))
   if (!data) notFound()
-  const { k, f, roster, reservationer } = data
+  const { k, f, roster, reservationer, debatt } = data
+  const anforanden = debatt.reduce((n, d) => n + Number(d.anforanden), 0)
+  const talare = debatt.reduce((n, d) => n + Number(d.talare), 0)
 
   // Utskottets förslag ställs som ja, reservationen som nej. Utfallet räknas
   // därför fram ur rösterna i stället för att läsas ur forslagspunkt.vinnare:
@@ -143,6 +152,56 @@ export default async function Votering({ params }: { params: Promise<{ id: strin
             : ''}
         </p>
       </section>
+
+      {anforanden > 0 && (
+        <section className="regel mt-12 pt-7">
+          <h2 className="display text-2xl">Debatten</h2>
+          <p className="mt-3 max-w-[64ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
+            <strong style={{ color: 'var(--black)' }}>
+              {heltal(anforanden)} anföranden
+            </strong>{' '}
+            av {heltal(talare)} talare hölls i kammardebatten om betänkandet{' '}
+            <em>{f.betankande?.titel}</em>.
+          </p>
+
+          <table className="mt-6 w-full max-w-lg text-[14px]">
+            <tbody>
+              {debatt.map((d) => (
+                <tr key={d.parti} className="regel">
+                  <td className="py-2 font-semibold">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="inline-block h-3 w-1 rounded-sm" aria-hidden
+                            style={{ background: PARTIFARG[d.parti] ?? 'var(--linje)' }} />
+                      {namn(d.parti)}
+                    </span>
+                  </td>
+                  <td className="tabular py-2 pl-4 text-right font-semibold">
+                    {heltal(Number(d.anforanden))}
+                  </td>
+                  <td className="tabular whitespace-nowrap py-2 pl-5 text-right"
+                      style={{ color: 'var(--black-svag)' }}>
+                    {tal(100 * Number(d.anforanden) / anforanden)} %
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Nivåskillnaden måste stå utskriven. Anförandena hör till hela
+              betänkandet; att fördela dem på enskilda förslagspunkter kräver
+              tolkning, och sajten tolkar inte anföranden. */}
+          <p className="mt-5 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
+            Debatten gällde <strong style={{ color: 'var(--black)' }}>hela betänkandet</strong>,
+            inte bara den här förslagspunkten — ett betänkande innehåller ofta
+            flera punkter som debatteras i ett svep. Vad som sades sammanfattas
+            inte här. Ett försök att jämföra tal mot röst redovisas på{' '}
+            <Link href="/metod#hyckleri" className="underline hover:opacity-60">
+              metodsidan
+            </Link>
+            , och det höll inte.
+          </p>
+        </section>
+      )}
 
       <section className="regel mt-12 pt-7">
         <h2 className="display text-2xl">Underlaget</h2>
