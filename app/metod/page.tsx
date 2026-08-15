@@ -11,21 +11,34 @@ export const revalidate = 3600
 export const metadata = {
   title: 'Så räknar vi — Riksdagsgranskning',
   description:
-    'Definitionerna bakom varje siffra på sajten: partilinje, samstämmighet, ensam mot alla, frånvaro och ämnesklassning — och det öppna data inte kan svara på.',
+    'Svar på det som brukar frågas om sajten: hur talen räknas, om ett nej betyder motstånd, vem som skrev klarspråket, varför två sidor säger olika många — och vad materialet inte kan svara på.',
 }
 
 /** Ordningen de redovisas i, inte den ordning databasen råkar returnera. */
 const NIVAER = ['hög', 'medel', 'låg'] as const
 
+/**
+ * Sidans register, och därmed dess FAQ. Posterna är frågor därför att en läsare
+ * som undrar om AI-texterna går att lita på inte letar efter uppslagsordet
+ * "Klarspråket och ämnena" — den läsaren söker på sin fråga, inte på vårt
+ * begrepp.
+ *
+ * Ankarnamnen är oförändrade och får inte döpas om: sidhuvudets fot, /partier,
+ * /amnen, /franvaro, /samstammighet och båda voteringssidorna länkar in i dem.
+ * Varje avsnitts h2 upprepar frågan ordagrant — en läsare som klickar på en
+ * fråga ska landa på den, inte på något som bara liknar den.
+ */
 const INNEHALL = [
-  ['underlaget', 'Underlaget'],
-  ['definitioner', 'Så räknas talen'],
-  ['ja-och-nej', 'Ett ja är utskottets förslag'],
-  ['klarsprak', 'Klarspråket och ämnena'],
-  ['regeringssidan', 'Regeringssidan vann nästan allt'],
-  ['begransningar', 'Vad materialet inte kan svara på'],
-  ['fel', 'Hittar du ett fel'],
-  ['hyckleri', 'Vi letade efter hyckleri'],
+  ['underlaget', 'Vad bygger siffrorna på?'],
+  ['definitioner', 'Hur räknas samstämmighet, frånvaro och partilinje?'],
+  ['ja-och-nej', 'Betyder ett nej att partiet är emot förslaget?'],
+  ['klarsprak', 'Kan jag lita på AI-sammanfattningarna?'],
+  ['olika-tal', 'Varför säger startsidan och voteringssidan olika många?'],
+  ['regeringssidan', 'Fick regeringen igenom sin politik?'],
+  ['tre-lika', 'Varför ser tre av partisidorna likadana ut?'],
+  ['begransningar', 'Vad kan materialet inte svara på?'],
+  ['fel', 'Hittar du ett fel?'],
+  ['hyckleri', 'Säger politikerna en sak och röstar tvärtom?'],
 ] as const
 
 type Utfall = { parti: string; voteringar: number; med_vinnaren: number; andel: number }
@@ -49,6 +62,7 @@ async function hamta() {
     anforanden,
     forluster,
     retorik,
+    listade,
   ] = await Promise.all([
     rader<Utfall>(klient.from('parti_utfall').select('*').order('andel', { ascending: false })),
     rader<{ avlagda: number; avvikande: number }>(
@@ -70,6 +84,12 @@ async function hamta() {
     rakna(antal(klient, 'utskottet_forlorade'), 'utskottsförluster'),
     rader<{ overensstammelse: string; antal: number }>(
       klient.from('retorik_summering').select('overensstammelse, antal')),
+    // Voteringssidans eget tal, läst ur voteringssidans egen vy. Att räkna om
+    // punkt_klartext här i stället vore att bygga in precis den glidning
+    // avsnittet #olika-tal finns för att förklara: votering_lista joinar mot
+    // betankande, klartext_summering gör det inte, och en punkt vars betänkande
+    // saknas faller ur den ena men inte ur den andra.
+    rakna(antal(klient, 'votering_lista'), 'listade beslut'),
   ])
 
   // PostgREST lämnar numeric som sträng. Talen måste därför gå genom Number()
@@ -130,6 +150,7 @@ async function hamta() {
     forluster,
     retorik: retorikRader,
     retorikTotalt: retorikRader.reduce((n, [, v]) => n + v, 0),
+    listade,
   }
 }
 
@@ -143,8 +164,12 @@ export default async function Metod() {
     .filter((u) => REGERINGSPARTIERNA.some((p) => p === u.parti))
     .sort((a, b) => b.med_vinnaren - a.med_vinnaren)[0]
   // Skillnaden mellan förklarade punkter och voteringar är punkter som fick en
-  // klarspråksförklaring men aldrig ett namnupprop.
+  // klarspråksförklaring men aldrig ett namnupprop om sakfrågan.
   const utanRostdata = d.forklarade - d.voteringar
+  // Samma skillnad, men räknad mellan de två tal sidorna faktiskt visar —
+  // voteringssidans lista och startsidans mönster. Det är den differensen
+  // #olika-tal ska förklara, och den ska härledas ur samma vyer som talen.
+  const motivupprop = d.listade - d.voteringar
 
   return (
     <main>
@@ -156,13 +181,16 @@ export default async function Metod() {
         <p className="stig mt-7 max-w-[52ch] text-[clamp(17px,2.2vw,20px)] leading-[1.45]"
            style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}>
           Varje tal på den här sajten kommer ur riksdagens egna öppna data och
-          går att räkna om. Här står definitionerna bakom dem, vilken modell som
-          skrev klarspråket, och vad materialet inte kan svara på.
+          går att räkna om. Nedan står frågorna som brukar ställas om dem, med
+          svaret först i varje avsnitt.
         </p>
       </section>
 
-      <nav aria-label="Innehåll" className="regel flex flex-wrap gap-2 py-7">
-        {INNEHALL.map(([id, text]) => (
+      {/* Frågan om de två talen försvinner med sitt avsnitt den dag talen är
+          lika. Ett navpiller som lovar en förklaring till en skillnad som inte
+          finns är värre än inget piller alls. */}
+      <nav aria-label="Frågor på sidan" className="regel flex flex-wrap gap-2 py-7">
+        {INNEHALL.filter(([id]) => id !== 'olika-tal' || motivupprop > 0).map(([id, text]) => (
           <a
             key={id}
             href={`#${id}`}
@@ -175,7 +203,7 @@ export default async function Metod() {
       </nav>
 
       <section id="underlaget" className="regel scroll-mt-6 py-16">
-        <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Underlaget</h2>
+        <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Vad bygger siffrorna på?</h2>
 
         <div className="mt-10 flex flex-wrap items-end gap-x-10 gap-y-4">
           <Nyckeltal ton="signal">{heltal(d.voteringar)}</Nyckeltal>
@@ -188,9 +216,11 @@ export default async function Metod() {
 
         <div className="mt-12 max-w-3xl">
           <Rad tal={d.forklarade} text="förslagspunkter har en klarspråksförklaring" />
+          {/* Kort här med flit. Varför de 18 inte räknas är en egen fråga med
+              eget avsnitt — den här raden ska bara få talen att gå ihop. */}
           <Rad
             tal={utanRostdata}
-            text="av dem avgjordes med namnupprop om motiveringen i stället för om sakfrågan. Rösterna är hämtade, men de säger hur beslutet skulle motiveras — inte vad som beslutades — och räknas därför inte in någonstans"
+            text="av dem fick namnupprop om motivfrågan i stället för om sakfrågan, och räknas därför inte in i något mönster"
           />
           <Rad
             tal={d.utanNamnupprop}
@@ -213,10 +243,13 @@ export default async function Metod() {
       </section>
 
       <section id="definitioner" className="regel scroll-mt-6 py-16">
-        <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Så räknas talen</h2>
+        <h2 className="rubrik max-w-[24ch] text-[clamp(1.8rem,4.4vw,44px)]">
+          Hur räknas samstämmighet, frånvaro och partilinje?
+        </h2>
         <p className="mt-5 max-w-[58ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
-          Sex definitioner bär hela sajten. De är valda för att vara enkla nog
-          att kontrollera, inte för att vara raffinerade.
+          Efter sex regler, och de står allihop nedan — regeln först, förbehållet
+          efter. De är valda för att vara enkla nog att kontrollera, inte för att
+          vara raffinerade.
         </p>
 
         <div className="mt-12 grid gap-12">
@@ -265,7 +298,10 @@ export default async function Metod() {
               En nolla betyder inte att partiet aldrig går sin egen väg. Den
               betyder att partiet aldrig gjorde det <em>utan sällskap</em> — och
               för {lista(REGERINGSPARTIERNA.map(namn))} är det nästan mekaniskt
-              omöjligt. Se begränsningarna nedan.
+              omöjligt, eftersom{' '}
+              <a href="#tre-lika" className="underline hover:opacity-70">
+                de tre röstar lika i nästan allt
+              </a>.
             </p>
           </Definition>
 
@@ -347,16 +383,20 @@ export default async function Metod() {
       </section>
 
       <section id="ja-och-nej" className="regel scroll-mt-6 py-16">
-        <p className="rubrik max-w-[20ch] text-[clamp(1.9rem,5.5vw,46px)] leading-[1.05]">
-          Ett ja är alltid utskottets förslag<span style={{ color: 'var(--accent)' }}>.</span>
-        </p>
+        {/* Frågan sätts i display-skalan, inte i .rubrik: det här är sidans
+            farligaste missförstånd och avsnittet ska synas i ögonvrån. Signalen
+            sitter på frågetecknet, där punkten satt förut. */}
+        <h2 className="rubrik max-w-[22ch] text-[clamp(1.9rem,5.5vw,46px)] leading-[1.05]">
+          Betyder ett nej att partiet är emot förslaget
+          <span style={{ color: 'var(--accent)' }}>?</span>
+        </h2>
         <div className="mt-7 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
              style={{ color: 'var(--black-mjuk)' }}>
           <p>
-            I en svensk votering ställs utskottets förslag som ja och en
-            reservation som nej. Ett parti som röstar nej till mer pengar till
-            skolan har därför oftast röstat för sitt eget förslag om mer pengar
-            till skolan.
+            Oftast tvärtom. I en svensk votering ställs utskottets förslag som ja
+            och en reservation som nej, så ett parti som röstar nej till mer
+            pengar till skolan har nästan alltid röstat för sitt eget förslag om
+            mer pengar till skolan.
           </p>
           <p>
             Det är den enskilt viktigaste fällan i det här materialet. Ett
@@ -379,15 +419,19 @@ export default async function Metod() {
       </section>
 
       <section id="klarsprak" className="regel scroll-mt-6 py-16">
-        <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Klarspråket och ämnena</h2>
+        <h2 className="rubrik max-w-[20ch] text-[clamp(1.8rem,4.4vw,44px)]">
+          Kan jag lita på AI-sammanfattningarna?
+        </h2>
         <div className="mt-7 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
              style={{ color: 'var(--black-mjuk)' }}>
           <p>
+            Så långt att du kan kontrollera dem — och det är meningen att du ska.
             Sakfrågan, <em>ja innebar</em> och <em>nej innebar</em> står inte i
-            riksdagens data. De är skrivna av språkmodellen{' '}
+            riksdagens data, utan är skrivna av språkmodellen{' '}
             <strong style={{ color: 'var(--black)' }}>{lista(d.modeller)}</strong>{' '}
             utifrån utskottets förslag och reservationstexterna på samma
-            förslagspunkt. Ämnestaggen sattes i samma anrop, ur en fast lista på{' '}
+            förslagspunkt. Båda originaltexterna ligger öppna på voteringens egen
+            sida. Ämnestaggen sattes i samma anrop, ur en fast lista på{' '}
             {AMNEN.length} ämnen.
           </p>
           <p>
@@ -425,23 +469,59 @@ export default async function Metod() {
         </Forbehall>
       </section>
 
+      {motivupprop > 0 && (
+        <section id="olika-tal" className="regel scroll-mt-6 py-16">
+          <h2 className="rubrik max-w-[24ch] text-[clamp(1.8rem,4.4vw,44px)]">
+            Varför säger startsidan och voteringssidan olika många?
+          </h2>
+          <div className="mt-7 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
+               style={{ color: 'var(--black-mjuk)' }}>
+            <p>
+              Därför att de räknar två olika saker. Voteringssidan listar{' '}
+              <strong style={{ color: 'var(--black)' }}>{heltal(d.listade)}</strong>{' '}
+              förslagspunkter med klarspråksförklaring.{' '}
+              <strong style={{ color: 'var(--black)' }}>{heltal(d.voteringar)}</strong>{' '}
+              av dem avgjordes med namnupprop om sakfrågan, och det är de som bär
+              varje mönster på startsidan.
+            </p>
+            <p>
+              De {heltal(motivupprop)} övriga fick också namnupprop, och rösterna
+              är hämtade — varje ledamot har sin rad, precis som i de andra. Men
+              uppropet gällde motivfrågan: hur beslutet skulle motiveras, inte
+              vad som beslutades. Rösterna säger alltså inget om partiernas
+              hållning i sakfrågan, och räknas därför inte in i någon partilinje,
+              samstämmighet eller frånvarosiffra.
+            </p>
+            <p>
+              Punkterna är inte borttagna för det. De ligger kvar i
+              voteringslistan, med sin klarspråksförklaring och utan partiernas
+              linjer. Att kalla dem <em>saknade röster</em> vore fel — det är
+              röster om en annan fråga.
+            </p>
+          </div>
+          <Textlank href="/voteringar" className="mt-8">
+            Se alla {heltal(d.listade)} beslut i listan
+          </Textlank>
+        </section>
+      )}
+
       <section id="regeringssidan" className="regel scroll-mt-6 py-16">
-        <p className="rubrik max-w-[22ch] text-[clamp(1.9rem,5.5vw,46px)] leading-[1.05]">
-          Regeringssidans linje vann{' '}
-          <span style={{ color: 'var(--accent)' }}>
-            {heltal(basta?.med_vinnaren ?? 0)} av {heltal(d.voteringar)}
-          </span>{' '}
-          voteringar.
-        </p>
+        <h2 className="rubrik max-w-[20ch] text-[clamp(1.9rem,5.5vw,46px)] leading-[1.05]">
+          Fick regeringen igenom sin politik
+          <span style={{ color: 'var(--accent)' }}>?</span>
+        </h2>
         <div className="mt-7 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
              style={{ color: 'var(--black-mjuk)' }}>
-          <p>
-            Siffran gäller {lista(REGERINGSPARTIERNA.map(namn))} och besvarar en
-            fråga som faktiskt ställs: fick regeringen igenom sin politik? Svaret
-            är ja, nästan undantagslöst.
+          <p className="text-[19px] leading-[1.5]">
+            Ja, nästan undantagslöst. {lista(REGERINGSPARTIERNA.map(namn))} stod
+            på den vinnande sidan i{' '}
+            <strong style={{ color: 'var(--accent)' }}>
+              {heltal(basta?.med_vinnaren ?? 0)} av {heltal(d.voteringar)}
+            </strong>{' '}
+            voteringar.
           </p>
           <p>
-            Men den är till stor del strukturell. Utskottsmajoriteten <em>är</em>{' '}
+            Men talet är till stor del strukturellt. Utskottsmajoriteten <em>är</em>{' '}
             regeringssidan, så att dess linje vinner är nästan samma påstående som
             att utskottets förslag vinner. Talet beskriver hur riksdagen fungerar
             — inte hur skickliga regeringspartierna varit. Det är skälet till att
@@ -477,14 +557,44 @@ export default async function Metod() {
         </p>
       </section>
 
+      <section id="tre-lika" className="regel scroll-mt-6 py-16">
+        <h2 className="rubrik max-w-[20ch] text-[clamp(1.8rem,4.4vw,44px)]">
+          Varför ser tre av partisidorna likadana ut?
+        </h2>
+        <div className="mt-7 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
+             style={{ color: 'var(--black-mjuk)' }}>
+          <p>
+            Därför att {lista(REGERINGSPARTIERNA.map(namn))} röstar lika i{' '}
+            <strong style={{ color: 'var(--black)' }}>{d.likhetsspann}</strong>{' '}
+            av alla voteringar. Sidorna säger nästan samma sak för att partierna
+            gjorde nästan samma sak — det är ett resultat, inte ett fel i
+            beräkningen.
+          </p>
+          <p>
+            Det får två följder som är lätta att läsa fel. Varje fynd som namnger
+            ett av de tre gäller i praktiken alla tre, och vilket av dem som
+            hamnar i rubriken avgörs av tiondelar. Och inget av dem kan gärna bli{' '}
+            <em>ensamt mot alla</em>: de två andra står redan på samma linje.
+          </p>
+          <p>
+            Likheten räknas fram ur rösterna varje gång, den står inte skriven
+            någonstans. Skulle de tre glida isär kommande mandatperiod följer
+            talet med — men vad de röstade lika <em>om</em>, och varför, svarar
+            materialet inte på.
+          </p>
+        </div>
+        <Textlank href="/samstammighet" className="mt-8">
+          Se vem som röstar med vem
+        </Textlank>
+      </section>
+
       <section id="begransningar" className="regel scroll-mt-6 py-16">
         <h2 className="rubrik max-w-[20ch] text-[clamp(1.8rem,4.4vw,44px)]">
-          Vad materialet inte kan svara på
+          Vad kan materialet inte svara på?
         </h2>
         <p className="mt-5 max-w-[58ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
-          Sju saker som begränsar varje slutsats på sajten. De står här därför
-          att en siffra utan sitt förbehåll är ett påstående vi inte kan
-          försvara.
+          Det här begränsar varje slutsats på sajten. Listan står här därför att
+          en siffra utan sitt förbehåll är ett påstående vi inte kan försvara.
         </p>
 
         <div className="mt-12 grid gap-10">
@@ -496,14 +606,10 @@ export default async function Metod() {
             frånvarande hade röstat med sitt parti — vilket överdriver effekten.
           </Begransning>
 
-          <Begransning rubrik={`${lista(REGERINGSPARTIERNA.map(namn))} är utbytbara i statistiken`}>
-            De röstar lika i {d.likhetsspann} av alla voteringar. Varje fynd som
-            namnger ett av dem gäller i praktiken alla tre, och vilket som hamnar
-            i rubriken avgörs av tiondelar. Det gör också att inget av dem gärna
-            kan bli <em>ensamt mot alla</em>: de två andra står redan på samma
-            linje.
-          </Begransning>
-
+          {/* Att de tre är utbytbara stod länge här, som en av begränsningarna.
+              Det är en fråga läsaren ställer när partisidorna ser likadana ut,
+              och har därför en egen adress ovan i stället — samma påstående på
+              två ställen på samma sida driver isär. */}
           <Begransning rubrik="De flesta besluten togs utan omröstning">
             {heltal(d.utanNamnupprop)} av {heltal(d.punkter)} förslagspunkter
             avgjordes genom acklamation, alltså utan att någon begärde namnupprop.
@@ -549,14 +655,14 @@ export default async function Metod() {
         <div className="mt-6 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
              style={{ color: 'var(--black-mjuk)' }}>
           <p>
-            Varje votering på sajten har en egen sida med utskottets förslag och
-            reservationerna i originaltext. Börja där: om klarspråket säger något
-            annat än underlaget, är det klarspråket som har fel.
+            Anmäl det, gärna med länk till voteringen och vad som borde ha stått.
+            Rättelser i underlaget kräver en ny körning och syns därför inte
+            samma dag, men de görs.
           </p>
           <p>
-            Rapportera det, gärna med länk till voteringen och vad som borde
-            stått. Rättelser i underlaget kräver en ny körning och syns därför
-            inte samma dag, men de görs.
+            Börja med voteringens egen sida. Där ligger utskottets förslag och
+            reservationerna i originaltext, och säger klarspråket något annat än
+            underlaget är det klarspråket som har fel.
           </p>
         </div>
         <a
@@ -575,13 +681,12 @@ export default async function Metod() {
       <section id="hyckleri" className="panel helbredd scroll-mt-6 py-16 sm:py-20">
         <div className="mx-auto max-w-5xl px-5 sm:px-8">
         <Etikett>Ett negativt resultat</Etikett>
-        <h2 className="display mt-6 max-w-[16ch] text-[clamp(2.2rem,6.5vw,72px)]">
-          Vi letade efter hyckleri.
+        <h2 className="display mt-6 max-w-[17ch] text-[clamp(2.2rem,6.5vw,72px)]">
+          Säger politikerna en sak och röstar tvärtom?
         </h2>
         <p className="mt-7 max-w-[54ch] text-[19px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
-          Den vanligaste idén om riksdagsgranskning är att hitta politiker som
-          säger en sak i talarstolen och röstar tvärtom. Vi prövade den. Den
-          håller inte — och här är varför.
+          Vi prövade att mäta det, och måttet höll inte. Det är den vanligaste
+          idén om riksdagsgranskning, så här är de tre stegen där den föll.
         </p>
 
         <ol className="mt-14 grid gap-10">

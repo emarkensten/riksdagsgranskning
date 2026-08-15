@@ -164,14 +164,21 @@ export default async function Voteringar({
             Rösterna för de 18 ÄR hämtade — 349 rader var. De är bara av en annan
             sort: riksdagens fält `avser` säger 'motivfrågan', och parti_rost
             räknar bara 'sakfrågan'. Att kalla dem saknade vore fel. */}
-        <p className="stig mt-4 max-w-[62ch] text-[13.5px] leading-[1.6]"
-           style={{ color: 'var(--black-svag)', animationDelay: '80ms' }}>
-          {heltal(d.medRoster)} av dem avgjordes med namnupprop om sakfrågan. För
-          de {heltal(d.totalt - d.medRoster)} övriga gällde namnuppropet
-          motiveringen — hur beslutet skulle motiveras, inte vad som beslutades.
-          De rösterna säger inget om partiernas hållning i sakfrågan och räknas
-          därför inte, så raderna visas utan partiernas linjer.
-        </p>
+        {/* Faller bort med skillnaden. Är talen lika finns inget att förklara,
+            och metodsidans #olika-tal existerar inte heller då. */}
+        {d.totalt > d.medRoster && (
+          <p className="stig mt-4 max-w-[62ch] text-[13.5px] leading-[1.6]"
+             style={{ color: 'var(--black-svag)', animationDelay: '80ms' }}>
+            {heltal(d.medRoster)} av dem avgjordes med namnupprop om sakfrågan.
+            För de {heltal(d.totalt - d.medRoster)} övriga gällde namnuppropet
+            motiveringen — hur beslutet skulle motiveras, inte vad som beslutades.
+            De rösterna säger inget om partiernas hållning i sakfrågan och räknas
+            därför inte, så raderna visas utan partiernas linjer.{' '}
+            <Link href="/metod#olika-tal" className="underline hover:opacity-70">
+              Varför sidorna säger olika många
+            </Link>
+          </p>
+        )}
       </section>
 
       {/* Sökfältet är ett vanligt GET-formulär. Filtren följer med som dolda
