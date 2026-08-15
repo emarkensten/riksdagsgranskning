@@ -4,7 +4,8 @@ import { antal, db, datum, heltal, rader, rakna } from '@/lib/db'
 import AMNEN from '@/lib/amnen.json'
 import { Rostrad, Rostnyckel, type PartiRad } from '@/components/rostrad'
 
-export const revalidate = 3600
+// Ingen revalidate: sidan läser searchParams och renderas därför alltid
+// dynamiskt. En deklaration här hade sett ut som en cache som inte finns.
 
 export const metadata = {
   title: 'Voteringarna — Riksdagsgranskning',
@@ -44,7 +45,10 @@ async function hamta({ amne, q, rm, sida }: Sok) {
   const valtAmne = amne && AMNEN.includes(amne) ? amne : undefined
   const valtRm = rm && riksmoten.some((r) => r.rm === rm) ? rm : undefined
   const sok = q?.trim() || undefined
-  const nr = Math.max(1, Number(sida) || 1)
+  // Golvas, inte bara klampas nedåt. Ett decimaltal skulle ge ett radfönster
+  // som inte börjar på en sidgräns, och föras vidare in i sidlänkarna som
+  // sida=3.7 → sida=4.7 — rader hoppas då över mellan sidor.
+  const nr = Math.max(1, Math.floor(Number(sida)) || 1)
 
   /** Samma filter på både räkningen och sidhämtningen. */
   const filtrera = <T extends { eq: any; ilike: any }>(f: T): T => {
