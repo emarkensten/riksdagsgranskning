@@ -59,7 +59,7 @@ export type Parti = (typeof PARTIER)[number]
  * — de röstar lika därför att de regerar tillsammans — men skulle de någon gång
  * skilja sig åt är det två listor, inte en. Räkna alltid ut likheten ur data.
  */
-export const REGERINGSPARTIERNA = ['M', 'KD', 'L']
+export const REGERINGSPARTIERNA = ['M', 'KD', 'L'] as const
 
 const PARTINAMN: Record<string, string> = {
   S: 'Socialdemokraterna', M: 'Moderaterna', SD: 'Sverigedemokraterna',
@@ -124,11 +124,22 @@ export function heltal(n: number) {
   return tal(n, 0)
 }
 
-/** "6 oktober 2022" — svenska månadsnamn, inte ISO. */
+/**
+ * "6 oktober 2022" — svenska månadsnamn, inte ISO.
+ *
+ * Zonen sätts uttryckligen, annars avgörs datumet av var servern står. En ren
+ * datumkolumn ("2022-10-06") parsas av Date som UTC-midnatt, och formateras den
+ * i en zon väster om UTC blir det gårdagens datum: samma sträng gav "6 oktober"
+ * i Europe/Stockholm och "5 oktober" i America/New_York.
+ */
 export function datum(iso?: string) {
   if (!iso) return '—'
+  const rentDatum = /^\d{4}-\d{2}-\d{2}$/.test(iso)
   return new Date(iso).toLocaleDateString('sv-SE', {
-    day: 'numeric', month: 'long', year: 'numeric',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: rentDatum ? 'UTC' : 'Europe/Stockholm',
   })
 }
 

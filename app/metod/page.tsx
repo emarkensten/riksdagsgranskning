@@ -33,7 +33,6 @@ async function hamta() {
     hamtat,
     punkter,
     utanNamnupprop,
-    voteringar,
     betankanden,
     anforanden,
     forluster,
@@ -58,14 +57,6 @@ async function hamta() {
       klient.from('ledamot').select('uppdaterad').order('uppdaterad', { ascending: false }).limit(1)),
     rakna(antal(klient, 'forslagspunkt'), 'förslagspunkter'),
     rakna(antal(klient, 'forslagspunkt').is('votering_id', null), 'punkter utan votering'),
-    // Sidans huvudsiffra räknas för sig, som startsidan redan gör. Att plocka
-    // den ur första raden i en lista sorterad på andel gör den beroende av en
-    // sorteringsordning som inget annat hänger på.
-    //
-    // Räknas på jamn_votering, inte på forslagspunkt.votering_id is not null.
-    // Det senare ger 2 587 — punkter där en votering registrerats — medan
-    // underlaget för varje mönster är de 2 569 som faktiskt har röstdata.
-    rakna(antal(klient, 'jamn_votering'), 'voteringar'),
     rakna(antal(klient, 'betankande'), 'betänkanden'),
     rakna(antal(klient, 'anforande'), 'anföranden'),
     rakna(antal(klient, 'utskottet_forlorade'), 'utskottsförluster'),
@@ -94,8 +85,19 @@ async function hamta() {
   const likhet = mkdl.map((p) => Number(p.samstammighet))
   const retorikRader = retorik
     .map((r) => [r.overensstammelse, Number(r.antal)] as const)
-    .filter(([, n]) => n > 0)
     .sort((a, b) => b[1] - a[1])
+
+  // Alla åtta rader i parti_utfall bär samma antal, eftersom varje parti har en
+  // linje i varje votering. Läs det utan att förlita sig på sorteringen.
+  //
+  // Just den här vyn, inte en räkning på jamn_votering: parti_utfall är joinad
+  // mot punkt_klartext och räknar alltså de voteringar sajten faktiskt kan
+  // förklara. jamn_votering täcker varje votering_id i rost, och skillnaden
+  // mellan de två universumen skulle göra utanRostdata negativ den dag en
+  // votering importeras utan klarspråk.
+  const voteringar = utfallRader.length
+    ? Math.max(...utfallRader.map((u) => u.voteringar))
+    : 0
 
   return {
     utfall: utfallRader,
@@ -109,7 +111,9 @@ async function hamta() {
     franvaroandel: roster > 0 ? (100 * franvarande) / roster : 0,
     modeller: [...new Set(klartext.map((k) => k.modell))],
     sakerhet,
-    likhetsspann: `${tal(Math.min(...likhet))}–${tal(Math.max(...likhet))} %`,
+    likhetsspann: likhet.length
+      ? `${tal(Math.min(...likhet))}–${tal(Math.max(...likhet))} %`
+      : '—',
     forsta: forsta[0]?.datum,
     sista: sista[0]?.datum,
     hamtat: hamtat[0]?.uppdaterad,
@@ -127,9 +131,12 @@ async function hamta() {
 export default async function Metod() {
   const d = await hamta()
 
-  // Listan är sorterad fallande på andel, så det första regeringspartiet är
-  // också det som klarade sig bäst.
-  const basta = d.utfall.find((u) => REGERINGSPARTIERNA.includes(u.parti))
+  // Sorteras på med_vinnaren, inte på listans ordning: parti_utfall.andel är
+  // avrundad till en decimal, så två partier kan dela andel med olika många
+  // vinster bakom sig.
+  const basta = d.utfall
+    .filter((u) => REGERINGSPARTIERNA.some((p) => p === u.parti))
+    .sort((a, b) => b.med_vinnaren - a.med_vinnaren)[0]
   // Skillnaden mellan förklarade punkter och voteringar är punkter som fick en
   // klarspråksförklaring men aldrig ett namnupprop.
   const utanRostdata = d.forklarade - d.voteringar
@@ -210,7 +217,7 @@ export default async function Metod() {
 
         <p className="mt-7 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
           Källa: <a href="https://data.riksdagen.se" className="underline hover:opacity-60"
-                    rel="noreferrer">data.riksdagen.se</a>. Hämtat {datum(d.hamtat)}, och sedan dess
+                    target="_blank" rel="noreferrer">data.riksdagen.se</a>. Hämtat {datum(d.hamtat)}, och sedan dess
           oförändrat — sajten uppdateras inte automatiskt. Materialet täcker
           riksmötena {d.riksmoten[0]?.rm} till {d.riksmoten[d.riksmoten.length - 1]?.rm},
           med betänkanden daterade {datum(d.forsta)} till {datum(d.sista)}.
@@ -374,14 +381,14 @@ export default async function Metod() {
             Det fältet innehåller etiketterna <em>bifall</em> och <em>Avslagen</em>{' '}
             även för punkter där utskottets förslag vann, och den som räknar på det
             får fler förluster än som inträffat. Nej-sidan vann{' '}
-            <strong style={{ color: 'var(--black)' }}>{d.forluster} gånger</strong>{' '}
+            <strong style={{ color: 'var(--black)' }}>{heltal(d.forluster)} gånger</strong>{' '}
             under hela mandatperioden.
           </p>
         </div>
         <Link href="/#forlorade"
               className="mt-6 inline-block border-b pb-1 text-[14px] transition-opacity hover:opacity-60"
               style={{ borderColor: 'var(--accent)' }}>
-          Se de {d.forluster} fallen →
+          Se de {heltal(d.forluster)} fallen →
         </Link>
       </section>
 
@@ -521,7 +528,7 @@ export default async function Metod() {
           <Begransning rubrik="Förluster i utskottet syns inte">
             En regering kan förlora en fråga i utskottet innan den når kammaren, och
             sådana nederlag lämnar inga spår i röstdata. Att nej-sidan bara vann{' '}
-            {d.forluster} gånger säger alltså något om kammaren, inte om regeringens
+            {heltal(d.forluster)} gånger säger alltså något om kammaren, inte om regeringens
             hela framgång.
           </Begransning>
 
@@ -566,6 +573,7 @@ export default async function Metod() {
         </div>
         <a
           href="https://github.com/emarkensten/riksdagsgranskning/issues/new"
+          target="_blank"
           rel="noreferrer"
           className="mt-6 inline-block border-b pb-1 text-[14px] transition-opacity hover:opacity-60"
           style={{ borderColor: 'var(--accent)' }}
