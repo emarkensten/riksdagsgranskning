@@ -291,7 +291,7 @@ function Innebord({ etikett, text, farg, vann, ikon, delare = false }: {
 }) {
   return (
     <div
-      className={`py-9 sm:pr-10 ${delare ? 'border-b sm:border-b-0 sm:border-r' : 'sm:pl-10'}`}
+      className={`py-9 ${delare ? 'border-b sm:border-b-0 sm:border-r sm:pr-10' : 'sm:pl-10'}`}
       style={{ borderColor: 'var(--linje)' }}
     >
       <div className="flex items-center gap-2.5" style={{ color: farg }}>

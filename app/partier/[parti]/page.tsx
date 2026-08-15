@@ -216,7 +216,10 @@ export default async function Partisida({ params }: { params: Promise<{ parti: s
                 text={`Samstämmigheten med kammaren är ${tal(Math.abs(hogst.delta))} procentenheter högre här än i partiets egen normalnivå.`}
               />
             )}
-            {lagst && (
+            {/* Villkoren är inte kosmetiska: med bara ett ämne i underlaget är
+                lagst === hogst, och de två korten hade då påstått både "högre"
+                och "längre ifrån" om samma ämne. */}
+            {lagst && lagst !== hogst && lagst.delta < 0 && (
               <Avvikelse
                 amne={lagst.amne}
                 delta={lagst.delta}
