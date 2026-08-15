@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 
 const SIDOR = [
   { href: '/voteringar', text: 'Voteringar' },
+  { href: '/spanningar', text: 'Sagt mot röstat' },
   { href: '/franvaro', text: 'Frånvaro' },
 ]
 
