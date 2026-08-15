@@ -7,6 +7,7 @@ const SIDOR = [
   { href: '/samstammighet', text: 'Vem röstar med vem' },
   { href: '/voteringar', text: 'Voteringar' },
   { href: '/franvaro', text: 'Frånvaro' },
+  { href: '/spanningar', text: 'Metod' },
 ]
 
 export function Navigation() {

@@ -117,6 +117,44 @@ listar det, talaren är statsråd, eller voteringsordningen.
 Endast fall som överlever granskningen publiceras. Detta namnger verkliga
 politiker — ett felaktigt påstående är värre än ett missat fynd.
 
+## Verifieringens utfall: inget håller
+
+De nio starkaste flaggade fallen granskades av en agent vars uppgift var att
+motbevisa dem.
+
+| Verdikt | Antal |
+|---|---:|
+| håller | **0** |
+| svagt | 2 |
+| faller | 7 |
+
+Inte ett enda fall överlevde. Motargumenten är sakliga, och ett mönster
+återkommer: **talaren hade formellt yrkat bifall till en annan reservation**,
+och det påstådda kravet var en bisats i förbifarten snarare än partiets yrkande
+i den aktuella voteringen.
+
+Ett exempel på hur nära det kan se ut utan att hålla — en C-ledamot sa
+"regeringen behöver kontinuerligt följa upp denna lagstiftning", nästan
+ordagrant vad S-reservationen begärde, men fortsatte direkt: "Det kommer även vi
+från Centerpartiet att göra." Hon beskrev sedvanlig politisk bevakning, inte ett
+krav på ett tillkännagivande.
+
+Andra vanliga avfärdningsgrunder som föll ut: allmän oro för ett sakområde
+förväxlad med krav på den specifika åtgärd voteringen gällde, och reservationer
+som innehöll mer än talaren efterfrågat, där partiet kan ha avvisat helheten.
+
+## Slutsats om idé 1
+
+**Idé 1 ger inga publicerbara fynd.** Slutsatsen vilar nu på tre oberoende ben
+i stället för en gissning:
+
+1. Individnivån är utesluten av partidisciplinen (0,14 % avvikelse)
+2. Partinivåns träffar varierar 0,3–12,7 % beroende enbart på promptformulering
+3. Ingen av de starkaste träffarna överlever adversariell granskning
+
+Detta redovisas öppet på sajten med siffrorna framme. Ett granskningsverktyg som
+berättar vad det inte hittade är mer trovärdigt än ett som bara visar träffarna.
+
 ## Lärdom
 
 En instruktion om försiktighet kan tysta exakt det fynd man letar efter, och en
