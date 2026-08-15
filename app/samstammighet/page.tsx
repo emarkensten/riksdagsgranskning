@@ -3,15 +3,17 @@ import { db, heltal, lista, namn, rader, tal, PARTIER, REGERINGSPARTIERNA } from
 import { Stapel } from '@/components/stapel'
 import { Chip, Etikett, Forbehall, Nyckeltal } from '@/components/system'
 import AMNEN from '@/lib/amnen.json'
+import { sidmetadata } from '@/lib/sajt'
 
 // Ingen revalidate: sidan läser searchParams och renderas därför alltid
 // dynamiskt. En deklaration här hade sett ut som en cache som inte finns.
 
-export const metadata = {
-  title: 'Vem röstar med vem — Namnupprop',
-  description:
+export const metadata = sidmetadata({
+  titel: 'Vem röstar med vem',
+  beskrivning:
     'Hur ofta varje par av riksdagspartier landade på samma linje, mätt över alla voteringar med namnupprop 2022–2026.',
-}
+  sokvag: '/samstammighet',
+})
 
 type Par = { parti_1: string; parti_2: string; gemensamma: number; lika: number; samstammighet: number }
 

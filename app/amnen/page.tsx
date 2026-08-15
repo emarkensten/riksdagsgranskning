@@ -3,14 +3,16 @@ import { db, heltal, lista, namn, rader, tal, REGERINGSPARTIERNA } from '@/lib/d
 import { Linjeetikett } from '@/components/rostrad'
 import { Etikett, Forbehall, Textlank } from '@/components/system'
 import { regeringsspann } from '@/lib/partier'
+import { sidmetadata } from '@/lib/sajt'
 
 export const revalidate = 3600
 
-export const metadata = {
-  title: 'Var är riksdagen oenig? — Namnupprop',
-  description:
+export const metadata = sidmetadata({
+  titel: 'Var är riksdagen oenig?',
+  beskrivning:
     'Enigheten i riksdagen, ämne för ämne. Alla 28 partipar mätta likadant över varje votering med namnupprop 2022–2026.',
-}
+  sokvag: '/amnen',
+})
 
 /**
  * Under så här många procentenheter räknas en avvikelse inte som ett fynd.

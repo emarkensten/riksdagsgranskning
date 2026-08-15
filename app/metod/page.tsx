@@ -4,16 +4,17 @@ import {
 import { Stapel } from '@/components/stapel'
 import { Etikett, Forbehall, Nyckeltal, Textlank } from '@/components/system'
 import { regeringsspann } from '@/lib/partier'
-import { AVSANDARE, NYTT_ARENDE, REPO } from '@/lib/sajt'
+import { AVSANDARE, NYTT_ARENDE, REPO, sidmetadata } from '@/lib/sajt'
 import AMNEN from '@/lib/amnen.json'
 
 export const revalidate = 3600
 
-export const metadata = {
-  title: 'Så räknar jag — Namnupprop',
-  description:
+export const metadata = sidmetadata({
+  titel: 'Så räknar jag',
+  beskrivning:
     'Svar på det som brukar frågas om sajten: hur talen räknas, om ett nej betyder motstånd, vem som skrev klarspråket, varför två sidor säger olika många — och vad materialet inte kan svara på.',
-}
+  sokvag: '/metod',
+})
 
 /** Ordningen de redovisas i, inte den ordning databasen råkar returnera. */
 const NIVAER = ['hög', 'medel', 'låg'] as const

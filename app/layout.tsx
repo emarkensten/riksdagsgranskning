@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Schibsted_Grotesk, IBM_Plex_Mono } from 'next/font/google'
 import Link from 'next/link'
 import { Navigation } from '@/components/navigation'
-import { AVSANDARE, REPO, SAJT } from '@/lib/sajt'
+import { AVSANDARE, REPO, SAJT, SAJT_URL, UNDERTITEL } from '@/lib/sajt'
 import './globals.css'
 
 /**
@@ -24,10 +24,32 @@ const mono = IBM_Plex_Mono({
   display: 'swap',
 })
 
+const TITEL = `${SAJT} — så röstade riksdagen`
+const BESKRIVNING =
+  `${UNDERTITEL} Mandatperioden 2022–2026, byggd på Sveriges riksdags öppna data.`
+
+/**
+ * `metadataBase` gör varje relativ og:image absolut. Utan den faller
+ * delningsbilden bort helt hos den som läser förhandsvisningen — Next varnar i
+ * konsolen, men bara i utveckling.
+ *
+ * openGraph och twitter ärvs av varje sida som inte sätter dem själv, så en ny
+ * sida får rätt bild utan att göra något. De sidor som har en egen rubrik
+ * skriver över `title` och `description`.
+ */
 export const metadata: Metadata = {
-  title: 'Namnupprop — så röstade riksdagen',
-  description:
-    'Varje votering i riksdagen, på vanlig svenska. Mandatperioden 2022–2026, byggd på Sveriges riksdags öppna data.',
+  metadataBase: new URL(SAJT_URL),
+  title: TITEL,
+  description: BESKRIVNING,
+  openGraph: {
+    type: 'website',
+    locale: 'sv_SE',
+    siteName: SAJT,
+    title: TITEL,
+    description: BESKRIVNING,
+    url: '/',
+  },
+  twitter: { card: 'summary_large_image', title: TITEL, description: BESKRIVNING },
 }
 
 const FOTLANKAR = [

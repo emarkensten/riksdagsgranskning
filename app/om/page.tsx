@@ -1,13 +1,14 @@
 import { Etikett, Forbehall, Textlank } from '@/components/system'
-import { AVSANDARE, NYTT_ARENDE, REPO, SAJT } from '@/lib/sajt'
+import { AVSANDARE, NYTT_ARENDE, REPO, SAJT, sidmetadata } from '@/lib/sajt'
 
-export const metadata = {
-  title: `Vem ligger bakom sajten? — ${SAJT}`,
-  description:
+export const metadata = sidmetadata({
+  titel: 'Vem ligger bakom sajten?',
+  beskrivning:
     `${SAJT} är byggd av ${AVSANDARE}, privat och utan koppling till Sveriges ` +
     'riksdag. Ingen finansiering, inget partiuppdrag, ingen annonsering — och ' +
     'källkoden ligger öppen.',
-}
+  sokvag: '/om',
+})
 
 /**
  * Avsändaren.

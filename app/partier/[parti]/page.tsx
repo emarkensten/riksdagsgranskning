@@ -9,6 +9,7 @@ import { Etikett, Forbehall, Partiprick, Textlank, Tillbaka } from '@/components
 import {
   motparter, regeringsspann, snitt, utbytbart, type Franvaro, type Par,
 } from '@/lib/partier'
+import { sidmetadata } from '@/lib/sajt'
 import AMNEN from '@/lib/amnen.json'
 
 export const revalidate = 3600
@@ -21,10 +22,11 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ parti: string }> }) {
   const parti = partiFranSlug((await params).parti)
   if (!parti) return {}
-  return {
-    title: `${namn(parti)} — Namnupprop`,
-    description: `Hur ${namn(parti)} röstade 2022–2026: vem partiet röstar med, var det avviker från sin egen normalnivå, hur ofta det stod ensamt och hur ofta det inte var på plats.`,
-  }
+  return sidmetadata({
+    titel: namn(parti),
+    beskrivning: `Hur ${namn(parti)} röstade 2022–2026: vem partiet röstar med, var det avviker från sin egen normalnivå, hur ofta det stod ensamt och hur ofta det inte var på plats.`,
+    sokvag: `/partier/${slug(parti)}`,
+  })
 }
 
 type Ensam = { parti: string; ensam: number; av: number; andel: number }
