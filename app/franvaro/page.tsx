@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { db, PARTIFARG, tal } from '@/lib/db'
+import { antal, db, heltal, rakna, PARTIFARG, tal } from '@/lib/db'
 
 export const revalidate = 3600
 
@@ -34,11 +34,22 @@ async function hamta() {
       return ledamot ? [{ ...f, ledamot }] : []
     })
 
-  // Jämna voteringar där frånvaron kunde ha fällt avgörandet.
+  // Voteringarna där frånvaron faktiskt kunde ha fällt avgörandet — samma
+  // urval som startsidans femte fynd länkar hit med. Tidigare hämtades allt med
+  // marginal <= 5 och listan kapades vid 60, vilket gjorde att avsnittet
+  // rubricerat "När frånvaron avgjorde" räknade fram ett annat antal än
+  // startsidan lovade.
   const { data: jamna } = await klient
     .from('jamn_votering')
     .select('votering_id, ja, nej, marginal, franvarande, franvaron_avgjorde')
-    .lte('marginal', 5).order('marginal').limit(60)
+    .lte('marginal', 3).eq('franvaron_avgjorde', true).order('marginal')
+
+  // Räknas i databasen, inte som listans längd: en punkt som saknar klarspråk
+  // faller bort i joinen nedan och skulle annars sänka talet tyst.
+  const avgjordeAntal = await rakna(
+    antal(klient, 'jamn_votering').lte('marginal', 3).eq('franvaron_avgjorde', true),
+    'voteringar där frånvaron avgjorde',
+  )
 
   const ider = (jamna ?? []).map((j) => j.votering_id)
   const { data: punkter } = await klient
@@ -65,13 +76,12 @@ async function hamta() {
     .map(([parti, s]) => ({ parti, andel: (100 * s.franv) / s.tot }))
     .sort((a, b) => b.andel - a.andel)
 
-  return { relevanta, summering, jamnaMedText, perParti }
+  return { relevanta, summering, jamnaMedText, perParti, avgjordeAntal }
 }
 
 export default async function Franvaro() {
-  const { relevanta, summering, jamnaMedText, perParti } = await hamta()
+  const { relevanta, summering, jamnaMedText, perParti, avgjordeAntal } = await hamta()
   const topp = relevanta.slice(0, 20)
-  const avgjorde = jamnaMedText.filter((j) => j.franvaron_avgjorde)
 
   return (
     <main className="pb-10">
@@ -183,14 +193,16 @@ export default async function Franvaro() {
       <section id="avgjorde" className="regel mt-16 scroll-mt-6 pt-7">
         <h2 className="display text-2xl">När frånvaron avgjorde</h2>
         <p className="mt-2 max-w-[62ch] text-[14px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
-          I {avgjorde.length === 0 ? 'inget' : avgjorde.length} fall{avgjorde.length === 1 ? '' : ''} hade
+          {/* "fall" böjs inte i plural på svenska — den ternär som stod här
+              gav tom sträng i båda grenarna. */}
+          I {avgjordeAntal === 0 ? 'inget' : heltal(avgjordeAntal)} fall hade
           utfallet blivit ett annat om varje frånvarande ledamot hade röstat med
           sitt parti. Det är ren aritmetik — men den bygger på antagandet att de
           frånvarande hade följt partilinjen.
         </p>
 
         <ol className="mt-6">
-          {jamnaMedText.slice(0, 25).map((j: any) => (
+          {jamnaMedText.map((j: any) => (
             <li key={j.votering_id} className="regel py-4">
               <Link href={`/voteringar/${j.punkt.id}`} className="group block">
                 <div className="flex flex-wrap items-baseline gap-x-3 text-[12px] uppercase tracking-[0.1em]"

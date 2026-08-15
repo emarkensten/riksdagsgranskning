@@ -58,8 +58,17 @@ async function hamta() {
   // Spannet mellan riksmötena. Talet för hela perioden är den vanligaste
   // förväxlingen i materialet — den som klickar vidare till frånvarosidan möts
   // av ett annat tal, och behöver veta varför redan här.
+  //
+  // Riksmötet skrivs ut bredvid varje ytterlighet. Ett nyss påbörjat riksmöte
+  // har få voteringar och kan ge ett extremvärde; då ska läsaren se vilket det
+  // gäller i stället för att få ett spann utan angivet underlag.
   const perRiksmote = (riksmoten ?? [])
-    .map((r: any) => (Number(r.roster) > 0 ? (100 * Number(r.franvarande)) / Number(r.roster) : 0))
+    .filter((r: any) => Number(r.roster) > 0)
+    .map((r: any) => ({
+      rm: r.rm as string,
+      andel: (100 * Number(r.franvarande)) / Number(r.roster),
+    }))
+    .sort((x, y) => x.andel - y.andel)
 
   const a = (amnen ?? [])[0] as any
 
@@ -70,8 +79,8 @@ async function hamta() {
     ensamExempel: (ensamExempel ?? []) as Exempel[],
     forluster: (forluster ?? []) as unknown as Forlust[],
     franvaroandel: roster > 0 ? (100 * franvarande) / roster : 0,
-    lagstaRiksmote: perRiksmote.length ? Math.min(...perRiksmote) : 0,
-    hogstaRiksmote: perRiksmote.length ? Math.max(...perRiksmote) : 0,
+    lagsta: perRiksmote[0],
+    hogsta: perRiksmote[perRiksmote.length - 1],
     roster,
     jamna: jamna.count ?? 0,
     avgjorde: avgjorde.count ?? 0,
@@ -122,7 +131,7 @@ export default async function Start() {
     },
     {
       tal: `${tal(d.franvaroandel)} %`,
-      text: `av ${heltal(d.roster)} röstningstillfällen stod tomma. Andelen varierar kraftigt mellan riksmötena, från ${tal(d.lagstaRiksmote)} till ${tal(d.hogstaRiksmote)} %.`,
+      text: `av ${heltal(d.roster)} röstningstillfällen stod tomma. Andelen varierar mellan riksmötena: ${tal(d.hogsta?.andel ?? 0)} % i ${d.hogsta?.rm} mot ${tal(d.lagsta?.andel ?? 0)} % i ${d.lagsta?.rm}.`,
       href: '/franvaro',
       lank: 'Se frånvaron per parti',
     },
