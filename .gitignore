@@ -44,3 +44,4 @@ lager2-batch.jsonl
 validering-lager3-*.md
 lager3-batch.jsonl
 scratch/
+tsconfig.tsbuildinfo
