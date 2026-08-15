@@ -56,19 +56,28 @@ export function Nyckeltal({
   )
 }
 
-/** Textlänk med pil. Signalfärgad, 14,5 px, halvfet. */
+/**
+ * Textlänk med pil. Signalfärgad, 14,5 px, halvfet.
+ *
+ * `extern` öppnar i ny flik med `rel="noreferrer"`. Prop och inte en egen
+ * komponent därför att pilen, färgen och hovringen ska vara desamma — en
+ * handskriven `<a>` bredvid den här driver isär vid första ändringen.
+ */
 export function Textlank({
   href,
   children,
   className = '',
+  extern = false,
 }: {
   href: string
   children: React.ReactNode
   className?: string
+  extern?: boolean
 }) {
   return (
     <Link
       href={href}
+      {...(extern ? { target: '_blank', rel: 'noreferrer' } : {})}
       className={`inline-flex items-center gap-2 text-[14.5px] font-semibold transition-opacity duration-150 hover:opacity-70 ${className}`}
       style={{ color: 'var(--accent)' }}
     >

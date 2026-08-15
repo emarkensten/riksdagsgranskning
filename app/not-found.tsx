@@ -23,7 +23,7 @@ export default function Saknas() {
 
       <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3">
         <Textlank href="/partier">De åtta partierna</Textlank>
-        <Textlank href="/metod">Så räknar vi</Textlank>
+        <Textlank href="/metod">Så räknar jag</Textlank>
       </div>
     </main>
   )
