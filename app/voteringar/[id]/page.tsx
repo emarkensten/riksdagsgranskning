@@ -8,27 +8,31 @@ type Debatt = { parti: string; anforanden: number; talare: number }
 
 async function hamta(id: number) {
   const klient = db()
-  const { data: k } = await klient
+  // maybeSingle() svarar med data: null både när raden saknas och när frågan
+  // fallerar. Felet läses därför uttryckligen — en punkt som inte finns ska ge
+  // 404, ett databasfel ska ge felsidan, och de två får inte se likadana ut.
+  const { data: k, error } = await klient
     .from('punkt_klartext')
     .select(
       'forslagspunkt_id, sakfraga, ja_innebar, nej_innebar, amne, sakerhet, modell, forslagspunkt!inner(id, rm, beteckning, punkt, rubrik, forslag, votering_id, motforslag_nummer, motforslag_partier, vinnare, bet_dok_id, betankande!inner(titel, organ, datum))',
     )
     .eq('forslagspunkt_id', id)
     .maybeSingle()
+  if (error) throw new Error(error.message)
   if (!k) return null
 
   const f = (k as any).forslagspunkt
-  const [{ data: roster }, { data: reservationer }, debatt] = await Promise.all([
-    klient.from('parti_rost').select('*').eq('votering_id', f.votering_id ?? ''),
-    klient.from('reservation').select('nummer, partier, text')
-      .eq('bet_dok_id', f.bet_dok_id).eq('punkt', f.punkt).order('nummer'),
+  const [roster, reservationer, debatt] = await Promise.all([
+    rader<any>(klient.from('parti_rost').select('*').eq('votering_id', f.votering_id ?? '')),
+    rader<any>(klient.from('reservation').select('nummer, partier, text')
+      .eq('bet_dok_id', f.bet_dok_id).eq('punkt', f.punkt).order('nummer')),
     // Debatten hör till betänkandet, inte till den enskilda förslagspunkten.
     // Se kommentaren i vyn — och i copyn nedan, som måste skriva ut det.
     rader<Debatt>(
       klient.from('betankande_debatt').select('parti, anforanden, talare')
         .eq('bet_dok_id', f.bet_dok_id).order('anforanden', { ascending: false })),
   ])
-  return { k: k as any, f, roster: roster ?? [], reservationer: reservationer ?? [], debatt }
+  return { k: k as any, f, roster, reservationer, debatt }
 }
 
 export default async function Votering({ params }: { params: Promise<{ id: string }> }) {

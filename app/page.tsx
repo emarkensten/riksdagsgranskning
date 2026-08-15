@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { db, heltal, lista, namn, tal, REGERINGSPARTIERNA } from '@/lib/db'
+import { antal, db, heltal, lista, namn, rader, rakna, tal, REGERINGSPARTIERNA } from '@/lib/db'
 import { Linjeetikett } from '@/components/rostrad'
 
 export const revalidate = 3600
@@ -19,41 +19,50 @@ async function hamta() {
   const klient = db()
 
   const [
-    { data: par },
-    { data: ensamma },
-    { data: forluster },
-    { data: riksmoten },
-    { data: amnen },
+    par,
+    ensamma,
+    forluster,
+    riksmoten,
+    amnen,
+    block,
     jamna,
     avgjorde,
     voteringar,
   ] = await Promise.all([
-    klient.from('partisamstammighet').select('parti_1, parti_2, gemensamma, lika, samstammighet')
-      .eq('amne', 'alla').order('samstammighet', { ascending: false }).limit(1),
-    klient.from('parti_ensam').select('parti, ensam, av, andel').order('ensam', { ascending: false }),
-    klient.from('utskottet_forlorade').select('*').order('datum'),
+    rader<any>(klient.from('partisamstammighet').select('parti_1, parti_2, gemensamma, lika, samstammighet')
+      .eq('amne', 'alla').order('samstammighet', { ascending: false }).limit(1)),
+    rader<Ensam>(klient.from('parti_ensam').select('parti, ensam, av, andel')
+      .order('ensam', { ascending: false })),
+    rader<Forlust>(klient.from('utskottet_forlorade').select('*').order('datum')),
     // En rad per riksmöte. Frånvaron för hela perioden måste summeras ur dem;
     // den enskilda raden är en helt annan siffra, och spannet mellan dem räknas
     // fram nedan och skrivs ut bredvid totalen.
-    klient.from('riksmote_summering').select('rm, roster, franvarande'),
-    klient.from('amne_oversikt').select('*').order('avvikande_delta').limit(1),
-    klient.from('jamn_votering').select('*', { count: 'exact', head: true }).lte('marginal', 3),
+    rader<{ rm: string; roster: number; franvarande: number }>(
+      klient.from('riksmote_summering').select('rm, roster, franvarande')),
+    rader<any>(klient.from('amne_oversikt').select('*').order('avvikande_delta').limit(1)),
+    // Regeringsblockets tre inbördes par. Spannet stod hårdkodat på två ställen
+    // i den här filen — den sista kopian, sedan metod-, parti-, samstämmighets-
+    // och ämnessidorna räknar fram det.
+    rader<{ samstammighet: number }>(
+      klient.from('partisamstammighet').select('samstammighet').eq('amne', 'alla')
+        .in('parti_1', REGERINGSPARTIERNA).in('parti_2', REGERINGSPARTIERNA)),
+    rakna(antal(klient, 'jamn_votering').lte('marginal', 3), 'jämna voteringar'),
     // Samma marginalvillkor som raden ovan: siffran presenteras som en delmängd
     // av de jämna voteringarna och måste räknas på samma urval.
-    klient.from('jamn_votering').select('*', { count: 'exact', head: true })
-      .lte('marginal', 3).eq('franvaron_avgjorde', true),
-    klient.from('jamn_votering').select('*', { count: 'exact', head: true }),
+    rakna(antal(klient, 'jamn_votering').lte('marginal', 3).eq('franvaron_avgjorde', true),
+      'voteringar där frånvaron avgjorde'),
+    rakna(antal(klient, 'jamn_votering'), 'voteringar'),
   ])
 
-  const rankade = (ensamma ?? []).map((e: any) => ({ ...e, andel: Number(e.andel) })) as Ensam[]
+  const rankade = ensamma.map((e) => ({ ...e, andel: Number(e.andel) }))
   const mestEnsam = rankade[0]
 
-  const { data: ensamExempel } = await klient
-    .from('ensam_exempel').select('*')
-    .eq('parti', mestEnsam?.parti ?? '').order('datum', { ascending: false })
+  const ensamExempel = await rader<Exempel>(
+    klient.from('ensam_exempel').select('*')
+      .eq('parti', mestEnsam?.parti ?? '').order('datum', { ascending: false }))
 
-  const roster = (riksmoten ?? []).reduce((n, r: any) => n + Number(r.roster), 0)
-  const franvarande = (riksmoten ?? []).reduce((n, r: any) => n + Number(r.franvarande), 0)
+  const roster = riksmoten.reduce((n, r) => n + Number(r.roster), 0)
+  const franvarande = riksmoten.reduce((n, r) => n + Number(r.franvarande), 0)
 
   // Spannet mellan riksmötena. Talet för hela perioden är den vanligaste
   // förväxlingen i materialet — den som klickar vidare till frånvarosidan möts
@@ -62,35 +71,39 @@ async function hamta() {
   // Riksmötet skrivs ut bredvid varje ytterlighet. Ett nyss påbörjat riksmöte
   // har få voteringar och kan ge ett extremvärde; då ska läsaren se vilket det
   // gäller i stället för att få ett spann utan angivet underlag.
-  const perRiksmote = (riksmoten ?? [])
-    .filter((r: any) => Number(r.roster) > 0)
-    .map((r: any) => ({
+  const perRiksmote = riksmoten
+    .filter((r) => Number(r.roster) > 0)
+    .map((r) => ({
       rm: r.rm as string,
       andel: (100 * Number(r.franvarande)) / Number(r.roster),
     }))
     .sort((x, y) => x.andel - y.andel)
 
-  const a = (amnen ?? [])[0] as any
+  const a = amnen[0] as any
 
   return {
-    topp: (par ?? [])[0] as any,
+    topp: par[0] as any,
     rankade,
     mestEnsam,
-    ensamExempel: (ensamExempel ?? []) as Exempel[],
-    forluster: (forluster ?? []) as unknown as Forlust[],
+    ensamExempel,
+    forluster,
     franvaroandel: roster > 0 ? (100 * franvarande) / roster : 0,
     lagsta: perRiksmote[0],
     hogsta: perRiksmote[perRiksmote.length - 1],
+    likhetsspann: (() => {
+      const v = block.map((b) => Number(b.samstammighet))
+      return v.length ? `${tal(Math.min(...v))}–${tal(Math.max(...v))} %` : '—'
+    })(),
     roster,
-    jamna: jamna.count ?? 0,
-    avgjorde: avgjorde.count ?? 0,
-    voteringar: voteringar.count ?? 0,
+    jamna,
+    avgjorde,
+    voteringar,
     amne: a && { ...a, avvikande_har: Number(a.avvikande_har), avvikande_normalt: Number(a.avvikande_normalt) },
   }
 }
 
 /**
- * M, KD och L röstar lika i 99,9–100 % av voteringarna. Namnger ett fynd ett av
+ * M, KD och L röstar lika i praktiskt taget varje votering. Namnger ett fynd ett av
  * dem gäller det i praktiken alla tre, och det måste stå bredvid siffran.
  */
 function utbytbara(amne: { avvikande_1: string; avvikande_2: string }) {
@@ -217,9 +230,9 @@ export default async function Start() {
             mätta likadant i alla 16 ämnen, utan att något par valts ut i förväg.
             {utbytbara(d.amne) && (
               <>
-                {' '}Vilket av de tre som står här avgörs av tiondelar:
-                Moderaterna, Kristdemokraterna och Liberalerna röstar lika i
-                99,9–100 % av alla voteringar, så fyndet gäller alla tre.
+                {' '}Vilket av de tre som står här avgörs av tiondelar:{' '}
+                {lista(REGERINGSPARTIERNA.map(namn))} röstar lika i{' '}
+                {d.likhetsspann} av alla voteringar, så fyndet gäller alla tre.
               </>
             )}
           </p>
@@ -269,7 +282,7 @@ export default async function Start() {
         <p className="mt-5 max-w-[62ch] border-l-2 py-3 pl-4 text-[14px] leading-relaxed"
            style={{ borderColor: 'var(--accent)', background: 'var(--accent-svag)', color: 'var(--black-mjuk)' }}>
           <strong style={{ color: 'var(--black)' }}>Nollorna är mekaniska.</strong>{' '}
-          Moderaterna, Kristdemokraterna och Liberalerna röstar lika i 99,9–100 %
+          {lista(REGERINGSPARTIERNA.map(namn))} röstar lika i {d.likhetsspann}{' '}
           av alla voteringar. Ett av dem kan därför nästan aldrig bli ensamt —
           de två andra står redan på samma linje. Siffran mäter inte hur
           självständigt ett parti är, utan hur ofta det drev en linje utan att
