@@ -5,6 +5,11 @@ import { db, heltal, namn, rader, tal, PARTIFARG, ROSTFARG, partilinje } from '@
 export const revalidate = 3600
 
 type Debatt = { parti: string; anforanden: number; talare: number }
+type Rost = {
+  parti: string; ja: number; nej: number; avstar: number
+  franvarande: number; totalt: number
+}
+type Reservation = { nummer: string; partier: string[] | null; text: string }
 
 async function hamta(id: number) {
   const klient = db()
@@ -23,8 +28,10 @@ async function hamta(id: number) {
 
   const f = (k as any).forslagspunkt
   const [roster, reservationer, debatt] = await Promise.all([
-    rader<any>(klient.from('parti_rost').select('*').eq('votering_id', f.votering_id ?? '')),
-    rader<any>(klient.from('reservation').select('nummer, partier, text')
+    rader<Rost>(klient.from('parti_rost')
+      .select('parti, ja, nej, avstar, franvarande, totalt')
+      .eq('votering_id', f.votering_id ?? '')),
+    rader<Reservation>(klient.from('reservation').select('nummer, partier, text')
       .eq('bet_dok_id', f.bet_dok_id).eq('punkt', f.punkt).order('nummer')),
     // Debatten hör till betänkandet, inte till den enskilda förslagspunkten.
     // Se kommentaren i vyn — och i copyn nedan, som måste skriva ut det.
@@ -47,8 +54,8 @@ export default async function Votering({ params }: { params: Promise<{ id: strin
   // därför fram ur rösterna i stället för att läsas ur forslagspunkt.vinnare:
   // det fältet innehåller även etiketterna 'bifall' och 'Avslagen' för punkter
   // som utskottet faktiskt vann, och skulle visa fel vinnare för fyra av dem.
-  const ja = roster.reduce((n: number, r: any) => n + r.ja, 0)
-  const nej = roster.reduce((n: number, r: any) => n + r.nej, 0)
+  const ja = roster.reduce((n, r) => n + Number(r.ja), 0)
+  const nej = roster.reduce((n, r) => n + Number(r.nej), 0)
   const rostades = ja + nej > 0
   // Lika röstetal avgörs genom lottning. Det har inte inträffat i underlaget,
   // men får inte tyst hamna på reservationssidan om det gör det.
@@ -114,8 +121,8 @@ export default async function Votering({ params }: { params: Promise<{ id: strin
           </thead>
           <tbody>
             {roster
-              .sort((a: any, b: any) => b.totalt - a.totalt)
-              .map((r: any) => {
+              .sort((a, b) => Number(b.totalt) - Number(a.totalt))
+              .map((r) => {
                 const linje = partilinje(r)
                 return (
                   <tr key={r.parti} className="regel">
@@ -220,7 +227,7 @@ export default async function Votering({ params }: { params: Promise<{ id: strin
                style={{ color: 'var(--black-mjuk)' }}>{f.forslag}</pre>
         </details>
 
-        {reservationer.map((r: any) => (
+        {reservationer.map((r) => (
           <details key={r.nummer} className="regel py-3">
             <summary className="cursor-pointer text-[14px] font-medium">
               Reservation {r.nummer}

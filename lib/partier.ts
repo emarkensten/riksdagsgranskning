@@ -1,4 +1,4 @@
-import { db, rader, REGERINGSPARTIERNA } from '@/lib/db'
+import { db, rader, tal, REGERINGSPARTIERNA } from '@/lib/db'
 
 /**
  * Underlaget som både /partier och /partier/[parti] bygger på.
@@ -62,4 +62,24 @@ export async function hamtaAlla() {
  */
 export function utbytbart(parti: string) {
   return REGERINGSPARTIERNA.some((p) => p === parti)
+}
+
+/**
+ * Spannet inom regeringsblocket, som en färdig sträng: "99,9–100,0 %".
+ *
+ * Ligger här därför att fem sidor skriver ut det — startsidan, metodsidan,
+ * ämnessidan, partisidan och samstämmighetssidan. Talet stod tidigare
+ * hårdkodat som "99,9–100 %" på tre av dem, och när härledningen infördes
+ * kopierades den i stället för att delas.
+ *
+ * Frågan måste ställas för sig. Att sila fram paren ur ett partiskopat svar
+ * ger bara två av tre — det gav KD-sidan spannet 99,9–99,9 %.
+ */
+export async function regeringsspann() {
+  const block = await rader<{ samstammighet: number }>(
+    db().from('partisamstammighet').select('samstammighet').eq('amne', 'alla')
+      .in('parti_1', REGERINGSPARTIERNA).in('parti_2', REGERINGSPARTIERNA),
+  )
+  const v = block.map((b) => Number(b.samstammighet))
+  return v.length ? `${tal(Math.min(...v))}–${tal(Math.max(...v))} %` : '—'
 }

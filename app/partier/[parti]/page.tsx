@@ -5,7 +5,9 @@ import {
   PARTIER, PARTIFARG, REGERINGSPARTIERNA,
 } from '@/lib/db'
 import { Stapel } from '@/components/stapel'
-import { motparter, snitt, utbytbart, type Franvaro, type Par } from '@/lib/partier'
+import {
+  motparter, regeringsspann, snitt, utbytbart, type Franvaro, type Par,
+} from '@/lib/partier'
 import AMNEN from '@/lib/amnen.json'
 
 export const revalidate = 3600
@@ -35,20 +37,13 @@ type Utfall = { parti: string; voteringar: number; med_vinnaren: number; andel: 
 async function hamta(parti: string) {
   const klient = db()
 
-  const [par, block, ensamma, exempel, franvaro, reservationer, utfall] = await Promise.all([
+  const [par, likhetsspann, ensamma, exempel, franvaro, reservationer, utfall] = await Promise.all([
     // 119 rader: sju motparter i sexton ämnen plus 'alla'.
     rader<Par>(
       klient.from('partisamstammighet')
         .select('parti_1, parti_2, amne, gemensamma, lika, samstammighet')
         .or(`parti_1.eq.${parti},parti_2.eq.${parti}`)),
-    // Regeringsblockets tre inbördes par, i en egen fråga.
-    //
-    // De går INTE att sila fram ur `par` ovan: den innehåller bara par där det
-    // aktuella partiet ingår, så ett av de tre saknas alltid. På KD-sidan blev
-    // spannet därför 99,9–99,9 % — paret L–M på 100,0 fanns inte med.
-    rader<{ samstammighet: number }>(
-      klient.from('partisamstammighet').select('samstammighet').eq('amne', 'alla')
-        .in('parti_1', REGERINGSPARTIERNA).in('parti_2', REGERINGSPARTIERNA)),
+    regeringsspann(),
     rader<Ensam>(klient.from('parti_ensam').select('*')),
     rader<Exempel>(
       klient.from('ensam_exempel').select('*').eq('parti', parti)
@@ -111,13 +106,8 @@ async function hamta(parti: string) {
     })),
     reservation: reservationer.find((r) => r.parti === parti),
     utfall: utfall.find((u) => u.parti === parti),
-    likhetsspann: spann(block.map((b) => Number(b.samstammighet))),
+    likhetsspann,
   }
-}
-
-/** Lägsta och högsta i en serie. Null när serien är tom, aldrig ±Infinity. */
-function spann(v: number[]) {
-  return v.length ? { lagst: Math.min(...v), hogst: Math.max(...v) } : null
 }
 
 export default async function Partisida({ params }: { params: Promise<{ parti: string }> }) {
@@ -145,15 +135,15 @@ export default async function Partisida({ params }: { params: Promise<{ parti: s
         {/* Förbehållet öppnar sidan för M, KD och L. Utan det ser tre av åtta
             sidor närmast identiska ut, och läsaren drar slutsatsen att något
             är trasigt i stället för att detta ÄR fyndet. */}
-        {utbytbart(parti) && d.likhetsspann && (
+        {utbytbart(parti) && (
           <p className="mt-7 max-w-[60ch] border-l-2 py-3 pl-4 text-[15px] leading-relaxed"
              style={{ borderColor: 'var(--accent)', background: 'var(--accent-svag)', color: 'var(--black-mjuk)' }}>
             <strong style={{ color: 'var(--black)' }}>
               Läs den här sidan tillsammans med de andra två.
             </strong>{' '}
             {lista(REGERINGSPARTIERNA.map(namn))} röstar lika i{' '}
-            {tal(d.likhetsspann.lagst)}–{tal(d.likhetsspann.hogst)} % av alla
-            voteringar. Nästan varje tal nedan gäller därför alla tre, och
+            {d.likhetsspann} av alla voteringar. Nästan varje tal nedan gäller
+            därför alla tre, och
             skillnaderna mellan deras sidor handlar om tiondelar. Det är ett
             resultat, inte ett fel i mätningen.
           </p>

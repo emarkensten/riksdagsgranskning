@@ -3,6 +3,7 @@ import {
   antal, datum, db, heltal, lista, namn, rader, rakna, tal, REGERINGSPARTIERNA,
 } from '@/lib/db'
 import { Stapel } from '@/components/stapel'
+import { regeringsspann } from '@/lib/partier'
 import AMNEN from '@/lib/amnen.json'
 
 export const revalidate = 3600
@@ -27,7 +28,7 @@ async function hamta() {
     disciplin,
     klartext,
     riksmoten,
-    mkdl,
+    likhetsspann,
     forsta,
     sista,
     hamtat,
@@ -45,11 +46,7 @@ async function hamta() {
       klient.from('klartext_summering').select('modell, sakerhet, antal')),
     rader<Riksmote>(
       klient.from('riksmote_summering').select('rm, roster, franvarande, franvaroandel').order('rm')),
-    // De tre partier som röstar närmast identiskt. Spannet skrivs ut i klartext
-    // på flera sidor och får inte stå hårdkodat på någon av dem.
-    rader<{ samstammighet: number }>(
-      klient.from('partisamstammighet').select('samstammighet').eq('amne', 'alla')
-        .in('parti_1', REGERINGSPARTIERNA).in('parti_2', REGERINGSPARTIERNA)),
+    regeringsspann(),
     rader<{ datum: string }>(klient.from('betankande').select('datum').order('datum').limit(1)),
     rader<{ datum: string }>(
       klient.from('betankande').select('datum').order('datum', { ascending: false }).limit(1)),
@@ -82,7 +79,6 @@ async function hamta() {
   ] as const)
   const forklarade = klartext.reduce((n, k) => n + Number(k.antal), 0)
 
-  const likhet = mkdl.map((p) => Number(p.samstammighet))
   const retorikRader = retorik
     .map((r) => [r.overensstammelse, Number(r.antal)] as const)
     .sort((a, b) => b[1] - a[1])
@@ -111,9 +107,7 @@ async function hamta() {
     franvaroandel: roster > 0 ? (100 * franvarande) / roster : 0,
     modeller: [...new Set(klartext.map((k) => k.modell))],
     sakerhet,
-    likhetsspann: likhet.length
-      ? `${tal(Math.min(...likhet))}–${tal(Math.max(...likhet))} %`
-      : '—',
+    likhetsspann,
     forsta: forsta[0]?.datum,
     sista: sista[0]?.datum,
     hamtat: hamtat[0]?.uppdaterad,

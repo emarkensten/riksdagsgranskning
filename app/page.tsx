@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { antal, db, heltal, lista, namn, rader, rakna, tal, REGERINGSPARTIERNA } from '@/lib/db'
 import { Linjeetikett } from '@/components/rostrad'
+import { regeringsspann } from '@/lib/partier'
 
 export const revalidate = 3600
 
@@ -24,7 +25,7 @@ async function hamta() {
     forluster,
     riksmoten,
     amnen,
-    block,
+    likhetsspann,
     jamna,
     avgjorde,
     voteringar,
@@ -40,12 +41,7 @@ async function hamta() {
     rader<{ rm: string; roster: number; franvarande: number }>(
       klient.from('riksmote_summering').select('rm, roster, franvarande')),
     rader<any>(klient.from('amne_oversikt').select('*').order('avvikande_delta').limit(1)),
-    // Regeringsblockets tre inbördes par. Spannet stod hårdkodat på två ställen
-    // i den här filen — den sista kopian, sedan metod-, parti-, samstämmighets-
-    // och ämnessidorna räknar fram det.
-    rader<{ samstammighet: number }>(
-      klient.from('partisamstammighet').select('samstammighet').eq('amne', 'alla')
-        .in('parti_1', REGERINGSPARTIERNA).in('parti_2', REGERINGSPARTIERNA)),
+    regeringsspann(),
     rakna(antal(klient, 'jamn_votering').lte('marginal', 3), 'jämna voteringar'),
     // Samma marginalvillkor som raden ovan: siffran presenteras som en delmängd
     // av de jämna voteringarna och måste räknas på samma urval.
@@ -90,10 +86,7 @@ async function hamta() {
     franvaroandel: roster > 0 ? (100 * franvarande) / roster : 0,
     lagsta: perRiksmote[0],
     hogsta: perRiksmote[perRiksmote.length - 1],
-    likhetsspann: (() => {
-      const v = block.map((b) => Number(b.samstammighet))
-      return v.length ? `${tal(Math.min(...v))}–${tal(Math.max(...v))} %` : '—'
-    })(),
+    likhetsspann,
     roster,
     jamna,
     avgjorde,
