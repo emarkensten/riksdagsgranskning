@@ -147,6 +147,23 @@ decimalkomma, tunt mellanrum i tusental och riktigt minustecken: `56,3 %`,
 | `.panel` | mörkt fält, definierar om rollvariablerna |
 | `.helbredd` | bryter ut till fönstrets kant |
 | `.stig` | engångsreveal i heron, respekterar `prefers-reduced-motion` |
+| `.mono` | IBM Plex Mono utan etikettens övriga egenskaper |
+
+### `@tailwind utilities` ligger sist i filen
+
+Inte överst, och det är inte en smaksak. Klasserna ovan — och `.display`,
+`.rubrik`, `.siffra`, `.etikett` — sätter `font-weight`, `line-height` och
+`color` med samma specificitet som en Tailwind-utility. Den som står sist i
+filen vinner.
+
+Med utilities överst blev `className="rubrik leading-[1.05]"` tyst `1.0`:
+`.rubrik` kom senare och tog över. Uppmätt i webbläsaren gav det `line-height:
+46px` i stället för `48,30px` på fyra pull-quotes, utan minsta varning — CSS
+säger aldrig ifrån när en regel förlorar.
+
+**Lägg därför nya egna klasser före `@tailwind utilities`, aldrig efter.** Samma
+fälla finns i kombinationer som `.regel` plus `sm:border-t-0`; fyndrutnätet på
+startsidan använder `border-b`/`sm:border-b-0` just för att slippa den.
 
 Avsnitt separeras med `py-16` och en `.regel`. Radie: piller och knappar
 `999px`, fyrkanter och chips 3–4 px, länkkort 8 px. Inga skuggor.
@@ -180,8 +197,13 @@ pixlar — ett piller är 7×14 px i navet och 15×26 px som knapp.
 | `Linjeetikett` | fyllning = röst, understrykning = parti |
 
 Ikonerna är geometriska, 20×20, streck 1,6 (1,8 för bock och kryss), alltid
-`currentColor`. `lucide-react` används inte — dess streck är 2 px och skulle synas
-som en tyngre linje bredvid de här.
+`currentColor`. Åtta stycken: `PilHoger`, `PilVanster`, `Info`,
+`Forstoringsglas`, `Stapeldiagram`, `Bock`, `Kryss`, `Kalender`.
+
+Inget ikonbibliotek är installerat, och `lucide-react` togs bort ur
+`package.json` när shadcn-resterna städades. Dess streck är 2 px och hade synts
+som en tyngre linje bredvid de här — lägg inte tillbaka det för en enstaka ikon,
+rita den i stället.
 
 ---
 
