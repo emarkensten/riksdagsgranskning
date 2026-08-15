@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { db, heltal, lista, namn, rader, tal, REGERINGSPARTIERNA } from '@/lib/db'
 import { Linjeetikett } from '@/components/rostrad'
+import { regeringsspann } from '@/lib/partier'
 
 export const revalidate = 3600
 
@@ -62,14 +63,10 @@ function ankare(amne: string) {
 async function hamta() {
   const klient = db()
   // 16 respektive 48 rader — vyerna är dimensionerade för att rymmas i ett svar.
-  const [amnen, exempel, block] = await Promise.all([
+  const [amnen, exempel, likhetsspann] = await Promise.all([
     rader<Amne>(klient.from('amne_oversikt').select('*').order('kammarens_enighet')),
     rader<Exempel>(klient.from('amne_exempel').select('*').order('datum', { ascending: false })),
-    // Regeringsblockets tre inbördes par. Spannet stod hårdkodat i "Om måttet"
-    // och skulle ha blivit tyst osant vid nästa import.
-    rader<{ samstammighet: number }>(
-      klient.from('partisamstammighet').select('samstammighet').eq('amne', 'alla')
-        .in('parti_1', REGERINGSPARTIERNA).in('parti_2', REGERINGSPARTIERNA)),
+    regeringsspann(),
   ])
 
   const talfalt = [
@@ -85,14 +82,10 @@ async function hamta() {
     perAmne.set(e.amne, [...(perAmne.get(e.amne) ?? []), e])
   }
 
-  const likhet = block.map((b) => Number(b.samstammighet))
-
   return {
     rader: rows,
     perAmne,
-    likhetsspann: likhet.length
-      ? `${tal(Math.min(...likhet))}–${tal(Math.max(...likhet))} %`
-      : '—',
+    likhetsspann,
   }
 }
 
