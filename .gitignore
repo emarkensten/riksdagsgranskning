@@ -40,3 +40,4 @@ next-env.d.ts
 
 # valideringsrapporter (genereras lokalt)
 validering-lager2-*.md
+lager2-batch.jsonl

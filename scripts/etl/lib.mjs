@@ -69,6 +69,28 @@ export async function pool(items, limit, worker) {
   return results
 }
 
+/**
+ * Läser ALLA rader ur en fråga.
+ *
+ * Supabase kapar svar vid 1000 rader på servern (db-max-rows). Ett stort
+ * .range() lyfter INTE den gränsen — det kapas tyst, vilket ger ofullständig
+ * data utan felmeddelande. Enda säkra vägen är att sidindela tills en sida
+ * kommer tillbaka kortare än sidstorleken.
+ *
+ * @param {(fran:number,till:number)=>PromiseLike<{data:any[],error:any}>} sida
+ */
+export async function lasAlla(sida, sidstorlek = 1000) {
+  const alla = []
+  for (let fran = 0; ; fran += sidstorlek) {
+    const { data, error } = await sida(fran, fran + sidstorlek - 1)
+    if (error) throw new Error(error.message)
+    if (!data?.length) break
+    alla.push(...data)
+    if (data.length < sidstorlek) break
+  }
+  return alla
+}
+
 /** Upsert i portioner — Supabase klarar inte hur stora payloads som helst. */
 export async function upsert(table, rows, opts = {}) {
   const size = opts.chunk ?? 500

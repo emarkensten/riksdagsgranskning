@@ -10,8 +10,9 @@
  */
 import fs from 'node:fs'
 import { config } from 'dotenv'
-import { db, pool } from '../etl/lib.mjs'
+import { pool } from '../etl/lib.mjs'
 import { SYSTEM, SCHEMA, byggUserPrompt } from './prompt.mjs'
+import { hamtaPunkter } from './underlag.mjs'
 
 config({ path: '.env.local' })
 
@@ -28,32 +29,17 @@ const PRIS = {
 }
 
 async function hamtaUrval(n) {
-  // Sprid urvalet över utskott så vi inte validerar mot ett enda sakområde.
-  const { data: punkter, error: err2 } = await db()
-    .from('forslagspunkt')
-    .select('id, bet_dok_id, rm, beteckning, punkt, rubrik, forslag, motforslag_nummer, motforslag_partier')
-    .not('votering_id', 'is', null)
-    .eq('rm', '2024/25')
-    .range(0, 9999)
-  if (err2) throw new Error(err2.message)
+  // Samma underlag som produktionskörningen — annars validerar vi något annat
+  // än det vi sedan kör.
+  const punkter = await hamtaPunkter({ rm: '2024/25', baraNya: false })
 
-  // Deterministiskt spritt urval: ett steg genom listan sorterad på utskott.
+  // Deterministiskt spritt urval över utskotten, så vi inte validerar mot ett
+  // enda sakområde.
   const sorterade = punkter.sort((a, b) =>
     (a.beteckning + a.punkt).localeCompare(b.beteckning + b.punkt))
   const steg = Math.max(1, Math.floor(sorterade.length / n))
   const urval = []
   for (let i = 0; i < sorterade.length && urval.length < n; i += steg) urval.push(sorterade[i])
-
-  // Hämta betänkandetitel och reservationer.
-  for (const p of urval) {
-    const { data: bet } = await db()
-      .from('betankande').select('titel').eq('dok_id', p.bet_dok_id).single()
-    p.bet_titel = bet?.titel
-    const { data: res } = await db()
-      .from('reservation').select('nummer, partier, rubrik, text')
-      .eq('bet_dok_id', p.bet_dok_id).eq('punkt', p.punkt)
-    p.reservationer = res ?? []
-  }
   return urval
 }
 
