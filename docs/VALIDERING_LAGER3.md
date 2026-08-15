@@ -45,6 +45,25 @@ Nollan är därför **delvis ett artefakt av instruktionen**, inte enbart ett fa
 om riksdagen. Formuleringarna "var återhållsam" och "använd sparsamt" fick
 agenterna att utelämna i stället för att gradera.
 
+## Men en annan agent pekar åt motsatt håll
+
+En agent i samma våg redovisade ett helt annat skäl till sin nolla:
+
+> flera fall som såg ut som motsägelser visade sig vara partier som var
+> medreservanter men formellt röstade "Avstår" på grund av voteringsordning vid
+> flera samtidiga reservationer
+
+Det är en verklig mekanism i riksdagen: när flera reservationer ställs mot
+varandra kan ett parti tvingas avstå i ett delmoment trots att det står bakom en
+reservation. Den agenten kastade alltså inte fall av slarv — den identifierade
+ett äkta procedurartefakt som `motforslag_partier` ensamt inte fångar.
+
+Det öppnar en tredje möjlighet: att `gpt-5.6-luna` och `gpt-5.6-terra`
+**över-flaggade** därför att de inte kände till voteringsordningen. Deras 4–11 %
+kan alltså vara falska positiva snarare än fynd agenterna missade.
+
+Vilken förklaring som gäller avgörs av A/B:t nedan.
+
 ## Åtgärd
 
 Instruktionen är omskriven med en regel som saknades:

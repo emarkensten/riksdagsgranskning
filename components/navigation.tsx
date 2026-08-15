@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const SIDOR = [
+  { href: '/samstammighet', text: 'Vem röstar med vem' },
   { href: '/voteringar', text: 'Voteringar' },
-  { href: '/spanningar', text: 'Sagt mot röstat' },
   { href: '/franvaro', text: 'Frånvaro' },
 ]
 

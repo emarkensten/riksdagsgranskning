@@ -53,15 +53,41 @@ export default async function Start() {
           parti ställde sig.
         </p>
 
-        <div className="stig mt-10" style={{ animationDelay: '240ms' }}>
+        <div className="stig mt-10 flex flex-wrap gap-x-8 gap-y-3" style={{ animationDelay: '240ms' }}>
           <Link
-            href="/voteringar"
+            href="/samstammighet"
             className="inline-block border-b-2 pb-1 text-[15px] font-medium transition-opacity hover:opacity-60"
             style={{ borderColor: 'var(--accent)' }}
           >
-            Bläddra bland voteringarna →
+            Vem röstar med vem →
+          </Link>
+          <Link
+            href="/voteringar"
+            className="inline-block border-b pb-1 text-[15px] transition-opacity hover:opacity-60"
+            style={{ borderColor: 'var(--linje)', color: 'var(--black-mjuk)' }}
+          >
+            Bläddra bland voteringarna
           </Link>
         </div>
+      </section>
+
+      <section className="stig regel mt-16 pt-8" style={{ animationDelay: '400ms' }}>
+        <p className="display max-w-[22ch] text-[clamp(1.7rem,4.5vw,2.8rem)] leading-[1.05]">
+          Liberalerna och Moderaterna röstade lika i
+          <span style={{ color: 'var(--accent)' }}> 2 569 av 2 569 </span>
+          voteringar.
+        </p>
+        <p className="mt-5 max-w-[52ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
+          Under hela mandatperioden finns inte en enda votering där partiernas
+          linjer gick isär. Kristdemokraterna avvek från båda tre gånger.
+        </p>
+        <Link
+          href="/samstammighet"
+          className="mt-5 inline-block border-b pb-1 text-[14px] transition-opacity hover:opacity-60"
+          style={{ borderColor: 'var(--accent)' }}
+        >
+          Se hela matrisen
+        </Link>
       </section>
 
       <section className="stig mt-20 grid gap-px sm:grid-cols-3" style={{ animationDelay: '320ms' }}>
