@@ -83,17 +83,32 @@ export async function GET() {
   const karta = new Map(voteringar.filter((v) => v.votering_id).map((v) => [v.votering_id!, v]))
 
   const rader = [KOLUMNER.join(',')]
+  let utelamnade = 0
   for (const r of roster) {
     const v = karta.get(r.votering_id)
     // En röst utan votering i listan hör till en punkt sajten inte förklarar.
     // Den utelämnas hellre än tas med utan sakfråga — annars ser filen ut att
     // innehålla voteringar som inte finns på sajten.
-    if (!v) continue
+    //
+    // I dag inträffar det aldrig: samtliga 22 786 röstrader har en match, och
+    // votering_lista har inga delade votering_id. Men en ofullständig fil är
+    // det värsta felet just den här rutten kan göra, så antalet räknas och
+    // loggas i stället för att försvinna.
+    if (!v) {
+      utelamnade++
+      continue
+    }
     rader.push([
       falt(v.forslagspunkt_id), falt(r.votering_id), falt(v.rm), falt(v.beteckning),
       falt(v.punkt), falt(v.datum), falt(v.amne), falt(v.sakfraga), falt(r.parti),
       falt(r.ja), falt(r.nej), falt(r.avstar), falt(r.franvarande), falt(r.totalt),
     ].join(','))
+  }
+
+  if (utelamnade > 0) {
+    console.error(
+      `${utelamnade} av ${roster.length} röstrader saknar votering i votering_lista och ingår inte i underlaget.`,
+    )
   }
 
   // BOM med flit. Excel på Windows läser en CSV utan den som latin-1, och varje

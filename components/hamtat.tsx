@@ -34,7 +34,10 @@ async function senast() {
       db().from('ledamot').select('uppdaterad').order('uppdaterad', { ascending: false }).limit(1),
     )
     return r[0]?.uppdaterad
-  } catch {
+  } catch (fel) {
+    // Loggas, även om läsaren inte får se något. Utan spåret kan meningen
+    // försvinna från varje sida i sajten permanent utan att någon vet varför.
+    console.error('Hämtdatumet kunde inte läsas:', fel)
     return undefined
   }
 }

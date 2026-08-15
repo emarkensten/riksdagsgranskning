@@ -11,7 +11,11 @@ export const BLOCK = 1000
  * utan att något går sönder. Sitemapen och underlagsexporten läser båda mer än
  * tusen rader och delar därför den här.
  *
- * `hamta` får ett halvöppet intervall och ska returnera raderna i det.
+ * `hamta` får ett SLUTET intervall — både `fran` och `till` ingår, precis som
+ * PostgREST:s egen `range`. Läses det som halvöppet blir blocken 999 rader,
+ * och då returnerar den här funktionen efter första varvet: `block.length <
+ * BLOCK` slår till direkt, och anroparen får en tyst stump i stället för hela
+ * tabellen.
  */
 export async function allaRader<T>(
   hamta: (fran: number, till: number) => PromiseLike<{ data: T[] | null; error: any }>,
