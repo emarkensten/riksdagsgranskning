@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { db, namn, tal } from '@/lib/db'
+import { db, lista, namn, tal } from '@/lib/db'
 import { Linjeetikett } from '@/components/rostrad'
 
 export const revalidate = 3600
@@ -37,7 +37,10 @@ async function hamta() {
     klient.from('riksmote_summering').select('rm, roster, franvarande'),
     klient.from('amne_oversikt').select('*').order('avvikande_delta').limit(1),
     klient.from('jamn_votering').select('*', { count: 'exact', head: true }).lte('marginal', 3),
-    klient.from('jamn_votering').select('*', { count: 'exact', head: true }).eq('franvaron_avgjorde', true),
+    // Samma marginalvillkor som raden ovan: siffran presenteras som en delmängd
+    // av de jämna voteringarna och måste räknas på samma urval.
+    klient.from('jamn_votering').select('*', { count: 'exact', head: true })
+      .lte('marginal', 3).eq('franvaron_avgjorde', true),
     klient.from('jamn_votering').select('*', { count: 'exact', head: true }),
   ])
 
@@ -79,6 +82,12 @@ function utbytbara(amne: { avvikande_1: string; avvikande_2: string }) {
 export default async function Start() {
   const d = await hamta()
 
+  // Meningarna nedan hämtar både tal och namn ur data. En hårdkodad formulering
+  // som "båda gångerna" eller "M, KD och L gjorde det aldrig" blir tyst osann
+  // så fort nästa riksmöte importeras.
+  const aldrigEnsamma = d.rankade.filter((p) => p.ensam === 0).map((p) => namn(p.parti))
+  const forlustPartier = [...new Set(d.forluster.flatMap((f) => f.motforslag_partier ?? []))]
+
   const fynd = [
     {
       tal: d.topp ? d.topp.lika.toLocaleString('sv-SE') : '—',
@@ -88,15 +97,19 @@ export default async function Start() {
     },
     {
       tal: d.mestEnsam?.ensam.toLocaleString('sv-SE') ?? '—',
-      text: `gånger stod ${namn(d.mestEnsam?.parti)} ensamt mot alla sju andra partier — oftare än något annat parti. Moderaterna, Kristdemokraterna och Liberalerna gjorde det aldrig.`,
+      text: `gånger stod ${namn(d.mestEnsam?.parti)} ensamt mot alla sju andra partier — oftare än något annat parti.${
+        aldrigEnsamma.length ? ` ${lista(aldrigEnsamma)} gjorde det aldrig.` : ''
+      }`,
       href: '#ensam',
       lank: 'Se alla åtta partier',
     },
     {
       tal: String(d.forluster.length),
-      text: `gånger föll utskottets förslag i kammaren, av ${d.voteringar.toLocaleString('sv-SE')} voteringar. Båda gångerna till en reservation från Socialdemokraterna.`,
+      text: `gånger föll utskottets förslag i kammaren, av ${d.voteringar.toLocaleString('sv-SE')} voteringar.${
+        forlustPartier.length ? ` Reservationen kom från ${lista(forlustPartier.map(namn))}.` : ''
+      }`,
       href: '#forlorade',
-      lank: 'Se båda fallen',
+      lank: 'Se fallen',
     },
     {
       tal: `${tal(d.franvaroandel)} %`,
@@ -162,6 +175,13 @@ export default async function Start() {
             </li>
           ))}
         </ol>
+        <p className="mt-6 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
+          Den sista siffran är aritmetik, inte en anklagelse. Riksdagen kvittar
+          frånvaro: när en ledamot uteblir avstår ofta en ledamot från motsatt
+          sida frivilligt, just för att styrkeförhållandet ska hålla. Vilka
+          voteringar som kvittades framgår inte av öppna data, så beräkningen
+          antar att alla frånvarande hade röstat med sitt parti.
+        </p>
       </section>
 
       {d.amne && (

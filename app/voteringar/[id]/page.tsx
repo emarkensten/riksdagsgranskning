@@ -37,7 +37,10 @@ export default async function Votering({ params }: { params: Promise<{ id: strin
   const ja = roster.reduce((n: number, r: any) => n + r.ja, 0)
   const nej = roster.reduce((n: number, r: any) => n + r.nej, 0)
   const rostades = ja + nej > 0
-  const utskottetVann = !rostades || ja > nej
+  // Lika röstetal avgörs genom lottning. Det har inte inträffat i underlaget,
+  // men får inte tyst hamna på reservationssidan om det gör det.
+  const oavgjort = rostades && ja === nej
+  const utskottetVann = rostades && ja > nej
 
   return (
     <main className="pb-10">
@@ -77,9 +80,9 @@ export default async function Votering({ params }: { params: Promise<{ id: strin
 
       <section className="mt-12 grid gap-px sm:grid-cols-2">
         <Innebord etikett="Ja innebar" text={k.ja_innebar} farg="var(--ja)"
-                  vann={rostades && utskottetVann} />
+                  vann={utskottetVann} />
         <Innebord etikett="Nej innebar" text={k.nej_innebar} farg="var(--nej)"
-                  vann={rostades && !utskottetVann} />
+                  vann={rostades && !utskottetVann && !oavgjort} />
       </section>
 
       <section className="regel mt-12 pt-7">
@@ -130,9 +133,11 @@ export default async function Votering({ params }: { params: Promise<{ id: strin
         <p className="mt-3 text-[13px]" style={{ color: 'var(--black-svag)' }}>
           {!rostades
             ? 'Ingen omröstning med namnupprop på den här punkten.'
-            : utskottetVann
-              ? `Utskottets förslag vann med ${ja} röster mot ${nej}.`
-              : `Reservation ${f.motforslag_nummer} vann med ${nej} röster mot ${ja}.`}
+            : oavgjort
+              ? `Lika röstetal, ${ja} mot ${nej}. Utfallet avgjordes genom lottning.`
+              : utskottetVann
+                ? `Utskottets förslag vann med ${ja} röster mot ${nej}.`
+                : `Reservation ${f.motforslag_nummer} vann med ${nej} röster mot ${ja}.`}
           {f.motforslag_partier?.length
             ? ` Motförslaget stöddes av ${f.motforslag_partier.join(', ')}.`
             : ''}
