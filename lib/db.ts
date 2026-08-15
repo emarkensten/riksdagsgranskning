@@ -18,6 +18,20 @@ export function db() {
 export const PARTIER = ['S', 'M', 'SD', 'C', 'V', 'KD', 'MP', 'L'] as const
 export type Parti = (typeof PARTIER)[number]
 
+const PARTINAMN: Record<string, string> = {
+  S: 'Socialdemokraterna', M: 'Moderaterna', SD: 'Sverigedemokraterna',
+  C: 'Centerpartiet', V: 'Vänsterpartiet', KD: 'Kristdemokraterna',
+  MP: 'Miljöpartiet', L: 'Liberalerna',
+}
+
+/**
+ * Fullt partinamn. Förkortningar hör hemma i tabeller där utrymmet kräver det,
+ * inte i löpande text — sajten skrivs för läsare som inte kan dem utantill.
+ */
+export function namn(forkortning?: string) {
+  return (forkortning && PARTINAMN[forkortning]) || forkortning || '—'
+}
+
 /** Riksdagens egna partifärger. Endast för dataavkodning. */
 export const PARTIFARG: Record<string, string> = {
   S: '#e8112d',
@@ -35,6 +49,25 @@ export const ROSTFARG: Record<string, string> = {
   Nej: 'var(--nej)',
   Avstår: 'var(--avstar)',
   Frånvarande: 'var(--franvarande)',
+}
+
+/** Textfärgen som håller 4,5:1 mot respektive röstfärg. Se globals.css. */
+export const ROSTTEXT: Record<string, string> = {
+  Ja: 'var(--ja-text)',
+  Nej: 'var(--nej-text)',
+  Avstår: 'var(--avstar-text)',
+  Frånvarande: 'var(--franvarande-text)',
+}
+
+/**
+ * Svensk taltypografi: decimalkomma, tunt mellanrum i tusental och riktigt
+ * minustecken. `toFixed()` ger engelsk punkt och ser fel ut på en svensk sida.
+ */
+export function tal(n: number, decimaler = 1) {
+  return n.toLocaleString('sv-SE', {
+    minimumFractionDigits: decimaler,
+    maximumFractionDigits: decimaler,
+  })
 }
 
 export type PartiRost = {

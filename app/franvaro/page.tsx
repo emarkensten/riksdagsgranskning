@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { db, PARTIFARG } from '@/lib/db'
+import { db, PARTIFARG, tal } from '@/lib/db'
 
 export const revalidate = 3600
 
@@ -109,7 +109,7 @@ export default async function Franvaro() {
                     {p.parti}
                   </span>
                 </td>
-                <td className="tabular py-2 text-right font-semibold">{p.andel.toFixed(1)} %</td>
+                <td className="tabular py-2 text-right font-semibold">{tal(p.andel)} %</td>
                 <td className="w-1/2 py-2 pl-4">
                   <span className="block h-1.5 rounded-sm" style={{
                     width: `${Math.min(100, p.andel * 4)}%`,

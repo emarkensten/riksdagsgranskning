@@ -29,9 +29,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="sv" className={`${display.variable} ${brod.variable}`}>
       <body className="relative">
         <div className="relative z-[1] mx-auto max-w-5xl px-5 sm:px-8">
-          <header className="flex items-baseline justify-between gap-6 py-6">
-            <Link href="/" className="display text-xl tracking-tight">
-              Riksdags&shy;granskning
+          {/* Stackad på mobil: fem navobjekt bredvid ordmärket tvingar fram
+              radbrytning mitt i namnet. */}
+          <header className="flex flex-col items-start gap-3 py-6 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
+            <Link href="/" className="display shrink-0 text-xl tracking-tight">
+              Riksdagsgranskning
             </Link>
             <Navigation />
           </header>
