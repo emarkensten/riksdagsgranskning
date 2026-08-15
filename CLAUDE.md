@@ -68,14 +68,33 @@ går det inte att tolka en votering korrekt — se `docs/BESLUT_2026-08.md`.
 
 ## Mätta grundfakta (2022–2026)
 
-Underlag för alla designbeslut. Mätt 2026-08-15, inte gissat.
+Underlag för alla designbeslut. Kontrollerade mot databasen 2026-08-15 med
+Supabase MCP, inte gissade. Siffrorna nedan gäller **hela mandatperioden** —
+det är den vanligaste felkällan i det här projektet.
 
-- **0,100 %** — andel röster som avviker från det egna partiets majoritet
-  (24 av 23 900). Individuell "sagt vs röstat" är därför inte en produkt.
-- **15,1 %** — andel frånvaro i voteringar. Rent faktapåstående, ingen tolkning.
-- **56 177** anföranden totalt, varav **23 740** i ärendedebatt (vårt underlag).
-- **~2 000** voteringspunkter med namnupprop.
+- **2 587** förslagspunkter med klarspråksförklaring, varav **2 569** har
+  röstdata. Skillnaden är punkter utan namnupprop.
+- **0,139 %** — andel avlagda röster som avviker från det egna partiets linje
+  (1 070 av 770 029). Individuell "sagt vs röstat" är därför inte en produkt.
+- **13,4 %** — frånvaro över hela perioden (119 768 av 896 581). Per riksmöte:
+  14,0 / 14,9 / 14,7 / 10,6 %. Blanda inte ihop dem.
+- **56 177** anföranden totalt, varav **23 740** i ärendedebatt.
 - Medellängd anförandetext: **2 953 tecken**.
+
+### Två fallgropar som redan kostat fel siffror
+
+**`forslagspunkt.vinnare` är inte tillförlitlig.** Fältet innehåller `bifall`,
+`Avslagen` och `null` för punkter som utskottet faktiskt vann. Den som räknar
+`vinnare <> 'utskottet'` får 5 förluster; rätt svar är 2.
+
+Utskottets förslag ställs alltid som ja och reservationen som nej. Använd
+aritmetiken `nej > ja`. Kontrollerat: den sammanfaller med
+`vinnare = 'utskottet'` i samtliga 2 569 voteringar med röstdata, utan
+motexempel.
+
+**M, KD och L röstar lika i 99,9–100 % av alla voteringar.** Varje fynd som
+namnger ett av dem gäller i praktiken alla tre, och vilket som hamnar i
+rubriken avgörs ofta av tiondelar. Skriv alltid ut det bredvid siffran.
 
 ---
 
