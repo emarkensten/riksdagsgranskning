@@ -195,7 +195,8 @@ export default async function Amnen() {
           <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
             Här ligger det mest avvikande paret mindre än {SVAG} procentenheter
             från sin egen normalnivå. Det är för lite för att kalla ett mönster,
-            och de får därför inga egna avsnitt — en jättesiffra på {tal(Math.abs(svaga[svaga.length - 1].avvikande_delta))} vore
+            och de får därför inga egna avsnitt — en jättesiffra på{' '}
+            {tal(Math.min(...svaga.map((r) => Math.abs(r.avvikande_delta))))} vore
             motsatsen till trovärdighet.
           </p>
           <table className="mt-7 w-full max-w-2xl text-[15px]">
@@ -214,10 +215,13 @@ export default async function Amnen() {
             </tbody>
           </table>
           <p className="mt-4 max-w-[62ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
+            {/* Meningen får inte räkna med att de svaga alltid är exakt två.
+                Enighetstalen listas i samma ordning som tabellen ovan. */}
             Procentenheter under parets normalnivå. Att avvikelsen är liten
-            betyder inte att kammaren är enig i sak — dessa två ämnen har
-            tvärtom riksdagens <em>högsta</em> enighetstal, {tal(svaga[0].kammarens_enighet)}{' '}
-            respektive {tal(svaga[svaga.length - 1].kammarens_enighet)} %.
+            betyder inte att kammaren är enig i sak —{' '}
+            {svaga.length === 1 ? 'ämnet har' : 'ämnena har'} tvärtom riksdagens{' '}
+            <em>högsta</em> enighetstal:{' '}
+            {lista(svaga.map((r) => `${tal(r.kammarens_enighet)} %`))}.
           </p>
         </section>
       )}
