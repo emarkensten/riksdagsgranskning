@@ -1,5 +1,8 @@
 import Link from 'next/link'
-import { db, lista, namn, tal } from '@/lib/db'
+import {
+  antal, datum, db, heltal, lista, namn, rader, rakna, tal, REGERINGSPARTIERNA,
+} from '@/lib/db'
+import { Stapel } from '@/components/stapel'
 import AMNEN from '@/lib/amnen.json'
 
 export const revalidate = 3600
@@ -10,40 +13,14 @@ export const metadata = {
     'Definitionerna bakom varje siffra på sajten: partilinje, samstämmighet, ensam mot alla, frånvaro och ämnesklassning — och det öppna data inte kan svara på.',
 }
 
-/**
- * Regeringen 2022–2026. Vilka partier som styr är en politisk omständighet och
- * finns inte i röstdata, så den står här. Talen bredvid namnen räknas fram.
- */
-const REGERINGEN = ['M', 'KD', 'L']
-
-const KATEGORIER = ['stämmer', 'spänning', 'motsäger', 'oklart'] as const
+/** Ordningen de redovisas i, inte den ordning databasen råkar returnera. */
+const NIVAER = ['hög', 'medel', 'låg'] as const
 
 type Utfall = { parti: string; voteringar: number; med_vinnaren: number; andel: number }
-type Disciplin = { parti: string; avlagda: number; avvikande: number; andel: number }
-type Riksmote = { rm: string; voteringar: number; roster: number; franvarande: number; franvaroandel: number }
+type Riksmote = { rm: string; roster: number; franvarande: number; franvaroandel: number }
 
 async function hamta() {
   const klient = db()
-
-  /**
-   * supabase-js kastar inte vid fel — den svarar med tom lista och ett `error`
-   * som är lätt att glömma. En vy som slår i anons statement_timeout på tre
-   * sekunder blir då "0 av 0" på sidan i stället för ett synligt fel. Varje
-   * fråga nedan går därför genom den här.
-   */
-  const rader = async <T,>(fraga: PromiseLike<{ data: unknown; error: unknown }>) => {
-    const { data, error } = await fraga
-    if (error) throw new Error((error as { message: string }).message)
-    return (data ?? []) as T[]
-  }
-
-  /** Exakt antal utan att läsa raderna — en select() kapas tyst vid takgränsen. */
-  const rakna = async (tabell: string, filter?: (q: any) => any): Promise<number> => {
-    const fraga = klient.from(tabell).select('*', { count: 'exact', head: true })
-    const { count, error } = await (filter ? filter(fraga) : fraga)
-    if (error) throw new Error(`${tabell}: ${error.message}`)
-    return count ?? 0
-  }
 
   const [
     utfall,
@@ -56,37 +33,44 @@ async function hamta() {
     hamtat,
     punkter,
     utanNamnupprop,
-    forklarade,
+    voteringar,
     betankanden,
     anforanden,
     forluster,
     retorik,
   ] = await Promise.all([
     rader<Utfall>(klient.from('parti_utfall').select('*').order('andel', { ascending: false })),
-    rader<Disciplin>(klient.from('parti_disciplin').select('*')),
+    rader<{ avlagda: number; avvikande: number }>(
+      klient.from('parti_disciplin').select('avlagda, avvikande')),
     rader<{ modell: string; sakerhet: string; antal: number }>(
-      klient.from('klartext_summering').select('*')),
-    rader<Riksmote>(klient.from('riksmote_summering').select('*').order('rm')),
+      klient.from('klartext_summering').select('modell, sakerhet, antal')),
+    rader<Riksmote>(
+      klient.from('riksmote_summering').select('rm, roster, franvarande, franvaroandel').order('rm')),
     // De tre partier som röstar närmast identiskt. Spannet skrivs ut i klartext
     // på flera sidor och får inte stå hårdkodat på någon av dem.
     rader<{ samstammighet: number }>(
-      klient.from('partisamstammighet').select('parti_1, parti_2, samstammighet')
-        .eq('amne', 'alla').in('parti_1', REGERINGEN).in('parti_2', REGERINGEN)),
+      klient.from('partisamstammighet').select('samstammighet').eq('amne', 'alla')
+        .in('parti_1', REGERINGSPARTIERNA).in('parti_2', REGERINGSPARTIERNA)),
     rader<{ datum: string }>(klient.from('betankande').select('datum').order('datum').limit(1)),
     rader<{ datum: string }>(
       klient.from('betankande').select('datum').order('datum', { ascending: false }).limit(1)),
     rader<{ uppdaterad: string }>(
       klient.from('ledamot').select('uppdaterad').order('uppdaterad', { ascending: false }).limit(1)),
-    rakna('forslagspunkt'),
-    rakna('forslagspunkt', (q) => q.is('votering_id', null)),
-    rakna('punkt_klartext'),
-    rakna('betankande'),
-    rakna('anforande'),
-    rakna('utskottet_forlorade'),
-    Promise.all(
-      KATEGORIER.map((k) =>
-        rakna('retorik_rost', (q: any) => q.eq('overensstammelse', k)).then((n) => [k, n] as const)),
-    ),
+    rakna(antal(klient, 'forslagspunkt'), 'förslagspunkter'),
+    rakna(antal(klient, 'forslagspunkt').is('votering_id', null), 'punkter utan votering'),
+    // Sidans huvudsiffra räknas för sig, som startsidan redan gör. Att plocka
+    // den ur första raden i en lista sorterad på andel gör den beroende av en
+    // sorteringsordning som inget annat hänger på.
+    //
+    // Räknas på jamn_votering, inte på forslagspunkt.votering_id is not null.
+    // Det senare ger 2 587 — punkter där en votering registrerats — medan
+    // underlaget för varje mönster är de 2 569 som faktiskt har röstdata.
+    rakna(antal(klient, 'jamn_votering'), 'voteringar'),
+    rakna(antal(klient, 'betankande'), 'betänkanden'),
+    rakna(antal(klient, 'anforande'), 'anföranden'),
+    rakna(antal(klient, 'utskottet_forlorade'), 'utskottsförluster'),
+    rader<{ overensstammelse: string; antal: number }>(
+      klient.from('retorik_summering').select('overensstammelse, antal')),
   ])
 
   // PostgREST lämnar numeric som sträng. Talen måste därför gå genom Number()
@@ -94,17 +78,28 @@ async function hamta() {
   const utfallRader = utfall.map((u) => ({ ...u, andel: Number(u.andel) }))
   const rm = riksmoten.map((r) => ({ ...r, franvaroandel: Number(r.franvaroandel) }))
 
-  const avlagda = disciplin.reduce((n, d) => n + Number(d.avlagda), 0)
-  const avvikande = disciplin.reduce((n, d) => n + Number(d.avvikande), 0)
+  const avlagda = disciplin.reduce((n, p) => n + Number(p.avlagda), 0)
+  const avvikande = disciplin.reduce((n, p) => n + Number(p.avvikande), 0)
   const roster = rm.reduce((n, r) => n + Number(r.roster), 0)
   const franvarande = rm.reduce((n, r) => n + Number(r.franvarande), 0)
 
+  // Summeras per nivå, inte nycklas på den: klartext_summering grupperar på
+  // modell OCH säkerhet, så två modeller ger två rader med samma nivå.
+  const sakerhet = NIVAER.map((niva) => [
+    niva,
+    klartext.filter((k) => k.sakerhet === niva).reduce((n, k) => n + Number(k.antal), 0),
+  ] as const)
+  const forklarade = klartext.reduce((n, k) => n + Number(k.antal), 0)
+
   const likhet = mkdl.map((p) => Number(p.samstammighet))
-  const sakerhet = new Map(klartext.map((k) => [k.sakerhet, Number(k.antal)]))
+  const retorikRader = retorik
+    .map((r) => [r.overensstammelse, Number(r.antal)] as const)
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1])
 
   return {
     utfall: utfallRader,
-    voteringar: utfallRader[0]?.voteringar ?? 0,
+    voteringar,
     avlagda,
     avvikande,
     avvikelseandel: avlagda > 0 ? (100 * avvikande) / avlagda : 0,
@@ -114,9 +109,7 @@ async function hamta() {
     franvaroandel: roster > 0 ? (100 * franvarande) / roster : 0,
     modeller: [...new Set(klartext.map((k) => k.modell))],
     sakerhet,
-    sakerhetTotalt: [...sakerhet.values()].reduce((n, v) => n + v, 0),
-    likhetLagsta: Math.min(...likhet),
-    likhetHogsta: Math.max(...likhet),
+    likhetsspann: `${tal(Math.min(...likhet))}–${tal(Math.max(...likhet))} %`,
     forsta: forsta[0]?.datum,
     sista: sista[0]?.datum,
     hamtat: hamtat[0]?.uppdaterad,
@@ -126,25 +119,17 @@ async function hamta() {
     betankanden,
     anforanden,
     forluster,
-    retorik: retorik.filter(([, n]) => n > 0),
-    retorikTotalt: retorik.reduce((n, [, v]) => n + v, 0),
+    retorik: retorikRader,
+    retorikTotalt: retorikRader.reduce((n, [, v]) => n + v, 0),
   }
-}
-
-/** "6 oktober 2022" — svenska månadsnamn, inte ISO. */
-function datum(iso?: string) {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleDateString('sv-SE', {
-    day: 'numeric', month: 'long', year: 'numeric',
-  })
 }
 
 export default async function Metod() {
   const d = await hamta()
 
-  const regeringen = d.utfall.filter((u) => REGERINGEN.includes(u.parti))
-  const basta = regeringen.reduce((a, b) => (a.med_vinnaren >= b.med_vinnaren ? a : b), regeringen[0])
-  const likhetsspann = `${tal(d.likhetLagsta)}–${tal(d.likhetHogsta)} %`
+  // Listan är sorterad fallande på andel, så det första regeringspartiet är
+  // också det som klarade sig bäst.
+  const basta = d.utfall.find((u) => REGERINGSPARTIERNA.includes(u.parti))
   // Skillnaden mellan förklarade punkter och voteringar är punkter som fick en
   // klarspråksförklaring men aldrig ett namnupprop.
   const utanRostdata = d.forklarade - d.voteringar
@@ -197,7 +182,7 @@ export default async function Metod() {
         <div className="mt-8">
           <div className="display tabular text-[clamp(3.2rem,13vw,7.5rem)] leading-[0.82]"
                style={{ color: 'var(--accent)' }}>
-            {d.voteringar.toLocaleString('sv-SE')}
+            {heltal(d.voteringar)}
           </div>
           <p className="mt-6 max-w-[46ch] text-[19px] leading-snug">
             voteringar med namnupprop ligger bakom varje mönster på sajten. Det är
@@ -215,7 +200,7 @@ export default async function Metod() {
             />
             <Rad
               tal={d.utanNamnupprop}
-              text={`av totalt ${d.punkter.toLocaleString('sv-SE')} förslagspunkter avgjordes helt utan omröstning`}
+              text={`av totalt ${heltal(d.punkter)} förslagspunkter avgjordes helt utan omröstning`}
             />
             <Rad tal={d.roster} text="röstningstillfällen — en rad per ledamot och votering, frånvaro inräknad" />
             <Rad tal={d.betankanden} text="betänkanden från riksdagens utskott" />
@@ -249,8 +234,8 @@ export default async function Metod() {
             </p>
             <p>
               Enskilda ledamöter som röstar annorlunda ändrar inte partiets linje.
-              De är också sällsynta: {d.avvikande.toLocaleString('sv-SE')} av{' '}
-              {d.avlagda.toLocaleString('sv-SE')} avlagda röster avviker, alltså{' '}
+              De är också sällsynta: {heltal(d.avvikande)} av{' '}
+              {heltal(d.avlagda)} avlagda röster avviker, alltså{' '}
               {tal(d.avvikelseandel, 3)} %.
             </p>
           </Definition>
@@ -283,7 +268,7 @@ export default async function Metod() {
             <p>
               En nolla betyder inte att partiet aldrig går sin egen väg. Den betyder
               att partiet aldrig gjorde det <em>utan sällskap</em> — och för{' '}
-              {lista(REGERINGEN.map(namn))} är det nästan mekaniskt omöjligt. Se
+              {lista(REGERINGSPARTIERNA.map(namn))} är det nästan mekaniskt omöjligt. Se
               begränsningarna nedan.
             </p>
           </Definition>
@@ -304,8 +289,8 @@ export default async function Metod() {
                   <tr key={r.rm} className="regel">
                     <td className="py-2">{r.rm}</td>
                     <td className="py-2 text-right" style={{ color: 'var(--black-svag)' }}>
-                      {Number(r.franvarande).toLocaleString('sv-SE')} av{' '}
-                      {Number(r.roster).toLocaleString('sv-SE')}
+                      {heltal(Number(r.franvarande))} av{' '}
+                      {heltal(Number(r.roster))}
                     </td>
                     <td className="whitespace-nowrap py-2 pl-6 text-right font-semibold">
                       {tal(r.franvaroandel)} %
@@ -315,7 +300,7 @@ export default async function Metod() {
                 <tr className="regel">
                   <td className="py-2 font-semibold">hela perioden</td>
                   <td className="py-2 text-right" style={{ color: 'var(--black-svag)' }}>
-                    {d.franvarande.toLocaleString('sv-SE')} av {d.roster.toLocaleString('sv-SE')}
+                    {heltal(d.franvarande)} av {heltal(d.roster)}
                   </td>
                   <td className="whitespace-nowrap py-2 pl-6 text-right font-semibold"
                       style={{ color: 'var(--accent)' }}>
@@ -428,21 +413,16 @@ export default async function Metod() {
 
         <table className="mt-7 w-full max-w-md text-[15px]">
           <tbody>
-            {(['hög', 'medel', 'låg'] as const).map((niva) => {
-              const antal = d.sakerhet.get(niva) ?? 0
-              return (
-                <tr key={niva} className="regel">
-                  <td className="py-2.5">säkerhet {niva}</td>
-                  <td className="tabular py-2.5 text-right font-semibold">
-                    {antal.toLocaleString('sv-SE')}
-                  </td>
-                  <td className="tabular whitespace-nowrap py-2.5 pl-6 text-right"
-                      style={{ color: 'var(--black-svag)' }}>
-                    {tal(d.sakerhetTotalt > 0 ? (100 * antal) / d.sakerhetTotalt : 0)} %
-                  </td>
-                </tr>
-              )
-            })}
+            {d.sakerhet.map(([niva, punkter]) => (
+              <tr key={niva} className="regel">
+                <td className="py-2.5">säkerhet {niva}</td>
+                <td className="tabular py-2.5 text-right font-semibold">{heltal(punkter)}</td>
+                <td className="tabular whitespace-nowrap py-2.5 pl-6 text-right"
+                    style={{ color: 'var(--black-svag)' }}>
+                  {tal(d.forklarade > 0 ? (100 * punkter) / d.forklarade : 0)} %
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
 
@@ -457,14 +437,14 @@ export default async function Metod() {
         <h2 className="display max-w-[22ch] text-[clamp(1.7rem,4.5vw,2.8rem)] leading-[1.05]">
           Regeringssidans linje vann{' '}
           <span style={{ color: 'var(--accent)' }}>
-            {basta?.med_vinnaren.toLocaleString('sv-SE')} av {d.voteringar.toLocaleString('sv-SE')}
+            {heltal(basta?.med_vinnaren ?? 0)} av {heltal(d.voteringar)}
           </span>{' '}
           voteringar.
         </h2>
         <div className="mt-6 grid max-w-[66ch] gap-4 text-[16px] leading-relaxed"
              style={{ color: 'var(--black-mjuk)' }}>
           <p>
-            Siffran gäller {lista(REGERINGEN.map(namn))} och besvarar en fråga som
+            Siffran gäller {lista(REGERINGSPARTIERNA.map(namn))} och besvarar en fråga som
             faktiskt ställs: fick regeringen igenom sin politik? Svaret är ja, nästan
             undantagslöst.
           </p>
@@ -483,7 +463,7 @@ export default async function Metod() {
               <tr key={u.parti} className="regel">
                 <td className="py-2.5 font-semibold">{u.parti}</td>
                 <td className="tabular py-2.5 pl-4 text-right" style={{ color: 'var(--black-svag)' }}>
-                  {u.med_vinnaren.toLocaleString('sv-SE')}
+                  {heltal(u.med_vinnaren)}
                 </td>
                 <td className="tabular whitespace-nowrap py-2.5 pl-5 text-right font-semibold">
                   {tal(u.andel)} %
@@ -491,15 +471,14 @@ export default async function Metod() {
                 {/* Stapeln är en upprepning av procenttalet och offras först när
                     utrymmet tryter — annars radbryts talen på mobil. */}
                 <td className="hidden w-1/2 py-2.5 pl-5 sm:table-cell">
-                  <span className="block h-2 rounded-sm"
-                        style={{ width: `${u.andel}%`, background: 'var(--accent)', minWidth: '2px' }} />
+                  <Stapel andel={u.andel} />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
         <p className="mt-5 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
-          Antalet av {d.voteringar.toLocaleString('sv-SE')} voteringar där partiets
+          Antalet av {heltal(d.voteringar)} voteringar där partiets
           linje sammanföll med den vinnande sidan. Ett parti som avstod räknas
           aldrig som vinnare, eftersom avstår varken är ja eller nej.
         </p>
@@ -523,18 +502,18 @@ export default async function Metod() {
             frånvarande hade röstat med sitt parti — vilket överdriver effekten.
           </Begransning>
 
-          <Begransning rubrik={`${lista(REGERINGEN.map(namn))} är utbytbara i statistiken`}>
-            De röstar lika i {likhetsspann} av alla voteringar. Varje fynd som
+          <Begransning rubrik={`${lista(REGERINGSPARTIERNA.map(namn))} är utbytbara i statistiken`}>
+            De röstar lika i {d.likhetsspann} av alla voteringar. Varje fynd som
             namnger ett av dem gäller i praktiken alla tre, och vilket som hamnar i
             rubriken avgörs av tiondelar. Det gör också att inget av dem gärna kan
             bli <em>ensamt mot alla</em>: de två andra står redan på samma linje.
           </Begransning>
 
           <Begransning rubrik="De flesta besluten togs utan omröstning">
-            {d.utanNamnupprop.toLocaleString('sv-SE')} av{' '}
-            {d.punkter.toLocaleString('sv-SE')} förslagspunkter avgjordes genom
+            {heltal(d.utanNamnupprop)} av{' '}
+            {heltal(d.punkter)} förslagspunkter avgjordes genom
             acklamation, alltså utan att någon begärde namnupprop. Sajten kan bara
-            säga något om de {d.voteringar.toLocaleString('sv-SE')} där rösterna
+            säga något om de {heltal(d.voteringar)} där rösterna
             räknades. Enighet i kammaren är därför systematiskt underrepresenterad
             här.
           </Begransning>
@@ -555,14 +534,14 @@ export default async function Metod() {
 
           <Begransning rubrik="Enskilda ledamöter bär ingen berättelse">
             {tal(d.avvikelseandel, 3)} % av de avlagda rösterna avviker från det egna
-            partiets linje — {d.avvikande.toLocaleString('sv-SE')} av{' '}
-            {d.avlagda.toLocaleString('sv-SE')}. Det finns ingen population av
+            partiets linje — {heltal(d.avvikande)} av{' '}
+            {heltal(d.avlagda)}. Det finns ingen population av
             ledamöter som röstar mot sitt parti, och därför ingen jämförelse att göra
             mellan dem. Sajten mäter partier, inte personer.
           </Begransning>
 
           <Begransning rubrik="Anförandena är inte tolkade">
-            {d.anforanden.toLocaleString('sv-SE')} anföranden ligger i databasen och
+            {heltal(d.anforanden)} anföranden ligger i databasen och
             går att läsa mot voteringen de hör till. Men ingen automatisk
             sammanfattning av vad som sades publiceras — försöket redovisas längst
             ned på den här sidan, och det höll inte.
@@ -613,7 +592,7 @@ export default async function Metod() {
             nummer="1"
             rubrik="Enskilda ledamöter avviker inte"
             tal={`${tal(d.avvikelseandel, 2)} %`}
-            text={`Av ${d.avlagda.toLocaleString('sv-SE')} avlagda röster avvek ${d.avvikande.toLocaleString('sv-SE')} från det egna partiets linje. Det finns ingen population av ledamöter som röstar mot sitt parti — därmed ingen berättelse på individnivå.`}
+            text={`Av ${heltal(d.avlagda)} avlagda röster avvek ${heltal(d.avvikande)} från det egna partiets linje. Det finns ingen population av ledamöter som röstar mot sitt parti — därmed ingen berättelse på individnivå.`}
           />
           <Steg
             nummer="2"
@@ -657,12 +636,12 @@ export default async function Metod() {
           <div className="regel mt-12 pt-7">
             <h3 className="display text-2xl">Underlaget, öppet</h3>
             <p className="mt-2 text-[13px]" style={{ color: 'var(--black-svag)' }}>
-              {d.retorikTotalt.toLocaleString('sv-SE')} bedömningar av anföranden mot
+              {heltal(d.retorikTotalt)} bedömningar av anföranden mot
               partiets röst i samma ärende.
             </p>
             <table className="mt-5 w-full max-w-md text-[14px]">
               <tbody>
-                {[...d.retorik].sort((a, b) => b[1] - a[1]).map(([k, v]) => (
+                {d.retorik.map(([k, v]) => (
                   <tr key={k} className="regel">
                     <td className="py-2">{k}</td>
                     <td className="tabular py-2 text-right font-semibold">{v}</td>
@@ -690,7 +669,7 @@ function Rad({ tal: n, text }: { tal: number; text: string }) {
   return (
     <tr className="regel">
       <td className="tabular display py-3 pr-5 text-right align-baseline text-[clamp(1.5rem,4vw,2.1rem)] leading-none">
-        {n.toLocaleString('sv-SE')}
+        {heltal(n)}
       </td>
       <td className="py-3 align-baseline leading-snug" style={{ color: 'var(--black-mjuk)' }}>
         {text}

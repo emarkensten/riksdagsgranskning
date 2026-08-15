@@ -29,7 +29,7 @@ comment on view parti_utfall is
   'Andel voteringar där partiets linje sammanföll med den vinnande sidan. Avstår räknas aldrig som vinnande.';
 
 -- Vyer stöder inte RLS. Supabase delar dessutom ut grant all till anon som
--- standard, så rättigheterna måste sättas uttryckligen — se migrationen
--- 20260815135952.
+-- standard, så varje nytt objekt måste revoke:as och grant:as uttryckligen.
+-- Regeln står i CLAUDE.md under Databas.
 revoke all on parti_utfall from anon, authenticated;
 grant select on parti_utfall to anon, authenticated;

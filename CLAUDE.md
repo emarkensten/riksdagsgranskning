@@ -52,7 +52,24 @@ standard, och det är bara RLS som stoppar skrivningarna. **En ny tabell i
 internet.** Slå på RLS i samma migration som skapar tabellen.
 
 Materialiserade vyer stöder inte RLS och skyddas bara av `grant`. Ge dem
-`select` till `anon` bara om frontend faktiskt läser dem.
+`select` till `anon` bara om frontend faktiskt läser dem. Samma sak gäller
+vanliga vyer.
+
+### Tre sekunder är taket för allt frontend läser
+
+`anon` har `statement_timeout = 3s`, `authenticated` 8 s, `service_role` inget.
+En vy som känns snabb i SQL-editorn kan alltså vara för långsam i webbläsaren —
+editorn kör som `postgres`, utan tak.
+
+Värre är att det inte syns: **supabase-js kastar inte, den svarar med tom lista
+och ett `error`**. En avbruten fråga blir därför en nolla på sidan i stället för
+ett fel. Kör varje fråga genom `rader()` eller `rakna()` i `lib/db.ts`, som
+läser `error` och kastar.
+
+Mät med `explain analyze` innan en ny vy släpps till frontend. Ligger den nära
+taket: aggregera på ett befintligt aggregat i stället för på rådata
+(`parti_disciplin` gick från 4 300 ms till 18 ms så) — och först om det inte
+räcker, materialisera och lägg till vyn i `aggregat_vyer()`.
 
 ---
 
