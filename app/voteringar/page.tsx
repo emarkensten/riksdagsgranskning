@@ -157,8 +157,8 @@ export default async function Voteringar({
           className="stig mt-6 max-w-[50ch] text-[19px] leading-[1.5]"
           style={{ color: 'var(--black-mjuk)', animationDelay: '80ms' }}
         >
-          Varje förslagspunkt riksdagen avgjorde, förklarad på vanlig svenska:
-          vad frågan gällde, vad ett ja innebar och vad ett nej innebar.
+          Varje förslagspunkt som avgjordes med namnupprop, förklarad på vanlig
+          svenska: vad frågan gällde, vad ett ja innebar och vad ett nej innebar.
         </p>
         {/* Startsidan säger 2 569 och den här sidan 2 587. Skillnaden är verklig
             och ska stå här, inte lämnas åt läsaren att upptäcka.

@@ -12,7 +12,7 @@ export const revalidate = 3600
 export const metadata = sidmetadata({
   titel: 'Så räknar jag',
   beskrivning:
-    'Svar på det som brukar frågas om sajten: hur talen räknas, om ett nej betyder motstånd, vem som skrev klarspråket, varför två sidor säger olika många — och vad materialet inte kan svara på.',
+    'Svar på de frågor talen väcker: hur talen räknas, om ett nej betyder motstånd, vem som skrev klarspråket, varför två sidor säger olika många — och vad materialet inte kan svara på.',
   sokvag: '/metod',
 })
 
@@ -160,12 +160,14 @@ async function hamta() {
 export default async function Metod() {
   const d = await hamta()
 
-  // Sorteras på med_vinnaren, inte på listans ordning: parti_utfall.andel är
-  // avrundad till en decimal, så två partier kan dela andel med olika många
-  // vinster bakom sig.
-  const basta = d.utfall
+  // Spann och inte det bästa partiets tal. Meningen namnger alla tre, och de
+  // ligger inte lika: M och L på 2 558, KD på 2 555. Att skriva ut det högsta
+  // som allas gjorde påståendet osant mot tabellen tio rader längre ned.
+  const regeringens = d.utfall
     .filter((u) => REGERINGSPARTIERNA.some((p) => p === u.parti))
-    .sort((a, b) => b.med_vinnaren - a.med_vinnaren)[0]
+    .map((u) => u.med_vinnaren)
+  const hogst = regeringens.length ? Math.max(...regeringens) : 0
+  const samst = regeringens.length ? Math.min(...regeringens) : 0
   // Skillnaden mellan förklarade punkter och voteringar är punkter som fick en
   // klarspråksförklaring men aldrig ett namnupprop om sakfrågan.
   const utanRostdata = d.forklarade - d.voteringar
@@ -184,7 +186,7 @@ export default async function Metod() {
         <p className="stig mt-7 max-w-[52ch] text-[clamp(17px,2.2vw,20px)] leading-[1.45]"
            style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}>
           Varje tal på den här sajten kommer ur riksdagens egna öppna data och
-          går att räkna om. Nedan står frågorna som brukar ställas om dem, med
+          går att räkna om. Nedan står frågorna talen väcker, med
           svaret först i varje avsnitt.
         </p>
       </section>
@@ -212,8 +214,8 @@ export default async function Metod() {
           <Nyckeltal ton="signal">{heltal(d.voteringar)}</Nyckeltal>
           <p className="mb-2 max-w-[46ch] text-[18px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
             voteringar med namnupprop ligger bakom varje mönster på sajten. Det
-            är samtliga voteringar i mandatperioden där riksdagen räknade
-            rösterna ledamot för ledamot.
+            är samtliga voteringar i mandatperioden där namnuppropet gällde
+            sakfrågan — alltså vad som skulle beslutas.
           </p>
         </div>
 
@@ -253,10 +255,10 @@ export default async function Metod() {
           <p className="mt-3 max-w-[64ch] text-[15.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
             En rad per votering och parti, med ja, nej, avstår och frånvarande —
             samma tal som varje mått på sajten räknas ur. Partilinje,
-            samstämmighet, frånvaro, ensam mot alla och utfall går alla att
-            härleda ur den här filen och{' '}
+            samstämmighet, frånvaro per parti, ensam mot alla och utfall går alla
+            att härleda ur den här filen och{' '}
             <a href="#definitioner" className="underline hover:opacity-70">
-              definitionerna ovan
+              definitionerna i nästa avsnitt
             </a>.
           </p>
           <p className="mt-3 max-w-[64ch] text-[13.5px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
@@ -452,7 +454,7 @@ export default async function Metod() {
         <div className="mt-7 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
              style={{ color: 'var(--black-mjuk)' }}>
           <p>
-            Så långt att du kan kontrollera dem — och det är meningen att du ska.
+            Så långt som du själv kan kontrollera dem — och det är meningen att du ska.
             Sakfrågan, <em>ja innebar</em> och <em>nej innebar</em> står inte i
             riksdagens data, utan är skrivna av språkmodellen{' '}
             <strong style={{ color: 'var(--black)' }}>{lista(d.modeller)}</strong>{' '}
@@ -543,7 +545,8 @@ export default async function Metod() {
             Ja, nästan undantagslöst. {lista(REGERINGSPARTIERNA.map(namn))} stod
             på den vinnande sidan i{' '}
             <strong style={{ color: 'var(--accent)' }}>
-              {heltal(basta?.med_vinnaren ?? 0)} av {heltal(d.voteringar)}
+              {samst === hogst ? heltal(hogst) : `${heltal(samst)}–${heltal(hogst)}`} av{' '}
+              {heltal(d.voteringar)}
             </strong>{' '}
             voteringar.
           </p>
@@ -693,7 +696,7 @@ export default async function Metod() {
           </p>
           <p>
             Ingen finansiering, inget partiuppdrag, ingen annonsering. Källkoden
-            är öppen, så räkningen bakom varje tal på den här sidan går att läsa
+            är öppen, så räkningen bakom varje tal på sajten går att läsa
             och göra om.
           </p>
         </div>

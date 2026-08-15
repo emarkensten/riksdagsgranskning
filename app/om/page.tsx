@@ -1,5 +1,5 @@
 import { Etikett, Forbehall, Textlank } from '@/components/system'
-import { AVSANDARE, NYTT_ARENDE, REPO, SAJT, sidmetadata } from '@/lib/sajt'
+import { AVSANDARE, NYTT_ARENDE, PROFIL, REPO, SAJT, sidmetadata } from '@/lib/sajt'
 
 export const metadata = sidmetadata({
   titel: 'Vem ligger bakom sajten?',
@@ -32,9 +32,21 @@ export default function Om() {
           className="stig mt-7 max-w-[54ch] text-[clamp(17px,2.2vw,20px)] leading-[1.45]"
           style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}
         >
-          {SAJT} är byggd och drivs av {AVSANDARE}. Sajten namnger partier och
-          publicerar maskinskrivna sammanfattningar av politiska beslut. Då ska
-          det synas vem som svarar för dem.
+          {SAJT} är byggd och drivs av{' '}
+          {/* Namnet länkar till kontot som äger repot och commit-historiken. Ett
+              namn utan något att kontrollera det mot går inte att skilja från en
+              pseudonym, och sajten ber om förtroende i just den frågan. */}
+          <a
+            href={PROFIL}
+            target="_blank"
+            rel="noreferrer"
+            className="underline hover:opacity-70"
+            style={{ color: 'var(--black)' }}
+          >
+            {AVSANDARE}
+          </a>
+          . Sajten namnger partier och publicerar maskinskrivna sammanfattningar
+          av politiska beslut. Då ska det synas vem som svarar för dem.
         </p>
       </section>
 
@@ -59,7 +71,7 @@ export default function Om() {
       </Forbehall>
 
       <section id="varfor" className="regel scroll-mt-6 py-16">
-        <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Varför sajten finns</h2>
+        <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Varför finns sajten?</h2>
         <div
           className="mt-7 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
           style={{ color: 'var(--black-mjuk)' }}
@@ -96,7 +108,7 @@ export default function Om() {
 
       <section id="oberoende" className="regel scroll-mt-6 py-16">
         <h2 className="rubrik max-w-[22ch] text-[clamp(1.8rem,4.4vw,44px)]">
-          Vad som inte påverkar innehållet
+          Vad påverkar inte innehållet?
         </h2>
         <p
           className="mt-5 max-w-[58ch] text-[16.5px] leading-[1.6]"
@@ -108,8 +120,8 @@ export default function Om() {
 
         <div className="mt-12 grid gap-10">
           <Punkt rubrik="Ingen finansiering">
-            Sajten är inte finansierad av någon. Drift, databas och de körningar
-            som skrev klarspråket är betalda privat.
+            Sajten är inte finansierad av någon. Jag betalar drift, databas och
+            de körningar som skrev klarspråket själv.
           </Punkt>
           <Punkt rubrik="Inget partiuppdrag">
             Jag har inget uppdrag, medlemskap eller förtroendeuppdrag hos något
@@ -156,7 +168,7 @@ export default function Om() {
 
       <section className="regel scroll-mt-6 py-16">
         <h2 className="rubrik max-w-[20ch] text-[clamp(1.8rem,4.4vw,44px)]">
-          Vad sajten inte kan svara på
+          Vad kan sajten inte svara på?
         </h2>
         <p
           className="mt-5 max-w-[58ch] text-[16.5px] leading-[1.6]"
