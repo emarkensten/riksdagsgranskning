@@ -35,12 +35,20 @@ type Utfall = { parti: string; voteringar: number; med_vinnaren: number; andel: 
 async function hamta(parti: string) {
   const klient = db()
 
-  const [par, ensamma, exempel, franvaro, reservationer, utfall] = await Promise.all([
+  const [par, block, ensamma, exempel, franvaro, reservationer, utfall] = await Promise.all([
     // 119 rader: sju motparter i sexton ämnen plus 'alla'.
     rader<Par>(
       klient.from('partisamstammighet')
         .select('parti_1, parti_2, amne, gemensamma, lika, samstammighet')
         .or(`parti_1.eq.${parti},parti_2.eq.${parti}`)),
+    // Regeringsblockets tre inbördes par, i en egen fråga.
+    //
+    // De går INTE att sila fram ur `par` ovan: den innehåller bara par där det
+    // aktuella partiet ingår, så ett av de tre saknas alltid. På KD-sidan blev
+    // spannet därför 99,9–99,9 % — paret L–M på 100,0 fanns inte med.
+    rader<{ samstammighet: number }>(
+      klient.from('partisamstammighet').select('samstammighet').eq('amne', 'alla')
+        .in('parti_1', REGERINGSPARTIERNA).in('parti_2', REGERINGSPARTIERNA)),
     rader<Ensam>(klient.from('parti_ensam').select('*')),
     rader<Exempel>(
       klient.from('ensam_exempel').select('*').eq('parti', parti)
@@ -63,16 +71,18 @@ async function hamta(parti: string) {
     return {
       amne,
       har: snitt(i),
-      delta: snitt(i) - normalt,
+      // Avrundas här, inte vid utskriften: teckenprefixet väljs på talet som
+      // faktiskt visas, så −0,04 inte blir "−0,0".
+      delta: Math.round((snitt(i) - normalt) * 10) / 10,
       voteringar: i[0]?.gemensamma ?? 0,
     }
   })
     .filter((a) => a.voteringar > 0)
     .sort((a, b) => a.delta - b.delta)
 
-  const summera = (rader: Franvaro[]) => {
-    const roster = rader.reduce((n, r) => n + Number(r.roster), 0)
-    const franvarande = rader.reduce((n, r) => n + Number(r.franvarande), 0)
+  const summera = (poster: Franvaro[]) => {
+    const roster = poster.reduce((n, r) => n + Number(r.roster), 0)
+    const franvarande = poster.reduce((n, r) => n + Number(r.franvarande), 0)
     return { roster, franvarande, andel: roster > 0 ? (100 * franvarande) / roster : 0 }
   }
 
@@ -100,19 +110,13 @@ async function hamta(parti: string) {
       kammaren: summera(franvaro.filter((f) => f.rm === rm)).andel,
     })),
     reservation: reservationer.find((r) => r.parti === parti),
-    reservationer,
     utfall: utfall.find((u) => u.parti === parti),
-    likhetsspann: regeringsspann(par),
+    likhetsspann: spann(block.map((b) => Number(b.samstammighet))),
   }
 }
 
-/** Spannet inom regeringsblocket, räknat ur data. Endast meningsfullt för M, KD och L. */
-function regeringsspann(par: Par[]) {
-  const v = par
-    .filter((p) => p.amne === 'alla'
-      && REGERINGSPARTIERNA.some((r) => r === p.parti_1)
-      && REGERINGSPARTIERNA.some((r) => r === p.parti_2))
-    .map((p) => Number(p.samstammighet))
+/** Lägsta och högsta i en serie. Null när serien är tom, aldrig ±Infinity. */
+function spann(v: number[]) {
   return v.length ? { lagst: Math.min(...v), hogst: Math.max(...v) } : null
 }
 
@@ -239,7 +243,7 @@ export default async function Partisida({ params }: { params: Promise<{ parti: s
                   <td className="tabular whitespace-nowrap py-2.5 text-right">{tal(a.har)} %</td>
                   <td className="tabular whitespace-nowrap py-2.5 pl-4 text-right font-semibold"
                       style={{ color: i < 3 ? 'var(--accent)' : 'var(--black-svag)' }}>
-                    {a.delta > 0 ? '+' : '−'}{tal(Math.abs(a.delta))}
+                    {a.delta > 0 && '+'}{a.delta < 0 && '−'}{tal(Math.abs(a.delta))}
                   </td>
                   <td className="tabular hidden py-2.5 pl-4 text-right sm:table-cell"
                       style={{ color: 'var(--black-svag)' }}>
@@ -278,7 +282,7 @@ export default async function Partisida({ params }: { params: Promise<{ parti: s
               <>
                 <h3 className="mt-12 text-[13px] uppercase tracking-[0.12em]"
                     style={{ color: 'var(--black-svag)' }}>
-                  De tre senaste gångerna
+                  {d.exempel.length === 1 ? 'Den enda gången' : `De ${d.exempel.length} senaste gångerna`}
                 </h3>
                 <ol className="mt-3">
                   {d.exempel.map((e) => (
@@ -360,8 +364,11 @@ export default async function Partisida({ params }: { params: Promise<{ parti: s
                     style={{ color: 'var(--black-svag)' }}>
                   {tal(r.kammaren)} %
                 </td>
+                {/* Accent, inte partifärg: varje rad på sidan gäller samma
+                    parti, så färgen skulle inte koda något. Skalan är ×4 —
+                    frånvaro över 25 % fyller stapeln. */}
                 <td className="hidden w-1/2 py-2.5 pl-5 sm:table-cell">
-                  <Stapel andel={Math.min(100, r.parti * 4)} farg={PARTIFARG[parti]} />
+                  <Stapel andel={r.parti * 4} />
                 </td>
               </tr>
             ))}
