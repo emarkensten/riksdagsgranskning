@@ -11,16 +11,16 @@
  * modellen det producerar den påståenden som är trivialt motbevisbara.
  */
 
-// "jämställdhet och diskriminering" lades till efter validering: utan den
-// hamnade jämställdhetspolitiska voteringar under "konstitution och demokrati",
-// vilket gör ämnesfiltret missvisande.
-export const AMNEN = [
-  'arbetsmarknad', 'ekonomi och skatt', 'försvar och säkerhet', 'hälsa och sjukvård',
-  'integration och migration', 'jämställdhet och diskriminering', 'kultur och medier',
-  'miljö och klimat', 'näringsliv', 'rättsväsende', 'skola och utbildning',
-  'social omsorg', 'trafik och infrastruktur', 'utrikes',
-  'konstitution och demokrati', 'övrigt',
-]
+// Ämnena ligger i lib/amnen.json så att pipelinen och gränssnittets filter
+// aldrig kan glida isär. ("jämställdhet och diskriminering" lades till efter
+// validering — utan den hamnade jämställdhetsvoteringar under "konstitution
+// och demokrati".)
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+
+export const AMNEN = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../lib/amnen.json', import.meta.url)), 'utf8'),
+)
 
 export const SYSTEM = `Du förklarar vad svenska riksdagsvoteringar handlade om, på klarspråk.
 

@@ -212,14 +212,31 @@ async function anforanden() {
   }
 }
 
+// ------------------------------------------------------------------ aggregat
+
+/**
+ * Aggregaten är materialiserade vyer och blir inaktuella så fort nya röster
+ * skrivits. Utan den här uppdateringen visar sajten gamla siffror helt tyst.
+ */
+async function uppdateraAggregat() {
+  console.log('\n== Uppdaterar aggregat ==')
+  for (const vy of ['parti_rost', 'ledamot_franvaro', 'riksmote_summering']) {
+    const { error } = await db().rpc('refresh_aggregat', { vy })
+    if (error) throw new Error(`${vy}: ${error.message}`)
+    console.log(`  ${vy} uppdaterad`)
+  }
+}
+
 // ----------------------------------------------------------------------- main
 
-const stages = { ledamoter, betankanden, roster, anforanden }
+const stages = { ledamoter, betankanden, roster, anforanden, aggregat: uppdateraAggregat }
 
 if (stage === 'alla') {
-  for (const fn of [ledamoter, betankanden, roster, anforanden]) await fn()
+  for (const fn of [ledamoter, betankanden, roster, anforanden, uppdateraAggregat]) await fn()
 } else if (stages[stage]) {
   await stages[stage]()
+  // Röstimport ändrar underlaget för samtliga aggregat.
+  if (stage === 'roster') await uppdateraAggregat()
 } else {
   console.error(`Okänt steg: ${stage || '(inget)'}`)
   console.error(`Välj: ${Object.keys(stages).join(', ')}, alla`)

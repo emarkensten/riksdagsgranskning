@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { db } from '@/lib/db'
+import AMNEN from '@/lib/amnen.json'
 import { Rostrad, Rostnyckel, type PartiRad } from '@/components/rostrad'
 
 export const revalidate = 3600
@@ -32,7 +33,7 @@ async function hamta({ amne, q }: Sok) {
   const { data: roster } = await klient
     .from('parti_rost')
     .select('votering_id, parti, ja, nej, avstar, franvarande')
-    .in('votering_id', voteringsIder.slice(0, 200))
+    .in('votering_id', voteringsIder)
 
   const perVotering = new Map<string, PartiRad[]>()
   for (const r of roster ?? []) {
@@ -40,8 +41,9 @@ async function hamta({ amne, q }: Sok) {
     perVotering.get(r.votering_id)!.push(r as PartiRad)
   }
 
-  const { data: amnen } = await klient.from('punkt_klartext').select('amne')
-  const amnesLista = [...new Set((amnen ?? []).map((a) => a.amne).filter(Boolean))].sort()
+  // Ämnena kommer från den fasta taxonomin, inte från en läsning av tabellen:
+  // den skulle kapas vid 1000 rader och tappa ämnen ur senare riksmöten.
+  const amnesLista = [...AMNEN].sort((a, b) => a.localeCompare(b, 'sv'))
 
   return { punkter, perVotering, amnesLista }
 }

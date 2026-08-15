@@ -46,10 +46,18 @@ export type PartiRost = {
   linje: 'Ja' | 'Nej' | 'Avstår' | 'Frånvarande'
 }
 
-/** Partiets linje = det alternativ flest av dess ledamöter röstade på. */
+/**
+ * Partiets linje = det alternativ flest av dess NÄRVARANDE ledamöter valde.
+ *
+ * Frånvaro räknas medvetet inte med. Ett parti med 30 Ja och 40 frånvarande
+ * hade positionen Ja — att redovisa "Frånvarande" som partiets hållning vore
+ * ett sakfel. Det inträffar i ~0,5 % av partigrupperna.
+ */
 export function partilinje(r: Omit<PartiRost, 'parti' | 'linje'>): PartiRost['linje'] {
-  const par: [PartiRost['linje'], number][] = [
-    ['Ja', r.ja], ['Nej', r.nej], ['Avstår', r.avstar], ['Frånvarande', r.franvarande],
+  const avlagda: [PartiRost['linje'], number][] = [
+    ['Ja', r.ja], ['Nej', r.nej], ['Avstår', r.avstar],
   ]
-  return par.sort((a, b) => b[1] - a[1])[0][0]
+  const bast = avlagda.sort((a, b) => b[1] - a[1])[0]
+  // Bara om ingen enda ledamot röstade är frånvaro partiets faktiska hållning.
+  return bast[1] > 0 ? bast[0] : 'Frånvarande'
 }
