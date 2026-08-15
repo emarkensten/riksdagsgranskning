@@ -25,6 +25,13 @@
   --nej: #a4301c;
   --avstar: #8a7f68;
   --franvarande: #b9b1a1;
+
+  /* Textfärg ovanpå respektive röstfärg. Vit text klarar inte 4,5:1 mot de
+     ljusare av dem, och röstetiketterna är 11 px — de måste hålla måttet. */
+  --ja-text: #ffffff;
+  --nej-text: #ffffff;
+  --avstar-text: #17140f;
+  --franvarande-text: #17140f;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -42,6 +49,11 @@
     --nej: #e2705a;
     --avstar: #a89b80;
     --franvarande: #5c554a;
+
+    --ja-text: #14120e;
+    --nej-text: #14120e;
+    --avstar-text: #14120e;
+    --franvarande-text: #f0ebe0;
   }
 }
 

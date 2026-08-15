@@ -1,4 +1,4 @@
-import { db, PARTIER, PARTIFARG } from '@/lib/db'
+import { db, PARTIER, PARTIFARG, tal } from '@/lib/db'
 import AMNEN from '@/lib/amnen.json'
 import Link from 'next/link'
 
@@ -63,7 +63,7 @@ export default async function Samstammighet({
              style={{ borderColor: 'var(--accent)' }}>
             <strong>{topp.parti_1} och {topp.parti_2} röstade lika i{' '}
             {topp.lika.toLocaleString('sv-SE')} av {topp.gemensamma.toLocaleString('sv-SE')}{' '}
-            voteringar</strong> — {topp.samstammighet.toFixed(1)} % av hela mandatperioden.
+            voteringar</strong> — {tal(topp.samstammighet)} % av hela mandatperioden.
           </p>
         )}
       </div>
@@ -149,7 +149,7 @@ export default async function Samstammighet({
                   {p.lika} / {p.gemensamma}
                 </td>
                 <td className="tabular py-2 pl-6 text-right font-semibold">
-                  {p.samstammighet.toFixed(1)} %
+                  {tal(p.samstammighet)} %
                 </td>
                 <td className="w-1/3 py-2 pl-4">
                   <span className="block h-1.5 rounded-sm" style={{

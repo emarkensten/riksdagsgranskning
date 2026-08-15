@@ -1,4 +1,4 @@
-import { PARTIER, PARTIFARG, ROSTFARG, partilinje } from '@/lib/db'
+import { PARTIER, PARTIFARG, ROSTFARG, ROSTTEXT, partilinje } from '@/lib/db'
 
 export type PartiRad = {
   parti: string
@@ -6,6 +6,34 @@ export type PartiRad = {
   nej: number
   avstar: number
   franvarande: number
+}
+
+/**
+ * Ett parti och dess linje som en etikett. Partifärgen sitter i understrykningen,
+ * röstfärgen i fyllningen — färgen bär alltså två uppgifter utan att blandas.
+ */
+export function Linjeetikett({
+  parti,
+  linje,
+  titel,
+}: {
+  parti: string
+  linje: string
+  titel?: string
+}) {
+  return (
+    <span
+      title={titel ?? `${parti}: ${linje}`}
+      className="tabular inline-block w-9 rounded-sm py-0.5 text-center text-[11px] font-semibold"
+      style={{
+        background: ROSTFARG[linje],
+        color: ROSTTEXT[linje],
+        boxShadow: `inset 0 -2px 0 ${PARTIFARG[parti]}`,
+      }}
+    >
+      {parti}
+    </span>
+  )
 }
 
 /**
@@ -34,17 +62,12 @@ export function Rostrad({ rader }: { rader: PartiRad[] }) {
         }
         const linje = partilinje(r)
         return (
-          <span
+          <Linjeetikett
             key={p}
-            title={`${p}: ${linje} (Ja ${r.ja}, Nej ${r.nej}, Avstår ${r.avstar}, Frånv. ${r.franvarande})`}
-            className="tabular w-9 rounded-sm py-0.5 text-center text-[11px] font-semibold text-white"
-            style={{
-              background: ROSTFARG[linje],
-              boxShadow: `inset 0 -2px 0 ${PARTIFARG[p]}`,
-            }}
-          >
-            {p}
-          </span>
+            parti={p}
+            linje={linje}
+            titel={`${p}: ${linje} (Ja ${r.ja}, Nej ${r.nej}, Avstår ${r.avstar}, Frånv. ${r.franvarande})`}
+          />
         )
       })}
     </div>
