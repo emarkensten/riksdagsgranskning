@@ -2,14 +2,16 @@ import Link from 'next/link'
 import { PARTIER, lista, namn, slug, tal, REGERINGSPARTIERNA } from '@/lib/db'
 import { hamtaAlla, motparter, snitt } from '@/lib/partier'
 import { Etikett, Forbehall, Partiprick, Textlank } from '@/components/system'
+import { sidmetadata } from '@/lib/sajt'
 
 export const revalidate = 3600
 
-export const metadata = {
-  title: 'Partierna — Namnupprop',
-  description:
+export const metadata = sidmetadata({
+  titel: 'Partierna',
+  beskrivning:
     'Åtta partier, åtta sidor. Vem varje parti röstar med, var det skiljer sig från sin egen normalnivå, och hur ofta det stod ensamt.',
-}
+  sokvag: '/partier',
+})
 
 /** Så många partier ligger överst som kort. Resten blir listrader. */
 const KORT = 4

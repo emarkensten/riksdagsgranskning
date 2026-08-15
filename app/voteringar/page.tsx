@@ -5,15 +5,17 @@ import AMNEN from '@/lib/amnen.json'
 import { Rostrad, Rostnyckel, type PartiRad } from '@/components/rostrad'
 import { Chip } from '@/components/system'
 import { Forstoringsglas } from '@/components/ikoner'
+import { sidmetadata } from '@/lib/sajt'
 
 // Ingen revalidate: sidan läser searchParams och renderas därför alltid
 // dynamiskt. En deklaration här hade sett ut som en cache som inte finns.
 
-export const metadata = {
-  title: 'Voteringarna — Namnupprop',
-  description:
+export const metadata = sidmetadata({
+  titel: 'Voteringarna',
+  beskrivning:
     'Varje votering med namnupprop i mandatperioden 2022–2026, förklarad på vanlig svenska: vad frågan gällde, vad ett ja innebar och vad ett nej innebar.',
-}
+  sokvag: '/voteringar',
+})
 
 const PER_SIDA = 40
 

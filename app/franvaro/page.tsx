@@ -2,14 +2,16 @@ import Link from 'next/link'
 import { antal, db, heltal, namn, rader, rakna, tal, PARTIFARG } from '@/lib/db'
 import { Stapel } from '@/components/stapel'
 import { Etikett, Forbehall, Partiprick, Textlank } from '@/components/system'
+import { sidmetadata } from '@/lib/sajt'
 
 export const revalidate = 3600
 
-export const metadata = {
-  title: 'Vem var inte på plats? — Namnupprop',
-  description:
+export const metadata = sidmetadata({
+  titel: 'Vem var inte på plats?',
+  beskrivning:
     'Frånvaron i riksdagen 2022–2026, riksmöte för riksmöte och parti för parti. Räknat på rösterna, inte på voteringarna.',
-}
+  sokvag: '/franvaro',
+})
 
 /** Andelen av riksmötets voteringar en ledamot måste ha deltagit i för att listas. */
 const HALVTID = 0.5

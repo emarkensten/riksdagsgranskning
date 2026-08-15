@@ -5,6 +5,8 @@ import { Linjeetikett, Rostnyckel } from '@/components/rostrad'
 import { Stapel } from '@/components/stapel'
 import { Forbehall, Tillbaka } from '@/components/system'
 import { Bock, Kryss } from '@/components/ikoner'
+import { korta, sidmetadata } from '@/lib/sajt'
+import { rubrik } from '@/lib/votering'
 
 export const revalidate = 3600
 
@@ -44,6 +46,27 @@ async function hamta(id: number) {
         .eq('bet_dok_id', f.bet_dok_id).order('anforanden', { ascending: false })),
   ])
   return { k: k as any, f, roster, reservationer, debatt }
+}
+
+/**
+ * 2 587 voteringar är lika många landningssidor, och var och en är den enda
+ * sida på sajten som besvarar exakt sin fråga. Utan egen metadata delades de
+ * alla som "Namnupprop — så röstade riksdagen".
+ */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const r = await rubrik(Number(id))
+  if (!r) return {}
+  return sidmetadata({
+    // Sakfrågan kapas till 90 tecken. Den är i snitt 126 och som längst 247,
+    // vilket duger som rubrik på sidan men inte i en webbläsarflik.
+    titel: korta(r.sakfraga, 90),
+    // Sakfrågan upprepas inte här — den står redan i titeln, och de flesta
+    // börjar med "Om riksdagen skulle", vilket gjorde varje inledning till
+    // "partier om om riksdagen skulle".
+    beskrivning: `Hur de åtta partierna röstade, vad ett ja innebar och vad ett nej innebar. ${r.beteckning} i riksmötet ${r.rm}, förklarad på vanlig svenska.`,
+    sokvag: `/voteringar/${id}`,
+  })
 }
 
 export default async function Votering({ params }: { params: Promise<{ id: string }> }) {
