@@ -7,6 +7,7 @@ import { Forbehall, Tillbaka } from '@/components/system'
 import { Bock, Kryss } from '@/components/ikoner'
 import { korta, sidmetadata } from '@/lib/sajt'
 import { rubrik } from '@/lib/votering'
+import { avkoda } from '@/lib/text'
 
 export const revalidate = 3600
 
@@ -45,7 +46,15 @@ async function hamta(id: number) {
       klient.from('betankande_debatt').select('parti, anforanden, talare')
         .eq('bet_dok_id', f.bet_dok_id).order('anforanden', { ascending: false })),
   ])
-  return { k: k as any, f, roster, reservationer, debatt }
+  // Avkodas här och inte vid renderingen: riksdagens texter bär HTML-entiteter,
+  // och varje ställe som glömmer avkoda visar "f&ouml;rslag" ordagrant.
+  return {
+    k: k as any,
+    f: { ...f, forslag: avkoda(f.forslag), rubrik: avkoda(f.rubrik) },
+    roster,
+    reservationer: reservationer.map((r) => ({ ...r, text: avkoda(r.text) })),
+    debatt,
+  }
 }
 
 /**
