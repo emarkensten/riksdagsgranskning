@@ -90,7 +90,11 @@ export type PartiRost = {
  *
  * Frånvaro räknas medvetet inte med. Ett parti med 30 Ja och 40 frånvarande
  * hade positionen Ja — att redovisa "Frånvarande" som partiets hållning vore
- * ett sakfel. Det inträffar i ~0,5 % av partigrupperna.
+ * ett sakfel.
+ *
+ * Fallet där ingen enda ledamot röstade har inte inträffat: 0 av 20 552
+ * partigrupper i mandatperioden. Grenen finns för att den annars skulle
+ * returnera fel linje den dagen det händer.
  */
 export function partilinje(r: Omit<PartiRost, 'parti' | 'linje'>): PartiRost['linje'] {
   const avlagda: [PartiRost['linje'], number][] = [
