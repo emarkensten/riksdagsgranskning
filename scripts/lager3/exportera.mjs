@@ -14,12 +14,16 @@ import { harPartilinje } from './regel.mjs'
 
 const rm = process.argv[2] && process.argv[2] !== 'alla' ? process.argv[2] : undefined
 const PER = parseInt(process.argv[3] ?? '100', 10)
-const KATALOG = 'scratch/lager3'
+// Egen katalog per körning. Att tömma en delad katalog skulle dra undan
+// filerna för agenter som läser dem just nu.
+const KATALOG = process.argv[4] ?? `scratch/lager3-${(rm ?? 'alla').replace('/', '-')}`
 
 const alla = (await hamtaAnforanden({ rm, baraNya: true })).filter((a) => harPartilinje(a.parti))
 console.log(`${alla.length} huvudanföranden${rm ? ` i ${rm}` : ''} att bedöma`)
 
-fs.rmSync(KATALOG, { recursive: true, force: true })
+if (fs.existsSync(KATALOG) && fs.readdirSync(KATALOG).length) {
+  throw new Error(`${KATALOG} är inte tom — ange en annan katalog som fjärde argument.`)
+}
 fs.mkdirSync(KATALOG, { recursive: true })
 
 let n = 0

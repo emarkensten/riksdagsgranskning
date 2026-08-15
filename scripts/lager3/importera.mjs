@@ -13,12 +13,22 @@ import { db, upsert } from '../etl/lib.mjs'
 import { hamtaAnforanden } from './underlag.mjs'
 import { tillampaRegler } from './regel.mjs'
 
-const KATALOG = 'scratch/lager3'
 const MODELL = process.env.LAGER3_MODELL ?? 'claude-sonnet-5'
 
-const filer = fs.readdirSync(KATALOG).filter((f) => f.startsWith('svar-') && f.endsWith('.json'))
-if (!filer.length) throw new Error(`Inga svar-*.json i ${KATALOG}/`)
-console.log(`${filer.length} svarsfiler`)
+// Läser svar-*.json ur alla scratch/lager3*-kataloger, så flera vågor kan
+// importeras i en enda körning.
+const kataloger = fs.readdirSync('scratch')
+  .filter((d) => d.startsWith('lager3'))
+  .map((d) => path.join('scratch', d))
+  .filter((d) => fs.statSync(d).isDirectory())
+
+const filer = kataloger.flatMap((k) =>
+  fs.readdirSync(k)
+    .filter((f) => f.startsWith('svar-') && f.endsWith('.json'))
+    .map((f) => path.join(k, f)))
+
+if (!filer.length) throw new Error('Inga svar-*.json under scratch/lager3*/')
+console.log(`${filer.length} svarsfiler i ${kataloger.length} kataloger`)
 
 // Punktnummer måste översättas till forslagspunkt_id, och en agent kan ange
 // en punkt som inte finns i ärendet — de kastas hellre än gissas.
@@ -31,7 +41,7 @@ let okand = 0, nedgraderade = 0, trasiga = 0
 for (const f of filer) {
   let poster
   try {
-    poster = JSON.parse(fs.readFileSync(path.join(KATALOG, f), 'utf8'))
+    poster = JSON.parse(fs.readFileSync(f, 'utf8'))
   } catch (e) {
     console.error(`  ! ${f}: ogiltig JSON — ${e.message}`)
     trasiga++
