@@ -30,6 +30,15 @@ export default async function Votering({ params }: { params: Promise<{ id: strin
   if (!data) notFound()
   const { k, f, roster, reservationer } = data
 
+  // Utskottets förslag ställs som ja, reservationen som nej. Utfallet räknas
+  // därför fram ur rösterna i stället för att läsas ur forslagspunkt.vinnare:
+  // det fältet innehåller även etiketterna 'bifall' och 'Avslagen' för punkter
+  // som utskottet faktiskt vann, och skulle visa fel vinnare för fyra av dem.
+  const ja = roster.reduce((n: number, r: any) => n + r.ja, 0)
+  const nej = roster.reduce((n: number, r: any) => n + r.nej, 0)
+  const rostades = ja + nej > 0
+  const utskottetVann = !rostades || ja > nej
+
   return (
     <main className="pb-10">
       <div className="regel-tjock pt-8">
@@ -68,9 +77,9 @@ export default async function Votering({ params }: { params: Promise<{ id: strin
 
       <section className="mt-12 grid gap-px sm:grid-cols-2">
         <Innebord etikett="Ja innebar" text={k.ja_innebar} farg="var(--ja)"
-                  vann={f.vinnare === 'utskottet'} />
+                  vann={rostades && utskottetVann} />
         <Innebord etikett="Nej innebar" text={k.nej_innebar} farg="var(--nej)"
-                  vann={f.vinnare !== 'utskottet'} />
+                  vann={rostades && !utskottetVann} />
       </section>
 
       <section className="regel mt-12 pt-7">
@@ -119,8 +128,14 @@ export default async function Votering({ params }: { params: Promise<{ id: strin
           </tbody>
         </table>
         <p className="mt-3 text-[13px]" style={{ color: 'var(--black-svag)' }}>
-          Vann: {f.vinnare === 'utskottet' ? 'utskottets förslag' : `reservation ${f.motforslag_nummer}`}
-          {f.motforslag_partier?.length ? ` · motförslaget stöddes av ${f.motforslag_partier.join(', ')}` : ''}
+          {!rostades
+            ? 'Ingen omröstning med namnupprop på den här punkten.'
+            : utskottetVann
+              ? `Utskottets förslag vann med ${ja} röster mot ${nej}.`
+              : `Reservation ${f.motforslag_nummer} vann med ${nej} röster mot ${ja}.`}
+          {f.motforslag_partier?.length
+            ? ` Motförslaget stöddes av ${f.motforslag_partier.join(', ')}.`
+            : ''}
         </p>
       </section>
 
