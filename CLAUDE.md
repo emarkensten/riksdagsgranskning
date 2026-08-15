@@ -133,7 +133,20 @@ rubriken avgörs ofta av tiondelar. Skriv alltid ut det bredvid siffran.
 npm run dev        # utvecklingsserver
 ```
 
-ETL-skript ligger i `scripts/etl/`. Se `docs/ETL.md`.
+ETL-skript ligger i `scripts/etl/`. Det finns ingen separat ETL-dokumentation —
+`run.mjs` är kommenterad och `aggregat_vyer()` i databasen styr vilka
+materialiserade vyer som uppdateras och i vilken ordning.
+
+`docs/DEVELOPMENT.md` är en checklista från projektets första vecka och
+beskriver ett upplägg som inte längre gäller.
+
+---
+
+## Läget
+
+`docs/LAGE_2026-08.md` beskriver vad sajten är i dag och vad som återstår.
+Börja där. `docs/PLAN_EFTER_GRANSKNING.md` är genomförd och står kvar som
+underlag för varför sidorna ser ut som de gör.
 
 ---
 
