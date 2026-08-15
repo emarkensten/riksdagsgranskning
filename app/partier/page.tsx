@@ -135,7 +135,11 @@ export default async function Partier() {
           rätt eller får igenom mest. Två partier kan rösta lika av rakt motsatta
           skäl.
         </Forbehall>
-        <Textlank href="/metod#begransningar" className="mt-8">Så räknas talen</Textlank>
+        {/* Till frågan, inte till begränsningslistan: avsnittet ovan ställer
+            exakt den fråga metodsidan numera har en egen adress för. */}
+        <Textlank href="/metod#tre-lika" className="mt-8">
+          Varför tre av partisidorna ser likadana ut
+        </Textlank>
       </section>
     </main>
   )

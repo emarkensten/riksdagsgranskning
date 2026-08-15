@@ -170,7 +170,10 @@ export default async function Voteringar({
           de {heltal(d.totalt - d.medRoster)} övriga gällde namnuppropet
           motiveringen — hur beslutet skulle motiveras, inte vad som beslutades.
           De rösterna säger inget om partiernas hållning i sakfrågan och räknas
-          därför inte, så raderna visas utan partiernas linjer.
+          därför inte, så raderna visas utan partiernas linjer.{' '}
+          <Link href="/metod#olika-tal" className="underline hover:opacity-70">
+            Varför sidorna säger olika många
+          </Link>
         </p>
       </section>
 
