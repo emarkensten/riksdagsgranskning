@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const SIDOR = [
+  // Partier först — det är den ingång flest söker.
+  { href: '/partier', text: 'Partier' },
   { href: '/amnen', text: 'Ämnen' },
   { href: '/samstammighet', text: 'Vem röstar med vem' },
   { href: '/voteringar', text: 'Voteringar' },
