@@ -2,18 +2,108 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-  scroll-behavior: smooth;
-}
+/*
+  Redaktionell civic-print. Tanken: det här ska läsas som en välgjord
+  tidningsbilaga om riksdagen, inte som ett dashboard. Därför linjer istället
+  för kort, varmt papper istället för vitt, och en enda skarp accent.
 
-body {
-  background-color: rgb(255, 255, 255);
-  color: rgb(0, 0, 0);
+  Partifärger är DATA och används aldrig som dekor — annars börjar
+  gränssnittet självt se ut att ta ställning.
+*/
+
+:root {
+  --papper: #f4f1ea;
+  --papper-djup: #eae5da;
+  --black: #17140f;
+  --black-mjuk: #4a453c;
+  --black-svag: #7d7669;
+  --linje: #d5cec0;
+  --accent: #a4301c;
+  --accent-svag: #f0e3df;
+
+  --ja: #2f6b4f;
+  --nej: #a4301c;
+  --avstar: #8a7f68;
+  --franvarande: #b9b1a1;
 }
 
 @media (prefers-color-scheme: dark) {
-  body {
-    background-color: rgb(10, 10, 10);
-    color: rgb(255, 255, 255);
+  :root:not([data-theme='light']) {
+    --papper: #14120e;
+    --papper-djup: #1d1a15;
+    --black: #f0ebe0;
+    --black-mjuk: #b8b0a1;
+    --black-svag: #857d6e;
+    --linje: #332f27;
+    --accent: #e2705a;
+    --accent-svag: #2a1e1a;
+
+    --ja: #6aab8a;
+    --nej: #e2705a;
+    --avstar: #a89b80;
+    --franvarande: #5c554a;
   }
 }
+
+:root[data-theme='dark'] {
+  --papper: #14120e;
+  --papper-djup: #1d1a15;
+  --black: #f0ebe0;
+  --black-mjuk: #b8b0a1;
+  --black-svag: #857d6e;
+  --linje: #332f27;
+  --accent: #e2705a;
+  --accent-svag: #2a1e1a;
+
+  --ja: #6aab8a;
+  --nej: #e2705a;
+  --avstar: #a89b80;
+  --franvarande: #5c554a;
+}
+
+body {
+  background: var(--papper);
+  color: var(--black);
+  font-family: var(--font-brod), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'kern' 1;
+}
+
+/* Pappersstruktur — knappt synlig, men tar bort den platta skärmkänslan. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+}
+
+.display {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 0.95;
+}
+
+/* Siffror i tabeller måste stå i kolumn. */
+.tabular { font-variant-numeric: tabular-nums; }
+
+.regel { border-top: 1px solid var(--linje); }
+.regel-tjock { border-top: 2px solid var(--black); }
+
+/* Staplad reveal vid sidladdning — en gång, inte överallt. */
+@keyframes stig {
+  from { opacity: 0; transform: translateY(0.6rem); }
+  to   { opacity: 1; transform: none; }
+}
+.stig { animation: stig 0.7s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stig { animation: none; }
+}
+
+a { color: inherit; }
+
+::selection { background: var(--accent); color: var(--papper); }
