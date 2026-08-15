@@ -1,5 +1,10 @@
 # Plan efter granskning
 
+> **Genomförd 2026-08-15.** Alla åtta punkter är byggda och mergade i PR #13–#21.
+> Se [`LAGE_2026-08.md`](LAGE_2026-08.md) för vad sajten är i dag och vad som
+> återstår. Det här dokumentet står kvar som underlag — det beskriver varför
+> sidorna ser ut som de gör.
+
 **Datum:** 2026-08-15
 **Ersätter:** `PLAN_OMVINKLING.md`, som nu är byggd
 
