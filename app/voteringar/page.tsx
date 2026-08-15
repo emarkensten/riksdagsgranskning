@@ -35,12 +35,18 @@ type Rad = {
 async function hamta({ amne, q, rm, sida }: Sok) {
   const klient = db()
 
-  const [riksmoten, totalt] = await Promise.all([
+  const [riksmoten, totalt, medRoster] = await Promise.all([
     rader<{ rm: string }>(
       klient.from('riksmote_summering').select('rm').order('rm', { ascending: false })),
     // Hela listans storlek, oberoende av filtren. Heron påstår hur många
     // beslut sajten förklarar, och det talet får inte stå hårdkodat.
     rakna(antal(klient, 'votering_lista'), 'voteringar'),
+    // votering_lista är varje förslagspunkt med klarspråk — den filtrerar inte
+    // på röstdata. jamn_votering har en rad per votering_id i parti_rost, alltså
+    // de punkter som faktiskt fick protokollförda röster. Skillnaden är liten
+    // (18 av 2 587) men den förklarar varför startsidan säger ett annat tal än
+    // den här sidan, och då ska den stå utskriven i stället för att förvirra.
+    rakna(antal(klient, 'jamn_votering'), 'voteringar med röstdata'),
   ])
 
   // Filtren valideras mot kända värden. Ett okänt ämne eller riksmöte ska ge
@@ -96,6 +102,7 @@ async function hamta({ amne, q, rm, sida }: Sok) {
     perVotering,
     traffar,
     totalt,
+    medRoster,
     sidor,
     nr,
     riksmoten: riksmoten.map((r) => r.rm),
@@ -148,7 +155,17 @@ export default async function Voteringar({
           className="stig mt-6 max-w-[50ch] text-[19px] leading-[1.5]"
           style={{ color: 'var(--black-mjuk)', animationDelay: '80ms' }}
         >
-          Varje votering med namnupprop, med vad ett ja och ett nej innebar.
+          Varje förslagspunkt riksdagen avgjorde, förklarad på vanlig svenska:
+          vad frågan gällde, vad ett ja innebar och vad ett nej innebar.
+        </p>
+        {/* Startsidan säger 2 569 och den här sidan 2 587. Skillnaden är verklig
+            och ska stå här, inte lämnas åt läsaren att upptäcka. */}
+        <p className="stig mt-4 max-w-[62ch] text-[13.5px] leading-[1.6]"
+           style={{ color: 'var(--black-svag)', animationDelay: '80ms' }}>
+          {heltal(d.medRoster)} av dem avgjordes med namnupprop och har
+          protokollförda röster. För de {heltal(d.totalt - d.medRoster)} övriga
+          finns voteringen registrerad, men inga röster i öppna data — de raderna
+          visas utan partiernas linjer.
         </p>
       </section>
 
