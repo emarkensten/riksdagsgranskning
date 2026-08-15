@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Schibsted_Grotesk, IBM_Plex_Mono } from 'next/font/google'
 import Link from 'next/link'
 import { Navigation } from '@/components/navigation'
+import { AVSANDARE, REPO, SAJT } from '@/lib/sajt'
 import './globals.css'
 
 /**
@@ -30,8 +31,10 @@ export const metadata: Metadata = {
 }
 
 const FOTLANKAR = [
+  { href: '/om', text: 'Om sajten' },
   { href: '/metod', text: 'Metod' },
   { href: '/metod#begransningar', text: 'Begränsningar' },
+  { href: REPO, text: 'Källkod' },
   { href: 'https://data.riksdagen.se', text: 'Om data' },
 ]
 
@@ -61,14 +64,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <div className="mt-24" style={{ borderTop: '1px solid var(--linje)' }}>
           <footer className="mx-auto flex max-w-5xl flex-col justify-between gap-6 px-5 py-10 sm:flex-row sm:gap-10 sm:px-8">
-            <p
-              className="max-w-[60ch] text-[13.5px] leading-relaxed"
-              style={{ color: 'var(--black-svag)' }}
-            >
-              Källa: Sveriges riksdags öppna data. Voteringarnas innebörd är
-              sammanfattad automatiskt från utskottens förslag och reservationer —
-              varje sammanfattning kan granskas mot originaltexten.
-            </p>
+            {/* Avsändaren står i sidfoten och inte bara på /om: frågan "vem
+                ligger bakom det här?" ställs på den sida läsaren råkar stå på,
+                och ska ha ett svar där. */}
+            <div className="max-w-[60ch] text-[13.5px] leading-relaxed">
+              <p style={{ color: 'var(--black-svag)' }}>
+                Källa: Sveriges riksdags öppna data. Voteringarnas innebörd är
+                sammanfattad automatiskt från utskottens förslag och reservationer —
+                varje sammanfattning kan granskas mot originaltexten.
+              </p>
+              {/* Ingen länk i meningen: länkraden intill bär redan "Om sajten",
+                  och två likadana mål i samma sidfot är brus. */}
+              <p className="mt-3" style={{ color: 'var(--black-svag)' }}>
+                {SAJT} är en privat sajt av {AVSANDARE}, utan koppling till
+                Sveriges riksdag och utan finansiering, partiuppdrag eller
+                annonser.
+              </p>
+            </div>
             <nav className="flex shrink-0 flex-wrap gap-5 text-[13.5px] font-medium">
               {FOTLANKAR.map((l) => (
                 <Link

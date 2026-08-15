@@ -4,12 +4,13 @@ import {
 import { Stapel } from '@/components/stapel'
 import { Etikett, Forbehall, Nyckeltal, Textlank } from '@/components/system'
 import { regeringsspann } from '@/lib/partier'
+import { AVSANDARE, NYTT_ARENDE, REPO } from '@/lib/sajt'
 import AMNEN from '@/lib/amnen.json'
 
 export const revalidate = 3600
 
 export const metadata = {
-  title: 'Så räknar vi — Namnupprop',
+  title: 'Så räknar jag — Namnupprop',
   description:
     'Svar på det som brukar frågas om sajten: hur talen räknas, om ett nej betyder motstånd, vem som skrev klarspråket, varför två sidor säger olika många — och vad materialet inte kan svara på.',
 }
@@ -20,7 +21,7 @@ const NIVAER = ['hög', 'medel', 'låg'] as const
 /**
  * Sidans register, och därmed dess FAQ. Posterna är frågor därför att en läsare
  * som undrar om AI-texterna går att lita på inte letar efter uppslagsordet
- * "Klarspråket och ämnena" — den läsaren söker på sin fråga, inte på vårt
+ * "Klarspråket och ämnena" — den läsaren söker på sin fråga, inte på sajtens
  * begrepp.
  *
  * Ankarnamnen är oförändrade och får inte döpas om: sidhuvudets fot, /partier,
@@ -37,6 +38,7 @@ const INNEHALL = [
   ['regeringssidan', 'Fick regeringen igenom sin politik?'],
   ['tre-lika', 'Varför ser tre av partisidorna likadana ut?'],
   ['begransningar', 'Vad kan materialet inte svara på?'],
+  ['avsandare', 'Vem ligger bakom sajten?'],
   ['fel', 'Hittar du ett fel?'],
   ['hyckleri', 'Säger politikerna en sak och röstar tvärtom?'],
 ] as const
@@ -176,7 +178,7 @@ export default async function Metod() {
       <section className="pb-10 pt-16">
         <Etikett className="stig" ton="signal">Metod och källor</Etikett>
         <h1 className="display stig mt-6 text-[clamp(2.8rem,8.5vw,96px)]" style={{ animationDelay: '80ms' }}>
-          Så räknar vi.
+          Så räknar jag.
         </h1>
         <p className="stig mt-7 max-w-[52ch] text-[clamp(17px,2.2vw,20px)] leading-[1.45]"
            style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}>
@@ -594,7 +596,7 @@ export default async function Metod() {
         </h2>
         <p className="mt-5 max-w-[58ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
           Det här begränsar varje slutsats på sajten. Listan står här därför att
-          en siffra utan sitt förbehåll är ett påstående vi inte kan försvara.
+          en siffra utan sitt förbehåll är ett påstående sajten inte kan försvara.
         </p>
 
         <div className="mt-12 grid gap-10">
@@ -650,6 +652,32 @@ export default async function Metod() {
         </div>
       </section>
 
+      {/* Svaret i korthet, med hela redogörelsen på /om. Frågan står här därför
+          att sidan är sajtens FAQ — den som undrar vem som räknat söker på sin
+          fråga, inte i sidfoten. */}
+      <section id="avsandare" className="regel scroll-mt-6 py-16">
+        <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Vem ligger bakom sajten?</h2>
+        <div className="mt-7 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
+             style={{ color: 'var(--black-mjuk)' }}>
+          <p>
+            <strong style={{ color: 'var(--black)' }}>{AVSANDARE}</strong>,
+            privatperson. Sajten har ingen koppling till Sveriges riksdag, till
+            något parti eller till någon myndighet. Namnet är riksdagens ord för
+            förfarandet när rösterna räknas ledamot för ledamot — inte en
+            avsändare.
+          </p>
+          <p>
+            Ingen finansiering, inget partiuppdrag, ingen annonsering. Källkoden
+            är öppen, så räkningen bakom varje tal på den här sidan går att läsa
+            och göra om.
+          </p>
+        </div>
+        <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3">
+          <Textlank href="/om">Om sajten och den som byggt den</Textlank>
+          <Textlank href={REPO} extern>Läs källkoden på GitHub</Textlank>
+        </div>
+      </section>
+
       <section id="fel" className="regel scroll-mt-6 py-16">
         <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Hittar du ett fel?</h2>
         <div className="mt-6 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
@@ -666,7 +694,7 @@ export default async function Metod() {
           </p>
         </div>
         <a
-          href="https://github.com/emarkensten/riksdagsgranskning/issues/new"
+          href={NYTT_ARENDE}
           target="_blank"
           rel="noreferrer"
           className="mt-8 inline-block rounded-full px-[26px] py-[15px] text-[15px] font-semibold transition-[filter] duration-150 hover:brightness-[0.94]"
@@ -685,8 +713,8 @@ export default async function Metod() {
           Säger politikerna en sak och röstar tvärtom?
         </h2>
         <p className="mt-7 max-w-[54ch] text-[19px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
-          Vi prövade att mäta det, och måttet höll inte. Det är den vanligaste
-          idén om riksdagsgranskning, så här är de tre stegen där den föll.
+          Jag prövade att mäta det, och måttet höll inte. Det är den vanligaste
+          idén om granskning av riksdagen, så här är de tre stegen där den föll.
         </p>
 
         <ol className="mt-14 grid gap-10">
@@ -725,7 +753,7 @@ export default async function Metod() {
           </p>
           <p>
             Ett verktyg som räknar det som en motsägelse producerar hundratals
-            falska anklagelser. Vi valde att inte bygga det.
+            falska anklagelser. Jag valde att inte bygga det.
           </p>
         </div>
         <Textlank href="/samstammighet" className="mt-8">

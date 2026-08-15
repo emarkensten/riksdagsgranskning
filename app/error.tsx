@@ -1,6 +1,7 @@
 'use client'
 
 import { Etikett } from '@/components/system'
+import { NYTT_ARENDE } from '@/lib/sajt'
 
 /**
  * Felgränsen för hela sajten.
@@ -42,7 +43,7 @@ export default function Fel({ reset }: { error: Error; reset: () => void }) {
           Till startsidan
         </a>
         <a
-          href="https://github.com/emarkensten/riksdagsgranskning/issues/new"
+          href={NYTT_ARENDE}
           target="_blank"
           rel="noreferrer"
           className="text-[14.5px] font-semibold transition-opacity duration-150 hover:opacity-70"
