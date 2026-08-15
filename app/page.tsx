@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { antal, db, heltal, lista, namn, rader, rakna, tal, REGERINGSPARTIERNA } from '@/lib/db'
 import { Linjeetikett } from '@/components/rostrad'
+import { Etikett, Forbehall, Knapp, Nyckeltal, Partiprick, Textlank } from '@/components/system'
+import { Stapel } from '@/components/stapel'
 import { regeringsspann } from '@/lib/partier'
 
 export const revalidate = 3600
@@ -50,7 +52,7 @@ async function hamta() {
     rakna(antal(klient, 'jamn_votering'), 'voteringar'),
   ])
 
-  const rankade = ensamma.map((e) => ({ ...e, andel: Number(e.andel) }))
+  const rankade = ensamma.map((e) => ({ ...e, andel: Number(e.andel), ensam: Number(e.ensam) }))
   const mestEnsam = rankade[0]
 
   const ensamExempel = await rader<Exempel>(
@@ -111,114 +113,142 @@ export default async function Start() {
   // så fort nästa riksmöte importeras.
   const aldrigEnsamma = d.rankade.filter((p) => p.ensam === 0).map((p) => namn(p.parti))
   const forlustPartier = [...new Set(d.forluster.flatMap((f) => f.motforslag_partier ?? []))]
-
-  const fynd = [
-    {
-      tal: d.topp ? d.topp.lika.toLocaleString('sv-SE') : '—',
-      text: `av ${d.topp?.gemensamma.toLocaleString('sv-SE')} voteringar röstade ${namn(d.topp?.parti_1)} och ${namn(d.topp?.parti_2)} lika. Deras linjer gick aldrig isär under hela mandatperioden.`,
-      href: '/samstammighet',
-      lank: 'Se hela matrisen',
-    },
-    {
-      tal: d.mestEnsam?.ensam.toLocaleString('sv-SE') ?? '—',
-      text: `gånger stod ${namn(d.mestEnsam?.parti)} ensamt mot alla sju andra partier — oftare än något annat parti.${
-        aldrigEnsamma.length ? ` ${lista(aldrigEnsamma)} gjorde det aldrig.` : ''
-      }`,
-      href: '#ensam',
-      lank: 'Se alla åtta partier',
-    },
-    {
-      tal: String(d.forluster.length),
-      text: `gånger föll utskottets förslag i kammaren, av ${d.voteringar.toLocaleString('sv-SE')} voteringar.${
-        forlustPartier.length ? ` Reservationen kom från ${lista(forlustPartier.map(namn))}.` : ''
-      }`,
-      href: '#forlorade',
-      lank: 'Se fallen',
-    },
-    {
-      tal: `${tal(d.franvaroandel)} %`,
-      text: `av ${heltal(d.roster)} röstningstillfällen stod tomma. Andelen varierar mellan riksmötena: ${tal(d.hogsta?.andel ?? 0)} % i ${d.hogsta?.rm} mot ${tal(d.lagsta?.andel ?? 0)} % i ${d.lagsta?.rm}.`,
-      href: '/franvaro',
-      lank: 'Se frånvaron per parti',
-    },
-    // Nyheten är de tolv, inte de hundra elva. Talet som leder ett fynd ska
-    // vara det som är värt att veta, inte det största som råkar finnas.
-    {
-      tal: heltal(d.avgjorde),
-      text: `voteringar hade kunnat sluta annorlunda om alla frånvarande röstat med sitt parti — av ${heltal(d.jamna)} som avgjordes med tre rösters marginal eller mindre.`,
-      href: '/franvaro#avgjorde',
-      lank: `Se de ${heltal(d.avgjorde)} fallen`,
-    },
-  ]
+  const storstEnsam = d.rankade[0]?.ensam || 1
 
   return (
-    <main className="pb-10">
-      <section className="regel-tjock pt-8">
-        <p
-          className="stig text-[13px] uppercase tracking-[0.18em]"
-          style={{ color: 'var(--accent)', animationDelay: '0ms' }}
-        >
-          Mandatperioden 2022–2026
-        </p>
+    <main>
+      {/* Hero */}
+      <section className="pb-16 pt-[72px] sm:pb-[72px] sm:pt-[88px]">
+        <div className="stig flex items-center gap-2.5" style={{ animationDelay: '0ms' }}>
+          <span
+            aria-hidden
+            className="inline-block h-[9px] w-[9px] rounded-full"
+            style={{ background: 'var(--accent)' }}
+          />
+          <span className="text-[13px] font-semibold" style={{ color: 'var(--accent)' }}>
+            Mandatperioden 2022–2026
+          </span>
+        </div>
 
         <h1
-          className="display stig mt-5 text-[clamp(2.6rem,8vw,5.5rem)]"
+          className="display stig mt-10 max-w-[15ch] text-[clamp(3rem,9vw,116px)]"
           style={{ animationDelay: '80ms' }}
         >
-          Så röstade
-          <br />
-          riksdagen<span style={{ color: 'var(--accent)' }}>.</span>
+          Så röstade riksdagen.
         </h1>
 
         <p
-          className="stig mt-7 max-w-[48ch] text-[17px] leading-relaxed"
+          className="stig mt-10 max-w-[46ch] text-[clamp(18px,2.4vw,22px)] leading-[1.45]"
           style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}
         >
-          {d.voteringar.toLocaleString('sv-SE')} voteringar med namnupprop, var och
-          en förklarad på vanlig svenska: vad frågan gällde, vad ett ja innebar
-          och vad ett nej innebar. Här är fem saker de tillsammans visar.
+          {heltal(d.voteringar)} voteringar med namnupprop, var och en förklarad
+          på vanlig svenska. Här är fem saker de tillsammans visar.
         </p>
+
+        <div className="stig mt-10 flex flex-wrap gap-3" style={{ animationDelay: '160ms' }}>
+          <Knapp href="#fynd">Läs de fem fynden</Knapp>
+          <Knapp href="/voteringar" ton="sekundar">Sök en votering</Knapp>
+        </div>
       </section>
 
-      <section className="mt-10">
-        <ol>
-          {fynd.map((f, i) => (
-            <li key={f.href + i} className="regel py-9">
-              <div
-                className="display tabular text-[clamp(3.2rem,13vw,7.5rem)] leading-[0.82]"
-                style={{ color: 'var(--accent)' }}
-              >
-                {f.tal}
-              </div>
-              <p className="mt-6 max-w-[46ch] text-[19px] leading-snug">{f.text}</p>
-              <Link
-                href={f.href}
-                className="mt-5 inline-block border-b pb-1 text-[14px] transition-opacity hover:opacity-60"
-                style={{ borderColor: 'var(--accent)' }}
-              >
-                {f.lank} →
-              </Link>
-            </li>
-          ))}
-        </ol>
-        <p className="mt-6 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
-          Den sista siffran är aritmetik, inte en anklagelse. Riksdagen kvittar
-          frånvaro: när en ledamot uteblir avstår ofta en ledamot från motsatt
-          sida frivilligt, just för att styrkeförhållandet ska hålla. Vilka
-          voteringar som kvittades framgår inte av öppna data, så beräkningen
-          antar att alla frånvarande hade röstat med sitt parti.
-        </p>
+      {/* Fynd 01–02 — två celler delade av en hårlinje */}
+      <section
+        id="fynd"
+        className="grid scroll-mt-6 border-t sm:grid-cols-2"
+        style={{ borderColor: 'var(--linje)' }}
+      >
+        <div
+          className="border-b py-11 sm:border-b-0 sm:border-r sm:pr-12"
+          style={{ borderColor: 'var(--linje)' }}
+        >
+          <Etikett>Fynd 01 · Samstämmighet</Etikett>
+          <Nyckeltal klass="mt-[22px] text-[clamp(3.4rem,10vw,92px)]">
+            {d.topp ? heltal(Number(d.topp.lika)) : '—'}
+          </Nyckeltal>
+          <p className="mt-[22px] max-w-[34ch] text-[18px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
+            av {heltal(Number(d.topp?.gemensamma ?? 0))} voteringar röstade{' '}
+            {namn(d.topp?.parti_1)} och {namn(d.topp?.parti_2)} lika.{' '}
+            {Number(d.topp?.lika) === Number(d.topp?.gemensamma)
+              ? 'Deras linjer gick aldrig isär.'
+              : `Det är ${tal(Number(d.topp?.samstammighet ?? 0))} % — inget par röstade oftare lika.`}
+          </p>
+          <Textlank href="/samstammighet" className="mt-5">Se hela matrisen</Textlank>
+        </div>
+
+        <div className="py-11 sm:pl-12">
+          <Etikett>Fynd 02 · Ensam mot alla</Etikett>
+          <Nyckeltal klass="mt-[22px] text-[clamp(3.4rem,10vw,92px)]">
+            {heltal(d.mestEnsam?.ensam ?? 0)}
+          </Nyckeltal>
+          <p className="mt-[22px] max-w-[34ch] text-[18px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
+            gånger stod {namn(d.mestEnsam?.parti)} ensamt mot alla sju andra
+            partier — oftare än något annat parti.
+            {aldrigEnsamma.length ? ` ${lista(aldrigEnsamma)} gjorde det aldrig.` : ''}
+          </p>
+          <Textlank href="#ensam" className="mt-5">Se alla åtta partier</Textlank>
+        </div>
       </section>
 
+      {/* Fynd 03 — tal och mening i samma baslinje */}
+      <section className="regel py-11">
+        <Etikett>Fynd 03 · Kammaren fällde utskottet</Etikett>
+        <div className="mt-5 flex flex-wrap items-end gap-x-8 gap-y-4">
+          <Nyckeltal klass="text-[clamp(3.4rem,10vw,92px)]">{d.forluster.length}</Nyckeltal>
+          <p className="mb-2 max-w-[52ch] text-[18px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
+            gånger föll utskottets förslag i kammaren, av {heltal(d.voteringar)} voteringar.
+            {forlustPartier.length ? ` Reservationen kom från ${lista(forlustPartier.map(namn))}.` : ''}
+          </p>
+        </div>
+        <Textlank href="#forlorade" className="mt-6">Se fallen</Textlank>
+      </section>
+
+      {/* Fynd 04–05 — sidans enda mörka fält. Lime får bara förekomma här. */}
+      <section className="panel helbredd py-16 sm:py-20">
+        <div className="mx-auto grid max-w-5xl items-center gap-y-12 px-5 sm:px-8 md:grid-cols-[1.1fr_1fr] md:gap-x-14">
+        <div>
+          <Etikett>Fynd 04 · Frånvaro</Etikett>
+          <Nyckeltal ton="signal" klass="mt-5 text-[clamp(4rem,13vw,148px)]">
+            {tal(d.franvaroandel)} %
+          </Nyckeltal>
+          <p className="mt-7 max-w-[38ch] text-[20px] leading-[1.45]" style={{ color: 'var(--black-mjuk)' }}>
+            av {heltal(d.roster)} röstningstillfällen stod tomma. Andelen
+            varierar mellan riksmötena: {tal(d.hogsta?.andel ?? 0)} % i {d.hogsta?.rm}{' '}
+            mot {tal(d.lagsta?.andel ?? 0)} % i {d.lagsta?.rm}.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3.5">
+          <Etikett>Fynd 05 · Frånvaron avgjorde</Etikett>
+          <Nyckeltal ton="signal" klass="text-[clamp(3.4rem,10vw,92px)]">
+            {heltal(d.avgjorde)}
+          </Nyckeltal>
+          <p className="max-w-[40ch] text-[17px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
+            voteringar hade kunnat sluta annorlunda om alla frånvarande röstat
+            med sitt parti — av {heltal(d.jamna)} som avgjordes med tre rösters
+            marginal eller mindre.
+          </p>
+          <p className="max-w-[44ch] text-[13.5px] leading-[1.55]" style={{ color: 'var(--black-svag)' }}>
+            Aritmetik, inte anklagelse: riksdagen kvittar frånvaro, och vilka
+            voteringar som kvittades framgår inte av öppna data. Beräkningen
+            antar att alla frånvarande hade röstat med sitt parti.
+          </p>
+          <Textlank href="/franvaro#avgjorde" className="mt-2">
+            Se de {heltal(d.avgjorde)} fallen
+          </Textlank>
+        </div>
+        </div>
+      </section>
+
+      {/* Ämnesutsagan — sidans enda pull-quote */}
       {d.amne && (
-        <section className="regel-tjock mt-20 pt-8">
-          <p className="display max-w-[26ch] text-[clamp(1.7rem,4.5vw,2.8rem)] leading-[1.05]">
+        <section className="regel py-16">
+          <p className="rubrik max-w-[24ch] text-[clamp(1.9rem,5.5vw,46px)] leading-[1.05]">
             I frågor om {d.amne.amne} röstar {namn(d.amne.avvikande_1)} och{' '}
             {namn(d.amne.avvikande_2)} lika i
             <span style={{ color: 'var(--accent)' }}> {tal(d.amne.avvikande_har)} % </span>
             av voteringarna — mot {tal(d.amne.avvikande_normalt)} % i alla frågor.
           </p>
-          <p className="mt-5 max-w-[56ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
+          <p className="mt-6 max-w-[56ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
             Ingen annan ämnesskillnad i riksdagen är större. Alla 28 partipar är
             mätta likadant i alla 16 ämnen, utan att något par valts ut i förväg.
             {utbytbara(d.amne) && (
@@ -229,81 +259,80 @@ export default async function Start() {
               </>
             )}
           </p>
-          <Link
-            href="/amnen"
-            className="mt-5 inline-block border-b pb-1 text-[14px] transition-opacity hover:opacity-60"
-            style={{ borderColor: 'var(--accent)' }}
-          >
-            Se alla 16 ämnen →
-          </Link>
+          <Textlank href="/amnen" className="mt-5">Se alla 16 ämnen</Textlank>
         </section>
       )}
 
-      <section id="ensam" className="regel mt-20 scroll-mt-6 pt-8">
-        <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">Ensam mot alla</h2>
-        <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
-          Hur ofta ett parti hamnade på en linje som inget av de sju andra
-          delade, räknat på samtliga {d.mestEnsam?.av.toLocaleString('sv-SE')} voteringar.
-        </p>
+      {/* Ensam mot alla — tabellen */}
+      <section id="ensam" className="regel scroll-mt-6 py-16">
+        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+          <h2 className="rubrik text-[clamp(2rem,5vw,44px)]">Ensam mot alla</h2>
+          <p className="max-w-[42ch] text-[14.5px] sm:text-right" style={{ color: 'var(--black-mjuk)' }}>
+            Hur ofta ett parti drev en linje som ingen av de sju andra delade,
+            räknat på {heltal(d.mestEnsam?.av ?? 0)} voteringar.
+          </p>
+        </div>
 
-        <table className="mt-7 w-full max-w-xl text-[14px]">
-          <tbody>
-            {d.rankade.map((p) => (
-              <tr key={p.parti} className="regel">
-                <td className="py-2.5 font-semibold">{p.parti}</td>
-                <td className="tabular py-2.5 text-right font-semibold">
-                  {p.ensam.toLocaleString('sv-SE')}
-                </td>
-                <td className="tabular py-2.5 pl-5 text-right" style={{ color: 'var(--black-svag)' }}>
-                  {tal(p.andel)} %
-                </td>
-                <td className="w-1/2 py-2.5 pl-5">
-                  <span
-                    className="block h-2 rounded-sm"
-                    style={{
-                      width: `${(100 * p.ensam) / (d.rankade[0]?.ensam || 1)}%`,
-                      background: p.ensam > 0 ? 'var(--accent)' : 'transparent',
-                      minWidth: p.ensam > 0 ? '2px' : 0,
-                    }}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="mt-7">
+          {d.rankade.map((p) => (
+            <div
+              key={p.parti}
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-5 gap-y-2 py-4 sm:grid-cols-[minmax(180px,240px)_96px_1fr_80px]"
+              style={{ borderBottom: '1px solid var(--linje)' }}
+            >
+              <span className="flex items-center gap-3 text-[17px] font-bold sm:text-[19px]">
+                <Partiprick parti={p.parti} />
+                {namn(p.parti)}
+              </span>
+              <span
+                className="tabular text-right text-[17px] font-bold sm:text-left sm:text-[19px]"
+                style={{ color: p.ensam > 0 ? 'var(--black)' : 'var(--black-svag)' }}
+              >
+                {heltal(p.ensam)}
+              </span>
+              <span className="hidden sm:block">
+                <Stapel andel={(100 * p.ensam) / storstEnsam} />
+              </span>
+              <span
+                className="tabular col-span-2 text-[15px] sm:col-span-1 sm:text-right"
+                style={{ color: 'var(--black-svag)' }}
+              >
+                {tal(p.andel)} %
+              </span>
+            </div>
+          ))}
+        </div>
 
-        <p className="mt-5 max-w-[62ch] border-l-2 py-3 pl-4 text-[14px] leading-relaxed"
-           style={{ borderColor: 'var(--accent)', background: 'var(--accent-svag)', color: 'var(--black-mjuk)' }}>
-          <strong style={{ color: 'var(--black)' }}>Nollorna är mekaniska.</strong>{' '}
-          {lista(REGERINGSPARTIERNA.map(namn))} röstar lika i {d.likhetsspann}{' '}
-          av alla voteringar. Ett av dem kan därför nästan aldrig bli ensamt —
-          de två andra står redan på samma linje. Siffran mäter inte hur
-          självständigt ett parti är, utan hur ofta det drev en linje utan att
-          få sällskap.
-        </p>
+        <Forbehall rubrik="Nollorna är mekaniska." className="mt-7">
+          {lista(REGERINGSPARTIERNA.map(namn))} röstar lika i {d.likhetsspann} av
+          alla voteringar. Ett av dem kan därför nästan aldrig bli ensamt — de
+          två andra står redan på samma linje. Siffran mäter inte hur
+          självständigt ett parti är, utan hur ofta det drev en linje utan att få
+          sällskap.
+        </Forbehall>
 
         {d.ensamExempel.length > 0 && (
           <>
-            <h3 className="mt-10 text-[13px] uppercase tracking-[0.12em]" style={{ color: 'var(--black-svag)' }}>
+            <Etikett className="mt-14">
               De tre senaste gångerna {namn(d.mestEnsam?.parti)} stod ensamt
-            </h3>
-            <ol className="mt-3">
+            </Etikett>
+            <ol className="mt-5">
               {d.ensamExempel.map((e) => (
-                <li key={e.forslagspunkt_id} className="regel py-4">
+                <li key={e.forslagspunkt_id} className="regel py-5">
                   <Link href={`/voteringar/${e.forslagspunkt_id}`} className="group block">
-                    <div className="flex flex-wrap items-baseline gap-x-3 text-[12px] uppercase tracking-[0.1em]"
-                         style={{ color: 'var(--black-svag)' }}>
+                    <div className="mono flex flex-wrap gap-x-3.5 gap-y-1 text-[11.5px] uppercase tracking-[0.1em]"
+                         style={{ color: 'var(--etikett)' }}>
                       <span>{e.beteckning} · punkt {e.punkt}</span>
                       <span>{e.datum}</span>
                       <span style={{ color: 'var(--accent)' }}>{e.amne}</span>
                     </div>
-                    <p className="mt-1.5 max-w-[68ch] text-[16px] leading-snug transition-opacity group-hover:opacity-60">
+                    <p className="mt-2.5 max-w-[56ch] text-[19px] font-semibold leading-[1.35] tracking-[-0.01em] transition-opacity duration-150 group-hover:opacity-70">
                       {e.sakfraga}
                     </p>
                   </Link>
-                  <div className="mt-3 flex items-center gap-2">
+                  <div className="mt-3.5 flex items-center gap-2.5">
                     <Linjeetikett parti={e.parti} linje={e.linje} />
-                    <span className="text-[12px]" style={{ color: 'var(--black-svag)' }}>
+                    <span className="text-[13.5px]" style={{ color: 'var(--black-svag)' }}>
                       röstade {e.linje.toLowerCase()} — ensamt
                     </span>
                   </div>
@@ -314,57 +343,59 @@ export default async function Start() {
         )}
       </section>
 
-      <section id="forlorade" className="regel mt-20 scroll-mt-6 pt-8">
-        <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">När utskottet förlorade</h2>
-        <p className="mt-4 max-w-[64ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
+      {/* När utskottet förlorade */}
+      <section id="forlorade" className="regel scroll-mt-6 py-16">
+        <h2 className="rubrik text-[clamp(2rem,5vw,44px)]">När utskottet förlorade</h2>
+        <p className="mt-5 max-w-[64ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
           I varje votering ställs utskottets förslag som ja och reservationen som
           nej. Under hela mandatperioden vann nej-sidan {d.forluster.length} gånger.
         </p>
 
-        <ol className="mt-8">
+        <ol className="mt-9">
           {d.forluster.map((f) => (
             <li key={f.forslagspunkt_id} className="regel py-6">
-              <div className="flex flex-wrap items-baseline gap-x-3 text-[12px] uppercase tracking-[0.1em]"
-                   style={{ color: 'var(--black-svag)' }}>
+              <div className="mono flex flex-wrap gap-x-3.5 gap-y-1 text-[11.5px] uppercase tracking-[0.1em]"
+                   style={{ color: 'var(--etikett)' }}>
                 <span>{f.beteckning} · punkt {f.punkt}</span>
                 <span>{f.datum}</span>
               </div>
               <Link href={`/voteringar/${f.forslagspunkt_id}`} className="group block">
-                <p className="mt-2 max-w-[60ch] text-[18px] leading-snug transition-opacity group-hover:opacity-60">
+                <p className="mt-2.5 max-w-[56ch] text-[19px] font-semibold leading-[1.35] tracking-[-0.01em] transition-opacity duration-150 group-hover:opacity-70">
                   {f.sakfraga}
                 </p>
               </Link>
               <p className="tabular mt-4 text-[15px]">
-                <span style={{ color: 'var(--nej)' }}>{f.nej} nej</span>
+                <span className="font-bold" style={{ color: 'var(--nej)' }}>{f.nej} nej</span>
                 <span style={{ color: 'var(--black-svag)' }}> mot </span>
-                <span>{f.ja} ja</span>
+                <span className="font-bold">{f.ja} ja</span>
                 <span style={{ color: 'var(--black-svag)' }}>
                   {' '}· reservationen kom från {f.motforslag_partier?.join(', ') ?? '—'}
                 </span>
               </p>
               {/* Klartexten inleds nästan alltid med "Nej innebar…", så någon
                   egen etikett behövs inte — den skulle bara upprepa texten. */}
-              <p className="mt-3 max-w-[64ch] border-l-2 py-1 pl-4 text-[14px] leading-relaxed"
-                 style={{ borderColor: 'var(--nej)', color: 'var(--black-mjuk)' }}>
+              <p className="mt-3.5 max-w-[64ch] py-1 pl-4 text-[14.5px] leading-relaxed"
+                 style={{ borderLeft: '3px solid var(--nej)', color: 'var(--black-mjuk)' }}>
                 {f.nej_innebar}
               </p>
             </li>
           ))}
         </ol>
 
-        <p className="mt-6 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
+        <p className="mt-6 max-w-[64ch] text-[13.5px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
           Siffran gäller kammaren, inte regeringen. En regering kan förlora i
           utskottet innan frågan når votering, och sådana förluster syns inte i
           röstdata.
         </p>
       </section>
 
-      <section className="regel mt-20 pt-8">
-        <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">Varför ett nej sällan betyder nej</h2>
-        <div
-          className="mt-5 grid max-w-[70ch] gap-4 text-[16px] leading-relaxed"
-          style={{ color: 'var(--black-mjuk)' }}
-        >
+      {/* Varför ett nej sällan betyder nej */}
+      <section className="regel py-16">
+        <h2 className="rubrik max-w-[18ch] text-[clamp(2rem,5vw,44px)]">
+          Varför ett nej sällan betyder nej
+        </h2>
+        <div className="mt-6 grid max-w-[70ch] gap-4 text-[16.5px] leading-[1.6]"
+             style={{ color: 'var(--black-mjuk)' }}>
           <p>
             I riksdagen ställs utskottets förslag mot en reservation. Ett parti
             som röstar nej till mer pengar till skolan har därför oftast röstat
@@ -376,15 +407,10 @@ export default async function Start() {
             om ett partis hållning missvisande.
           </p>
         </div>
-        <Link
-          href="/voteringar"
-          className="mt-6 inline-block border-b pb-1 text-[14px] transition-opacity hover:opacity-60"
-          style={{ borderColor: 'var(--linje)', color: 'var(--black-mjuk)' }}
-        >
-          Bläddra bland voteringarna →
-        </Link>
+        <div className="mt-8">
+          <Knapp href="/voteringar" ton="sekundar">Bläddra bland voteringarna</Knapp>
+        </div>
       </section>
     </main>
   )
 }
-

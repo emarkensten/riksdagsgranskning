@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { antal, db, heltal, rader, rakna, tal, PARTIFARG } from '@/lib/db'
+import { antal, db, heltal, namn, rader, rakna, tal, PARTIFARG } from '@/lib/db'
 import { Stapel } from '@/components/stapel'
+import { Etikett, Forbehall, Partiprick, Textlank } from '@/components/system'
 
 export const revalidate = 3600
 
@@ -12,6 +13,9 @@ export const metadata = {
 
 /** Andelen av riksmötets voteringar en ledamot måste ha deltagit i för att listas. */
 const HALVTID = 0.5
+
+/** Staplarnas skala. Frånvaro på 25 % fyller bredden — annars syns inga skillnader. */
+const TAK = 25
 
 type Riksmote = { rm: string; roster: number; franvarande: number; franvaroandel: number }
 type PartiRad = { parti: string; rm: string; roster: number; franvarande: number }
@@ -81,7 +85,7 @@ async function hamta() {
 
   // Hämta bara de ledamöter som faktiskt förekommer. Tabellen har 2 898 rader
   // och en rak select() skulle kapas vid takgränsen.
-  const namn = new Map(
+  const namnkarta = new Map(
     (await rader<{ intressent_id: string; fornamn: string; efternamn: string; valkrets: string }>(
       klient.from('ledamot').select('intressent_id, fornamn, efternamn, valkrets')
         .in('intressent_id', ledamoter.map((l) => l.intressent_id)).range(0, 4999)))
@@ -94,7 +98,7 @@ async function hamta() {
   const relevanta = ledamoter
     .filter((l) => Number(l.voteringar) >= flest * HALVTID)
     .flatMap((l) => {
-      const person = namn.get(l.intressent_id)
+      const person = namnkarta.get(l.intressent_id)
       return person ? [{ ...l, person }] : []
     })
 
@@ -132,192 +136,178 @@ export default async function Franvaro() {
   const lagsta = d.riksmoten.reduce((a, b) => (b.franvaroandel < a.franvaroandel ? b : a), d.riksmoten[0])
 
   return (
-    <main className="pb-10">
-      <section className="regel-tjock pt-8">
-        <p className="stig text-[13px] uppercase tracking-[0.18em]"
-           style={{ color: 'var(--accent)', animationDelay: '0ms' }}>
-          Mandatperioden 2022–2026
-        </p>
-        <h1 className="display stig mt-5 text-[clamp(2.4rem,7vw,4.6rem)]"
-            style={{ animationDelay: '80ms' }}>
-          Vem var inte på plats<span style={{ color: 'var(--accent)' }}>?</span>
-        </h1>
-
-        <div className="stig mt-10" style={{ animationDelay: '160ms' }}>
-          <div className="display tabular text-[clamp(3.2rem,13vw,7.5rem)] leading-[0.82]"
-               style={{ color: 'var(--accent)' }}>
+    <main>
+      {/* Sidans enda mörka fält. Lime får bara förekomma här. */}
+      <section className="panel helbredd py-16 sm:py-[72px]">
+        <div className="mx-auto grid max-w-5xl items-center gap-y-14 px-5 sm:px-8 md:grid-cols-[1.1fr_1fr] md:gap-x-14">
+        <div>
+          <h1 className="stig text-[clamp(2.4rem,7vw,64px)] font-extrabold leading-[0.92] tracking-[-0.04em]">
+            Vem var inte på plats?
+          </h1>
+          <div className="siffra stig mt-8 text-[clamp(4rem,13vw,148px)]"
+               style={{ color: 'var(--lime)', animationDelay: '80ms' }}>
             {tal(d.hela.andel)} %
           </div>
-          <p className="mt-6 max-w-[46ch] text-[19px] leading-snug">
+          <p className="stig mt-7 max-w-[40ch] text-[20px] leading-[1.45]"
+             style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}>
             av {heltal(d.hela.roster)} röstningstillfällen stod tomma. Att rösta i
             kammaren är riksdagsledamotens mest grundläggande uppgift.
           </p>
         </div>
+
+        <div className="flex flex-col gap-3.5">
+          <Etikett>Per riksmöte</Etikett>
+          {d.riksmoten.map((r) => (
+            <div key={r.rm} className="grid grid-cols-[104px_1fr_64px] items-center gap-3.5 text-[15px]">
+              <span style={{ color: 'var(--black-mjuk)' }}>{r.rm}</span>
+              <Stapel andel={(100 * r.franvaroandel) / TAK} hojd={10} />
+              <span className="tabular text-right font-semibold">{tal(r.franvaroandel)} %</span>
+            </div>
+          ))}
+          <div className="grid grid-cols-[104px_1fr_64px] items-center gap-3.5 pt-3 text-[15px]"
+               style={{ borderTop: '1px solid var(--linje)' }}>
+            <span className="whitespace-nowrap font-semibold">hela perioden</span>
+            <Stapel andel={(100 * d.hela.andel) / TAK} hojd={10} />
+            <span className="tabular text-right font-bold" style={{ color: 'var(--lime)' }}>
+              {tal(d.hela.andel)} %
+            </span>
+          </div>
+          <p className="mt-2 max-w-[44ch] text-[13.5px] leading-[1.55]" style={{ color: 'var(--black-svag)' }}>
+            Räknat på rösterna, inte på voteringarna: varje ledamot och votering
+            är en rad. Stapeln är skalad så att {TAK} % fyller bredden.
+          </p>
+        </div>
+        </div>
       </section>
 
-      <section className="regel mt-16 pt-8">
-        <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">Riksmöte för riksmöte</h2>
-        <p className="mt-4 max-w-[60ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
-          Talet för hela perioden döljer en stor skillnad mellan åren:{' '}
-          {tal(hogsta?.franvaroandel ?? 0)} % i {hogsta?.rm} mot{' '}
-          {tal(lagsta?.franvaroandel ?? 0)} % i {lagsta?.rm}. Den som kommer hit
-          från en annan siffra på sajten hittar den i tabellen nedan.
-        </p>
+      <section className="py-16">
+        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+          <h2 className="rubrik text-[clamp(1.8rem,4.2vw,36px)]">Frånvaro per parti</h2>
+          <p className="max-w-[46ch] text-[14.5px] sm:text-right" style={{ color: 'var(--black-mjuk)' }}>
+            Hela mandatperioden. Talet döljer en skillnad mellan åren:{' '}
+            {tal(hogsta?.franvaroandel ?? 0)} % i {hogsta?.rm} mot{' '}
+            {tal(lagsta?.franvaroandel ?? 0)} % i {lagsta?.rm}.
+          </p>
+        </div>
 
-        <table className="mt-7 w-full max-w-2xl text-[15px]">
-          <tbody>
-            {d.riksmoten.map((r) => (
-              <tr key={r.rm} className="regel">
-                <td className="py-3 font-medium">{r.rm}</td>
-                <td className="tabular py-3 pl-4 text-right" style={{ color: 'var(--black-svag)' }}>
-                  {heltal(Number(r.franvarande))} av {heltal(Number(r.roster))}
-                </td>
-                <td className="tabular whitespace-nowrap py-3 pl-5 text-right font-semibold">
-                  {tal(r.franvaroandel)} %
-                </td>
-                <td className="hidden w-1/3 py-3 pl-5 sm:table-cell">
-                  <Stapel andel={r.franvaroandel * 4} />
-                </td>
-              </tr>
-            ))}
-            <tr className="regel">
-              <td className="py-3 font-semibold">hela perioden</td>
-              <td className="tabular py-3 pl-4 text-right" style={{ color: 'var(--black-svag)' }}>
-                {heltal(d.hela.franvarande)} av {heltal(d.hela.roster)}
-              </td>
-              <td className="tabular whitespace-nowrap py-3 pl-5 text-right font-semibold"
-                  style={{ color: 'var(--accent)' }}>
-                {tal(d.hela.andel)} %
-              </td>
-              <td className="hidden sm:table-cell" />
-            </tr>
-          </tbody>
-        </table>
-        <p className="mt-5 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
-          Räknat på rösterna, inte på voteringarna: varje ledamot och votering är
-          en rad. Stapeln är skalad så att 25 % fyller bredden.
-        </p>
+        <div className="mt-7">
+          {d.partier.map((p) => (
+            <Link
+              key={p.parti}
+              href={`/partier/${p.parti.toLowerCase()}`}
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-5 gap-y-2 py-3.5 transition-opacity duration-150 hover:opacity-70 sm:grid-cols-[minmax(180px,240px)_90px_1fr]"
+              style={{ borderBottom: '1px solid var(--linje)' }}
+            >
+              <span className="flex items-center gap-3 text-[16px] font-bold sm:text-[17px]">
+                <Partiprick parti={p.parti} />
+                {namn(p.parti)}
+              </span>
+              <span className="tabular text-right text-[17px] font-bold sm:text-left sm:text-[18px]">
+                {tal(p.andel)} %
+              </span>
+              {/* Partifärgen bär vilket parti raden gäller — det är data, och
+                  varje rad gäller ett eget parti. */}
+              <span className="col-span-2 sm:col-span-1">
+                <Stapel andel={(100 * p.andel) / TAK} hojd={12}
+                        farg={PARTIFARG[p.parti] ?? 'var(--accent)'} />
+              </span>
+            </Link>
+          ))}
+        </div>
+
+        <Forbehall rubrik="Läs listan varsamt." className="mt-7">
+          Partiledare och talespersoner har systematiskt hög frånvaro eftersom
+          uppdraget ofta ligger utanför kammaren. Skälen — föräldraledighet,
+          sjukdom, tjänsteresor, utskottsarbete — finns inte i öppna data, så en
+          hög siffra är inte i sig ett påstående om försummelse.
+        </Forbehall>
       </section>
 
-      <section className="regel mt-16 pt-8">
-        <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">Frånvaro per parti</h2>
-        <p className="mt-3 max-w-[60ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
-          Hela mandatperioden. Partiets samlade siffra är stabilare än enskilda
-          ledamöters.
-        </p>
-        <table className="mt-6 w-full max-w-2xl text-[15px]">
-          <tbody>
-            {d.partier.map((p) => (
-              <tr key={p.parti} className="regel">
-                <td className="py-2.5 font-semibold">
-                  <span className="inline-flex items-center gap-2">
-                    <span className="inline-block h-3 w-1 rounded-sm" aria-hidden
-                          style={{ background: PARTIFARG[p.parti] ?? 'var(--linje)' }} />
-                    <Link href={`/partier/${p.parti.toLowerCase()}`} className="hover:opacity-60">
-                      {p.parti}
-                    </Link>
-                  </span>
-                </td>
-                <td className="tabular whitespace-nowrap py-2.5 pl-4 text-right font-semibold">
-                  {tal(p.andel)} %
-                </td>
-                <td className="hidden w-1/2 py-2.5 pl-5 sm:table-cell">
-                  <Stapel andel={p.andel * 4} farg={PARTIFARG[p.parti] ?? 'var(--linje)'} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      <section className="regel mt-16 pt-8">
-        <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">Störst frånvaro i {d.senaste}</h2>
-        <p className="mt-4 max-w-[64ch] border-l-2 py-2 pl-4 text-[13px] leading-relaxed"
-           style={{ borderColor: 'var(--accent)', background: 'var(--accent-svag)', color: 'var(--black-mjuk)' }}>
-          <strong style={{ color: 'var(--black)' }}>Läs den här listan varsamt.</strong>{' '}
-          Partiledare och partiernas talespersoner har systematiskt hög frånvaro
-          eftersom uppdraget för dem ofta ligger utanför kammaren. Skälen till
-          frånvaro — föräldraledighet, sjukdom, tjänsteresor, utskottsarbete —
-          finns inte i riksdagens öppna data, så en hög siffra är inte i sig ett
-          påstående om försummelse. Den säger bara hur ofta ledamoten inte
-          deltog i en omröstning.
-        </p>
-        <p className="mt-4 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
+      <section className="regel py-16">
+        <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Störst frånvaro i {d.senaste}</h2>
+        <p className="mt-5 max-w-[64ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
           Listan gäller de {heltal(d.relevanta.length)} ledamöter som deltagit i
-          minst hälften av riksmötets voteringar, alltså {heltal(Math.ceil(d.flest * HALVTID))} av{' '}
-          {heltal(d.flest)}. Utan den regeln hamnar ersättare som tjänstgjort
-          någon vecka överst med andelar som inte går att jämföra.
+          minst hälften av riksmötets voteringar, alltså{' '}
+          {heltal(Math.ceil(d.flest * HALVTID))} av {heltal(d.flest)}. Utan den
+          regeln hamnar ersättare som tjänstgjort någon vecka överst med andelar
+          som inte går att jämföra.
         </p>
 
-        <table className="mt-6 w-full text-[14px]">
-          <thead>
-            <tr className="text-left text-[12px] uppercase tracking-[0.1em]"
-                style={{ color: 'var(--black-svag)' }}>
-              <th className="pb-2 font-medium">Ledamot</th>
-              <th className="pb-2 font-medium">Parti</th>
-              <th className="pb-2 text-right font-medium">Frånvarande</th>
-              <th className="pb-2 text-right font-medium">Andel</th>
-              <th className="hidden pb-2 pl-4 font-medium sm:table-cell">&nbsp;</th>
-            </tr>
-          </thead>
-          <tbody>
-            {topp.map((f) => (
-              <tr key={f.intressent_id + f.parti} className="regel">
-                <td className="py-2">
-                  {f.person.fornamn} {f.person.efternamn}
-                  <span className="ml-2 text-[12px]" style={{ color: 'var(--black-svag)' }}>
-                    {f.person.valkrets}
-                  </span>
-                </td>
-                <td className="py-2">
-                  <span className="inline-flex items-center gap-1.5 font-semibold">
-                    <span className="inline-block h-3 w-1 rounded-sm" aria-hidden
-                          style={{ background: PARTIFARG[f.parti] ?? 'var(--linje)' }} />
-                    {f.parti}
-                  </span>
-                </td>
-                <td className="tabular py-2 text-right">
-                  {heltal(Number(f.franvarande))}{' '}
-                  <span style={{ color: 'var(--black-svag)' }}>/ {heltal(Number(f.voteringar))}</span>
-                </td>
-                <td className="tabular whitespace-nowrap py-2 text-right font-semibold">
-                  {tal(Number(f.andel))} %
-                </td>
-                <td className="hidden w-[30%] py-2 pl-4 sm:table-cell">
-                  <Stapel andel={Number(f.andel)} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="mt-8">
+          <div className="etikett grid grid-cols-[1fr_auto_auto] gap-x-5 pb-3 sm:grid-cols-[1fr_64px_120px_100px_1fr]"
+               style={{ borderBottom: '1px solid var(--linje)' }}>
+            <span>Ledamot</span>
+            <span className="hidden sm:block">Parti</span>
+            <span className="hidden text-right sm:block">Frånvarande</span>
+            <span className="text-right">Andel</span>
+            <span className="hidden sm:block" />
+          </div>
+          {topp.map((f) => (
+            <div
+              key={f.intressent_id + f.parti}
+              className="grid grid-cols-[1fr_auto_auto] items-center gap-x-5 gap-y-1 py-3 sm:grid-cols-[1fr_64px_120px_100px_1fr]"
+              style={{ borderBottom: '1px solid var(--linje)' }}
+            >
+              <span className="text-[15.5px]">
+                {f.person.fornamn} {f.person.efternamn}
+                <span className="ml-2 text-[13px]" style={{ color: 'var(--black-svag)' }}>
+                  {f.person.valkrets}
+                </span>
+              </span>
+              <span className="flex items-center gap-2 text-[14px] font-bold">
+                <Partiprick parti={f.parti} storlek={10} />
+                {f.parti}
+              </span>
+              <span className="tabular hidden text-right text-[15px] sm:block">
+                {heltal(Number(f.franvarande))}{' '}
+                <span style={{ color: 'var(--black-svag)' }}>/ {heltal(Number(f.voteringar))}</span>
+              </span>
+              <span className="tabular text-right text-[16px] font-bold">
+                {tal(Number(f.andel))} %
+              </span>
+              <span className="hidden sm:block">
+                <Stapel andel={Number(f.andel)} hojd={10} />
+              </span>
+            </div>
+          ))}
+        </div>
       </section>
 
-      <section id="avgjorde" className="regel mt-16 scroll-mt-6 pt-8">
-        <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">När frånvaron avgjorde</h2>
-        <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
+      <section id="avgjorde" className="regel scroll-mt-6 py-16">
+        <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">När frånvaron avgjorde</h2>
+        <p className="mt-5 max-w-[62ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
           {/* "fall" böjs inte i plural på svenska — den ternär som stod här
               gav tom sträng i båda grenarna. */}
           I {d.avgjordeAntal === 0 ? 'inget' : heltal(d.avgjordeAntal)} fall hade
           utfallet blivit ett annat om varje frånvarande ledamot hade röstat med
-          sitt parti. Det är ren aritmetik — men den bygger på antagandet att de
-          frånvarande hade följt partilinjen, och riksdagen kvittar frånvaro:
-          när en ledamot uteblir avstår ofta en ledamot från motsatt sida
-          frivilligt. Vilka voteringar som kvittades framgår inte av öppna data.
+          sitt parti.
         </p>
 
-        <ol className="mt-7">
+        <Forbehall rubrik="Aritmetik, inte anklagelse." className="mt-7">
+          Beräkningen bygger på antagandet att de frånvarande hade följt
+          partilinjen, och riksdagen kvittar frånvaro: när en ledamot uteblir
+          avstår ofta en ledamot från motsatt sida frivilligt, just för att
+          styrkeförhållandet ska hålla. Vilka voteringar som kvittades framgår
+          inte av öppna data.
+        </Forbehall>
+
+        <ol className="mt-9">
           {d.jamnaMedText.map((j: any) => (
-            <li key={j.votering_id} className="regel py-4">
-              <Link href={`/voteringar/${j.punkt.id}`} className="group block">
-                <div className="flex flex-wrap items-baseline gap-x-3 text-[12px] uppercase tracking-[0.1em]"
-                     style={{ color: 'var(--black-svag)' }}>
+            <li key={j.votering_id}>
+              <Link
+                href={`/voteringar/${j.punkt.id}`}
+                className="block py-5 transition-opacity duration-150 hover:opacity-70"
+                style={{ borderTop: '1px solid var(--linje)' }}
+              >
+                <div className="mono flex flex-wrap gap-x-3.5 gap-y-1 text-[11.5px] uppercase tracking-[0.1em]"
+                     style={{ color: 'var(--etikett)' }}>
                   <span>{j.punkt.beteckning} · punkt {j.punkt.punkt}</span>
                   <span>{j.punkt.rm}</span>
                 </div>
-                <p className="mt-1.5 max-w-[68ch] text-[15px] leading-snug transition-opacity group-hover:opacity-60">
+                <p className="mt-2.5 max-w-[56ch] text-[19px] font-semibold leading-[1.35] tracking-[-0.01em]">
                   {sakfragan(j.punkt)}
                 </p>
-                <p className="tabular mt-2 text-[13px]" style={{ color: 'var(--black-svag)' }}>
+                <p className="tabular mt-3 text-[13.5px]" style={{ color: 'var(--black-svag)' }}>
                   {heltal(Number(j.ja))} ja mot {heltal(Number(j.nej))} nej — marginal{' '}
                   {heltal(Number(j.marginal))}. {heltal(Number(j.franvarande))} frånvarande.
                 </p>
@@ -326,11 +316,7 @@ export default async function Franvaro() {
           ))}
         </ol>
 
-        <Link href="/metod#definitioner"
-              className="mt-8 inline-block border-b pb-1 text-[14px] transition-opacity hover:opacity-60"
-              style={{ borderColor: 'var(--accent)' }}>
-          Så räknas frånvaron →
-        </Link>
+        <Textlank href="/metod#definitioner" className="mt-9">Så räknas frånvaron</Textlank>
       </section>
     </main>
   )

@@ -1,8 +1,8 @@
-import Link from 'next/link'
 import {
   antal, datum, db, heltal, lista, namn, rader, rakna, tal, REGERINGSPARTIERNA,
 } from '@/lib/db'
 import { Stapel } from '@/components/stapel'
+import { Etikett, Forbehall, Nyckeltal, Textlank } from '@/components/system'
 import { regeringsspann } from '@/lib/partier'
 import AMNEN from '@/lib/amnen.json'
 
@@ -16,6 +16,17 @@ export const metadata = {
 
 /** Ordningen de redovisas i, inte den ordning databasen råkar returnera. */
 const NIVAER = ['hög', 'medel', 'låg'] as const
+
+const INNEHALL = [
+  ['underlaget', 'Underlaget'],
+  ['definitioner', 'Så räknas talen'],
+  ['ja-och-nej', 'Ett ja är utskottets förslag'],
+  ['klarsprak', 'Klarspråket och ämnena'],
+  ['regeringssidan', 'Regeringssidan vann nästan allt'],
+  ['begransningar', 'Vad materialet inte kan svara på'],
+  ['fel', 'Hittar du ett fel'],
+  ['hyckleri', 'Vi letade efter hyckleri'],
+] as const
 
 type Utfall = { parti: string; voteringar: number; med_vinnaren: number; andel: number }
 type Riksmote = { rm: string; roster: number; franvarande: number; franvaroandel: number }
@@ -136,96 +147,79 @@ export default async function Metod() {
   const utanRostdata = d.forklarade - d.voteringar
 
   return (
-    <main className="pb-10">
-      <section className="regel-tjock pt-8">
-        <p className="stig text-[13px] uppercase tracking-[0.18em]"
-           style={{ color: 'var(--accent)', animationDelay: '0ms' }}>
-          Metod och källor
-        </p>
-        <h1 className="display stig mt-5 text-[clamp(2.6rem,8vw,5.5rem)]"
-            style={{ animationDelay: '80ms' }}>
-          Så räknar vi<span style={{ color: 'var(--accent)' }}>.</span>
+    <main>
+      <section className="pb-10 pt-16">
+        <Etikett className="stig" ton="signal">Metod och källor</Etikett>
+        <h1 className="display stig mt-6 text-[clamp(2.8rem,8.5vw,96px)]" style={{ animationDelay: '80ms' }}>
+          Så räknar vi.
         </h1>
-        <p className="stig mt-7 max-w-[52ch] text-[17px] leading-relaxed"
+        <p className="stig mt-7 max-w-[52ch] text-[clamp(17px,2.2vw,20px)] leading-[1.45]"
            style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}>
-          Varje tal på den här sajten kommer ur riksdagens egna öppna data och går
-          att räkna om. Här står definitionerna bakom dem, vilken modell som skrev
-          klarspråket, och vad materialet inte kan svara på.
+          Varje tal på den här sajten kommer ur riksdagens egna öppna data och
+          går att räkna om. Här står definitionerna bakom dem, vilken modell som
+          skrev klarspråket, och vad materialet inte kan svara på.
         </p>
       </section>
 
-      <nav aria-label="Innehåll" className="regel mt-12 pt-5">
-        <ul className="flex flex-wrap gap-x-6 gap-y-2 text-[14px]"
-            style={{ color: 'var(--black-mjuk)' }}>
-          {[
-            ['underlaget', 'Underlaget'],
-            ['definitioner', 'Så räknas talen'],
-            ['ja-och-nej', 'Ett ja är utskottets förslag'],
-            ['klarsprak', 'Klarspråket och ämnena'],
-            ['regeringssidan', 'Regeringssidan vann nästan allt'],
-            ['begransningar', 'Vad materialet inte kan svara på'],
-            ['fel', 'Hittar du ett fel'],
-            ['hyckleri', 'Vi letade efter hyckleri'],
-          ].map(([id, text]) => (
-            <li key={id}>
-              <a href={`#${id}`} className="border-b pb-0.5 transition-opacity hover:opacity-60"
-                 style={{ borderColor: 'var(--linje)' }}>
-                {text}
-              </a>
-            </li>
-          ))}
-        </ul>
+      <nav aria-label="Innehåll" className="regel flex flex-wrap gap-2 py-7">
+        {INNEHALL.map(([id, text]) => (
+          <a
+            key={id}
+            href={`#${id}`}
+            className="rounded-full px-[14px] py-2 text-[13.5px] font-medium transition-colors duration-150 hover:bg-[var(--papper-djup)]"
+            style={{ border: '1px solid var(--linje-stark)', color: 'var(--black-mjuk)' }}
+          >
+            {text}
+          </a>
+        ))}
       </nav>
 
-      <section id="underlaget" className="regel mt-16 scroll-mt-6 pt-8">
-        <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">Underlaget</h2>
+      <section id="underlaget" className="regel scroll-mt-6 py-16">
+        <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Underlaget</h2>
 
-        <div className="mt-8">
-          <div className="display tabular text-[clamp(3.2rem,13vw,7.5rem)] leading-[0.82]"
-               style={{ color: 'var(--accent)' }}>
-            {heltal(d.voteringar)}
-          </div>
-          <p className="mt-6 max-w-[46ch] text-[19px] leading-snug">
-            voteringar med namnupprop ligger bakom varje mönster på sajten. Det är
-            samtliga voteringar i mandatperioden där riksdagen räknade rösterna
-            ledamot för ledamot.
+        <div className="mt-10 flex flex-wrap items-end gap-x-10 gap-y-4">
+          <Nyckeltal ton="signal">{heltal(d.voteringar)}</Nyckeltal>
+          <p className="mb-2 max-w-[46ch] text-[18px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
+            voteringar med namnupprop ligger bakom varje mönster på sajten. Det
+            är samtliga voteringar i mandatperioden där riksdagen räknade
+            rösterna ledamot för ledamot.
           </p>
         </div>
 
-        <table className="mt-10 w-full max-w-2xl text-[15px]">
-          <tbody>
-            <Rad tal={d.forklarade} text="förslagspunkter har en klarspråksförklaring" />
-            <Rad
-              tal={utanRostdata}
-              text="av dem saknar röstdata — voteringen finns registrerad, men inga röster är protokollförda"
-            />
-            <Rad
-              tal={d.utanNamnupprop}
-              text={`av totalt ${heltal(d.punkter)} förslagspunkter avgjordes helt utan omröstning`}
-            />
-            <Rad tal={d.roster} text="röstningstillfällen — en rad per ledamot och votering, frånvaro inräknad" />
-            <Rad tal={d.betankanden} text="betänkanden från riksdagens utskott" />
-            <Rad tal={d.anforanden} text="anföranden är hämtade och sparade, men sammanfattas inte av sajten" />
-          </tbody>
-        </table>
+        <div className="mt-12 max-w-3xl">
+          <Rad tal={d.forklarade} text="förslagspunkter har en klarspråksförklaring" />
+          <Rad
+            tal={utanRostdata}
+            text="av dem saknar röstdata — voteringen finns registrerad, men inga röster är protokollförda"
+          />
+          <Rad
+            tal={d.utanNamnupprop}
+            text={`av totalt ${heltal(d.punkter)} förslagspunkter avgjordes helt utan omröstning`}
+          />
+          <Rad tal={d.roster} text="röstningstillfällen — en rad per ledamot och votering, frånvaro inräknad" />
+          <Rad tal={d.betankanden} text="betänkanden från riksdagens utskott" />
+          <Rad tal={d.anforanden} text="anföranden är hämtade och sparade, men sammanfattas inte av sajten" />
+        </div>
 
-        <p className="mt-7 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
-          Källa: <a href="https://data.riksdagen.se" className="underline hover:opacity-60"
-                    target="_blank" rel="noreferrer">data.riksdagen.se</a>. Hämtat {datum(d.hamtat)}, och sedan dess
-          oförändrat — sajten uppdateras inte automatiskt. Materialet täcker
-          riksmötena {d.riksmoten[0]?.rm} till {d.riksmoten[d.riksmoten.length - 1]?.rm},
-          med betänkanden daterade {datum(d.forsta)} till {datum(d.sista)}.
+        <p className="mt-8 max-w-[64ch] text-[13.5px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
+          Källa:{' '}
+          <a href="https://data.riksdagen.se" className="underline hover:opacity-70"
+             target="_blank" rel="noreferrer">data.riksdagen.se</a>. Hämtat{' '}
+          {datum(d.hamtat)}, och sedan dess oförändrat — sajten uppdateras inte
+          automatiskt. Materialet täcker riksmötena {d.riksmoten[0]?.rm} till{' '}
+          {d.riksmoten[d.riksmoten.length - 1]?.rm}, med betänkanden daterade{' '}
+          {datum(d.forsta)} till {datum(d.sista)}.
         </p>
       </section>
 
-      <section id="definitioner" className="regel mt-20 scroll-mt-6 pt-8">
-        <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">Så räknas talen</h2>
-        <p className="mt-4 max-w-[58ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
-          Sex definitioner bär hela sajten. De är valda för att vara enkla nog att
-          kontrollera, inte för att vara raffinerade.
+      <section id="definitioner" className="regel scroll-mt-6 py-16">
+        <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Så räknas talen</h2>
+        <p className="mt-5 max-w-[58ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
+          Sex definitioner bär hela sajten. De är valda för att vara enkla nog
+          att kontrollera, inte för att vara raffinerade.
         </p>
 
-        <div className="mt-10 grid gap-12">
+        <div className="mt-12 grid gap-12">
           <Definition rubrik="Partiets linje" regel="Det alternativ flest av partiets närvarande ledamöter valde.">
             <p>
               Frånvaro räknas inte in. Ett parti med 30 ja-röster och 40
@@ -234,8 +228,8 @@ export default async function Metod() {
               behandlas som ett ställningstagande, inte som ett uteblivet svar.
             </p>
             <p>
-              Enskilda ledamöter som röstar annorlunda ändrar inte partiets linje.
-              De är också sällsynta: {heltal(d.avvikande)} av{' '}
+              Enskilda ledamöter som röstar annorlunda ändrar inte partiets
+              linje. De är också sällsynta: {heltal(d.avvikande)} av{' '}
               {heltal(d.avlagda)} avlagda röster avviker, alltså{' '}
               {tal(d.avvikelseandel, 3)} %.
             </p>
@@ -248,12 +242,13 @@ export default async function Metod() {
             <p>
               Alla 28 partipar räknas likadant, i alla {AMNEN.length} ämnen, utan
               att något par valts ut i förväg och utan höger–vänsteraxel. Ett par
-              som båda röstade avstår räknas som eniga, eftersom avstår är en linje.
+              som båda röstade avstår räknas som eniga, eftersom avstår är en
+              linje.
             </p>
             <p>
-              Måttet säger vad partierna gjorde, inte varför. Två partier kan rösta
-              lika av rakt motsatta skäl, och en hög siffra är inte i sig ett
-              påstående om samarbete.
+              Måttet säger vad partierna gjorde, inte varför. Två partier kan
+              rösta lika av rakt motsatta skäl, och en hög siffra är inte i sig
+              ett påstående om samarbete.
             </p>
           </Definition>
 
@@ -262,15 +257,15 @@ export default async function Metod() {
             regel="En votering där partiet var det enda med sin linje — de sju andra stod någon annanstans."
           >
             <p>
-              Kravet är att alla åtta partier har en linje i voteringen. Punkter där
-              något parti saknar linje räknas inte, eftersom ett parti annars kunde
-              se ensamt ut bara för att en jämförelse saknades.
+              Kravet är att alla åtta partier har en linje i voteringen. Punkter
+              där något parti saknar linje räknas inte, eftersom ett parti annars
+              kunde se ensamt ut bara för att en jämförelse saknades.
             </p>
             <p>
-              En nolla betyder inte att partiet aldrig går sin egen väg. Den betyder
-              att partiet aldrig gjorde det <em>utan sällskap</em> — och för{' '}
-              {lista(REGERINGSPARTIERNA.map(namn))} är det nästan mekaniskt omöjligt. Se
-              begränsningarna nedan.
+              En nolla betyder inte att partiet aldrig går sin egen väg. Den
+              betyder att partiet aldrig gjorde det <em>utan sällskap</em> — och
+              för {lista(REGERINGSPARTIERNA.map(namn))} är det nästan mekaniskt
+              omöjligt. Se begränsningarna nedan.
             </p>
           </Definition>
 
@@ -284,36 +279,35 @@ export default async function Metod() {
               kraftigt mellan riksmötena — den vanligaste förväxlingen i det här
               materialet.
             </p>
-            <table className="tabular mt-2 w-full max-w-md text-[14px]">
-              <tbody>
-                {d.riksmoten.map((r) => (
-                  <tr key={r.rm} className="regel">
-                    <td className="py-2">{r.rm}</td>
-                    <td className="py-2 text-right" style={{ color: 'var(--black-svag)' }}>
-                      {heltal(Number(r.franvarande))} av{' '}
-                      {heltal(Number(r.roster))}
-                    </td>
-                    <td className="whitespace-nowrap py-2 pl-6 text-right font-semibold">
-                      {tal(r.franvaroandel)} %
-                    </td>
-                  </tr>
-                ))}
-                <tr className="regel">
-                  <td className="py-2 font-semibold">hela perioden</td>
-                  <td className="py-2 text-right" style={{ color: 'var(--black-svag)' }}>
-                    {heltal(d.franvarande)} av {heltal(d.roster)}
-                  </td>
-                  <td className="whitespace-nowrap py-2 pl-6 text-right font-semibold"
-                      style={{ color: 'var(--accent)' }}>
-                    {tal(d.franvaroandel)} %
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div className="max-w-md">
+              {d.riksmoten.map((r) => (
+                <div key={r.rm}
+                     className="tabular grid grid-cols-[1fr_auto_auto] items-baseline gap-x-6 py-2.5 text-[14.5px]"
+                     style={{ borderBottom: '1px solid var(--linje)' }}>
+                  <span>{r.rm}</span>
+                  <span style={{ color: 'var(--black-svag)' }}>
+                    {heltal(Number(r.franvarande))} av {heltal(Number(r.roster))}
+                  </span>
+                  <span className="whitespace-nowrap text-right font-bold">
+                    {tal(r.franvaroandel)} %
+                  </span>
+                </div>
+              ))}
+              <div className="tabular grid grid-cols-[1fr_auto_auto] items-baseline gap-x-6 py-2.5 text-[14.5px]"
+                   style={{ borderBottom: '1px solid var(--linje)' }}>
+                <span className="font-bold">hela perioden</span>
+                <span style={{ color: 'var(--black-svag)' }}>
+                  {heltal(d.franvarande)} av {heltal(d.roster)}
+                </span>
+                <span className="whitespace-nowrap text-right font-bold" style={{ color: 'var(--accent)' }}>
+                  {tal(d.franvaroandel)} %
+                </span>
+              </div>
+            </div>
             <p>
-              Skälet till frånvaron finns inte i öppna data. En hög siffra är därför
-              inte ett påstående om försummelse — bara om hur ofta ledamoten inte
-              deltog.
+              Skälet till frånvaron finns inte i öppna data. En hög siffra är
+              därför inte ett påstående om försummelse — bara om hur ofta
+              ledamoten inte deltog.
             </p>
           </Definition>
 
@@ -323,13 +317,13 @@ export default async function Metod() {
           >
             <p>
               <em>Frånvaron avgjorde</em> betyder att utfallet hade blivit det
-              motsatta om varje frånvarande ledamot röstat med sitt parti. Räkningen
-              lägger alltså tillbaka de frånvarande på partiets linje och ser efter
-              om segraren byts.
+              motsatta om varje frånvarande ledamot röstat med sitt parti.
+              Räkningen lägger alltså tillbaka de frånvarande på partiets linje
+              och ser efter om segraren byts.
             </p>
             <p>
-              Det är aritmetik, inte en anklagelse. Riksdagen kvittar frånvaro, och
-              vilka voteringar som kvittades framgår inte av öppna data — se
+              Det är aritmetik, inte en anklagelse. Riksdagen kvittar frånvaro,
+              och vilka voteringar som kvittades framgår inte av öppna data — se
               begränsningarna nedan.
             </p>
           </Definition>
@@ -339,9 +333,9 @@ export default async function Metod() {
             regel="Genomsnittet av alla 28 partipars samstämmighet inom ämnet."
           >
             <p>
-              Talet är sannolikheten att två slumpvis valda partier röstade lika i
-              ämnet. Ett lågt tal betyder att kammaren spänner brett, inte att en
-              viss konflikt är skarp.
+              Talet är sannolikheten att två slumpvis valda partier röstade lika
+              i ämnet. Ett lågt tal betyder att kammaren spänner brett, inte att
+              en viss konflikt är skarp.
             </p>
             <p>
               Jämförelsen mot <em>normalt</em> är samma partipars samstämmighet i
@@ -352,43 +346,41 @@ export default async function Metod() {
         </div>
       </section>
 
-      <section id="ja-och-nej" className="regel mt-20 scroll-mt-6 pt-8">
-        <h2 className="display max-w-[20ch] text-[clamp(1.7rem,4.5vw,2.8rem)] leading-[1.05]">
+      <section id="ja-och-nej" className="regel scroll-mt-6 py-16">
+        <p className="rubrik max-w-[20ch] text-[clamp(1.9rem,5.5vw,46px)] leading-[1.05]">
           Ett ja är alltid utskottets förslag<span style={{ color: 'var(--accent)' }}>.</span>
-        </h2>
-        <div className="mt-6 grid max-w-[66ch] gap-4 text-[16px] leading-relaxed"
+        </p>
+        <div className="mt-7 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
              style={{ color: 'var(--black-mjuk)' }}>
           <p>
-            I en svensk votering ställs utskottets förslag som ja och en reservation
-            som nej. Ett parti som röstar nej till mer pengar till skolan har därför
-            oftast röstat för sitt eget förslag om mer pengar till skolan.
+            I en svensk votering ställs utskottets förslag som ja och en
+            reservation som nej. Ett parti som röstar nej till mer pengar till
+            skolan har därför oftast röstat för sitt eget förslag om mer pengar
+            till skolan.
           </p>
           <p>
-            Det är den enskilt viktigaste fällan i det här materialet. Ett verktyg
-            som läser varje nej som motstånd mot sakfrågan producerar hundratals
-            falska anklagelser. Därför står det på varje voteringssida utskrivet vad
-            reservationen ville, och vilka partier som stod bakom den.
+            Det är den enskilt viktigaste fällan i det här materialet. Ett
+            verktyg som läser varje nej som motstånd mot sakfrågan producerar
+            hundratals falska anklagelser. Därför står det på varje voteringssida
+            utskrivet vad reservationen ville, och vilka partier som stod bakom
+            den.
           </p>
           <p>
             Av samma skäl räknas vinnaren ur ja- och nej-rösterna, inte ur
-            riksdagens fält <code style={{ color: 'var(--black)' }}>vinnare</code>.
+            riksdagens fält <code className="mono" style={{ color: 'var(--black)' }}>vinnare</code>.
             Det fältet innehåller etiketterna <em>bifall</em> och <em>Avslagen</em>{' '}
-            även för punkter där utskottets förslag vann, och den som räknar på det
-            får fler förluster än som inträffat. Nej-sidan vann{' '}
+            även för punkter där utskottets förslag vann, och den som räknar på
+            det får fler förluster än som inträffat. Nej-sidan vann{' '}
             <strong style={{ color: 'var(--black)' }}>{heltal(d.forluster)} gånger</strong>{' '}
             under hela mandatperioden.
           </p>
         </div>
-        <Link href="/#forlorade"
-              className="mt-6 inline-block border-b pb-1 text-[14px] transition-opacity hover:opacity-60"
-              style={{ borderColor: 'var(--accent)' }}>
-          Se de {heltal(d.forluster)} fallen →
-        </Link>
+        <Textlank href="/#forlorade" className="mt-8">Se de {heltal(d.forluster)} fallen</Textlank>
       </section>
 
-      <section id="klarsprak" className="regel mt-20 scroll-mt-6 pt-8">
-        <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">Klarspråket och ämnena</h2>
-        <div className="mt-6 grid max-w-[66ch] gap-4 text-[16px] leading-relaxed"
+      <section id="klarsprak" className="regel scroll-mt-6 py-16">
+        <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Klarspråket och ämnena</h2>
+        <div className="mt-7 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
              style={{ color: 'var(--black-mjuk)' }}>
           <p>
             Sakfrågan, <em>ja innebar</em> och <em>nej innebar</em> står inte i
@@ -400,159 +392,161 @@ export default async function Metod() {
           </p>
           <p>
             Uppgiften är översättning av procedur, inte omdöme. Modellen är
-            instruerad att aldrig värdera ett förslag, aldrig antyda vilken sida som
-            har rätt, och alltid skriva ut vad reservationen faktiskt ville. Den
-            instruktionen prövades på 30 punkter som lästes igenom manuellt innan
-            hela batchen kördes.
+            instruerad att aldrig värdera ett förslag, aldrig antyda vilken sida
+            som har rätt, och alltid skriva ut vad reservationen faktiskt ville.
+            Den instruktionen prövades på 30 punkter som lästes igenom manuellt
+            innan hela batchen kördes.
           </p>
           <p>
-            Modellen skattar själv hur väl underlaget räckte. Punkter under <em>hög</em>{' '}
-            säkerhet är märkta både i voteringslistan och på sin egen sida, där
-            originaltexterna ligger öppna för jämförelse.
+            Modellen skattar själv hur väl underlaget räckte. Punkter under{' '}
+            <em>hög</em> säkerhet är märkta både i voteringslistan och på sin
+            egen sida, där originaltexterna ligger öppna för jämförelse.
           </p>
         </div>
 
-        <table className="mt-7 w-full max-w-md text-[15px]">
-          <tbody>
-            {d.sakerhet.map(([niva, punkter]) => (
-              <tr key={niva} className="regel">
-                <td className="py-2.5">säkerhet {niva}</td>
-                <td className="tabular py-2.5 text-right font-semibold">{heltal(punkter)}</td>
-                <td className="tabular whitespace-nowrap py-2.5 pl-6 text-right"
-                    style={{ color: 'var(--black-svag)' }}>
-                  {tal(d.forklarade > 0 ? (100 * punkter) / d.forklarade : 0)} %
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="mt-8 max-w-md">
+          {d.sakerhet.map(([niva, punkter]) => (
+            <div key={niva}
+                 className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-6 py-3 text-[15px]"
+                 style={{ borderBottom: '1px solid var(--linje)' }}>
+              <span>säkerhet {niva}</span>
+              <span className="tabular font-bold">{heltal(punkter)}</span>
+              <span className="tabular whitespace-nowrap text-right" style={{ color: 'var(--black-svag)' }}>
+                {tal(d.forklarade > 0 ? (100 * punkter) / d.forklarade : 0)} %
+              </span>
+            </div>
+          ))}
+        </div>
 
-        <p className="mt-5 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
-          Ämnesindelningen är automatisk och därför trubbig. <em>Övrigt</em> samlar
-          det som inte föll inom någon av de {AMNEN.length - 1} övriga kategorierna,
-          och en förslagspunkt kan höra hemma i två ämnen men får bara ett.
-        </p>
+        <Forbehall rubrik="Ämnesindelningen är automatisk och därför trubbig." className="mt-8" litet>
+          <em>Övrigt</em> samlar det som inte föll inom någon av de{' '}
+          {AMNEN.length - 1} övriga kategorierna, och en förslagspunkt kan höra
+          hemma i två ämnen men får bara ett.
+        </Forbehall>
       </section>
 
-      <section id="regeringssidan" className="regel mt-20 scroll-mt-6 pt-8">
-        <h2 className="display max-w-[22ch] text-[clamp(1.7rem,4.5vw,2.8rem)] leading-[1.05]">
+      <section id="regeringssidan" className="regel scroll-mt-6 py-16">
+        <p className="rubrik max-w-[22ch] text-[clamp(1.9rem,5.5vw,46px)] leading-[1.05]">
           Regeringssidans linje vann{' '}
           <span style={{ color: 'var(--accent)' }}>
             {heltal(basta?.med_vinnaren ?? 0)} av {heltal(d.voteringar)}
           </span>{' '}
           voteringar.
-        </h2>
-        <div className="mt-6 grid max-w-[66ch] gap-4 text-[16px] leading-relaxed"
+        </p>
+        <div className="mt-7 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
              style={{ color: 'var(--black-mjuk)' }}>
           <p>
-            Siffran gäller {lista(REGERINGSPARTIERNA.map(namn))} och besvarar en fråga som
-            faktiskt ställs: fick regeringen igenom sin politik? Svaret är ja, nästan
-            undantagslöst.
+            Siffran gäller {lista(REGERINGSPARTIERNA.map(namn))} och besvarar en
+            fråga som faktiskt ställs: fick regeringen igenom sin politik? Svaret
+            är ja, nästan undantagslöst.
           </p>
           <p>
             Men den är till stor del strukturell. Utskottsmajoriteten <em>är</em>{' '}
             regeringssidan, så att dess linje vinner är nästan samma påstående som
-            att utskottets förslag vinner. Talet beskriver hur riksdagen fungerar —
-            inte hur skickliga regeringspartierna varit. Det är skälet till att det
-            står här och inte som ett fynd på startsidan.
+            att utskottets förslag vinner. Talet beskriver hur riksdagen fungerar
+            — inte hur skickliga regeringspartierna varit. Det är skälet till att
+            det står här och inte som ett fynd på startsidan.
           </p>
         </div>
 
-        <table className="mt-8 w-full max-w-xl text-[14px]">
-          <tbody>
-            {d.utfall.map((u) => (
-              <tr key={u.parti} className="regel">
-                <td className="py-2.5 font-semibold">{u.parti}</td>
-                <td className="tabular py-2.5 pl-4 text-right" style={{ color: 'var(--black-svag)' }}>
-                  {heltal(u.med_vinnaren)}
-                </td>
-                <td className="tabular whitespace-nowrap py-2.5 pl-5 text-right font-semibold">
-                  {tal(u.andel)} %
-                </td>
-                {/* Stapeln är en upprepning av procenttalet och offras först när
-                    utrymmet tryter — annars radbryts talen på mobil. */}
-                <td className="hidden w-1/2 py-2.5 pl-5 sm:table-cell">
-                  <Stapel andel={u.andel} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="mt-5 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
-          Antalet av {heltal(d.voteringar)} voteringar där partiets
-          linje sammanföll med den vinnande sidan. Ett parti som avstod räknas
-          aldrig som vinnare, eftersom avstår varken är ja eller nej.
+        <div className="mt-10 max-w-2xl">
+          {d.utfall.map((u) => (
+            <div key={u.parti}
+                 className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-5 gap-y-2 py-3.5 sm:grid-cols-[80px_96px_1fr_80px]"
+                 style={{ borderBottom: '1px solid var(--linje)' }}>
+              <span className="text-[17px] font-bold">{u.parti}</span>
+              <span className="tabular text-right text-[16px] font-bold sm:text-left sm:text-[19px]">
+                {tal(u.andel)} %
+              </span>
+              {/* Stapeln är en upprepning av procenttalet och offras först när
+                  utrymmet tryter — annars radbryts talen på mobil. */}
+              <span className="hidden sm:block">
+                <Stapel andel={u.andel} />
+              </span>
+              <span className="tabular col-span-2 text-[14px] sm:col-span-1 sm:text-right"
+                    style={{ color: 'var(--black-svag)' }}>
+                {heltal(u.med_vinnaren)} st
+              </span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-6 max-w-[64ch] text-[13.5px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
+          Antalet av {heltal(d.voteringar)} voteringar där partiets linje
+          sammanföll med den vinnande sidan. Ett parti som avstod räknas aldrig
+          som vinnare, eftersom avstår varken är ja eller nej.
         </p>
       </section>
 
-      <section id="begransningar" className="regel-tjock mt-20 scroll-mt-6 pt-8">
-        <h2 className="display text-[clamp(1.7rem,4.5vw,2.8rem)]">
+      <section id="begransningar" className="regel scroll-mt-6 py-16">
+        <h2 className="rubrik max-w-[20ch] text-[clamp(1.8rem,4.4vw,44px)]">
           Vad materialet inte kan svara på
         </h2>
-        <p className="mt-4 max-w-[58ch] text-[16px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
-          Sju saker som begränsar varje slutsats på sajten. De står här därför att
-          en siffra utan sitt förbehåll är ett påstående vi inte kan försvara.
+        <p className="mt-5 max-w-[58ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
+          Sju saker som begränsar varje slutsats på sajten. De står här därför
+          att en siffra utan sitt förbehåll är ett påstående vi inte kan
+          försvara.
         </p>
 
-        <div className="mt-10 grid gap-10">
+        <div className="mt-12 grid gap-10">
           <Begransning rubrik="Kvittningen syns inte">
-            Riksdagen kvittar frånvaro: när en ledamot uteblir avstår ofta en ledamot
-            från motsatt sida frivilligt, just för att styrkeförhållandet ska hålla.
-            Vilka voteringar som kvittades framgår inte av öppna data. Varje
-            beräkning av vad frånvaron kunde ha ändrat antar därför att alla
+            Riksdagen kvittar frånvaro: när en ledamot uteblir avstår ofta en
+            ledamot från motsatt sida frivilligt, just för att styrkeförhållandet
+            ska hålla. Vilka voteringar som kvittades framgår inte av öppna data.
+            Varje beräkning av vad frånvaron kunde ha ändrat antar därför att alla
             frånvarande hade röstat med sitt parti — vilket överdriver effekten.
           </Begransning>
 
           <Begransning rubrik={`${lista(REGERINGSPARTIERNA.map(namn))} är utbytbara i statistiken`}>
             De röstar lika i {d.likhetsspann} av alla voteringar. Varje fynd som
-            namnger ett av dem gäller i praktiken alla tre, och vilket som hamnar i
-            rubriken avgörs av tiondelar. Det gör också att inget av dem gärna kan
-            bli <em>ensamt mot alla</em>: de två andra står redan på samma linje.
+            namnger ett av dem gäller i praktiken alla tre, och vilket som hamnar
+            i rubriken avgörs av tiondelar. Det gör också att inget av dem gärna
+            kan bli <em>ensamt mot alla</em>: de två andra står redan på samma
+            linje.
           </Begransning>
 
           <Begransning rubrik="De flesta besluten togs utan omröstning">
-            {heltal(d.utanNamnupprop)} av{' '}
-            {heltal(d.punkter)} förslagspunkter avgjordes genom
-            acklamation, alltså utan att någon begärde namnupprop. Sajten kan bara
-            säga något om de {heltal(d.voteringar)} där rösterna
+            {heltal(d.utanNamnupprop)} av {heltal(d.punkter)} förslagspunkter
+            avgjordes genom acklamation, alltså utan att någon begärde namnupprop.
+            Sajten kan bara säga något om de {heltal(d.voteringar)} där rösterna
             räknades. Enighet i kammaren är därför systematiskt underrepresenterad
             här.
           </Begransning>
 
           <Begransning rubrik="Förluster i utskottet syns inte">
-            En regering kan förlora en fråga i utskottet innan den når kammaren, och
-            sådana nederlag lämnar inga spår i röstdata. Att nej-sidan bara vann{' '}
-            {heltal(d.forluster)} gånger säger alltså något om kammaren, inte om regeringens
-            hela framgång.
+            En regering kan förlora en fråga i utskottet innan den når kammaren,
+            och sådana nederlag lämnar inga spår i röstdata. Att nej-sidan bara
+            vann {heltal(d.forluster)} gånger säger alltså något om kammaren, inte
+            om regeringens hela framgång.
           </Begransning>
 
           <Begransning rubrik="Skälet till frånvaro saknas">
             Föräldraledighet, sjukdom, tjänsteresor och utskottsarbete registreras
-            inte i de öppna rösterna. Partiledare och talespersoner har systematiskt
-            hög frånvaro därför att uppdraget ligger utanför kammaren. En hög siffra
-            är ett faktum om deltagande, inte ett omdöme om ledamoten.
+            inte i de öppna rösterna. Partiledare och talespersoner har
+            systematiskt hög frånvaro därför att uppdraget ligger utanför
+            kammaren. En hög siffra är ett faktum om deltagande, inte ett omdöme
+            om ledamoten.
           </Begransning>
 
           <Begransning rubrik="Enskilda ledamöter bär ingen berättelse">
-            {tal(d.avvikelseandel, 3)} % av de avlagda rösterna avviker från det egna
-            partiets linje — {heltal(d.avvikande)} av{' '}
-            {heltal(d.avlagda)}. Det finns ingen population av
-            ledamöter som röstar mot sitt parti, och därför ingen jämförelse att göra
-            mellan dem. Sajten mäter partier, inte personer.
+            {tal(d.avvikelseandel, 3)} % av de avlagda rösterna avviker från det
+            egna partiets linje — {heltal(d.avvikande)} av {heltal(d.avlagda)}.
+            Det finns ingen population av ledamöter som röstar mot sitt parti, och
+            därför ingen jämförelse att göra mellan dem. Sajten mäter partier,
+            inte personer.
           </Begransning>
 
           <Begransning rubrik="Anförandena är inte tolkade">
-            {heltal(d.anforanden)} anföranden ligger i databasen och
-            går att läsa mot voteringen de hör till. Men ingen automatisk
-            sammanfattning av vad som sades publiceras — försöket redovisas längst
-            ned på den här sidan, och det höll inte.
+            {heltal(d.anforanden)} anföranden ligger i databasen och går att läsa
+            mot voteringen de hör till. Men ingen automatisk sammanfattning av vad
+            som sades publiceras — försöket redovisas längst ned på den här sidan,
+            och det höll inte.
           </Begransning>
         </div>
       </section>
 
-      <section id="fel" className="regel mt-20 scroll-mt-6 pt-8">
-        <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">Hittar du ett fel?</h2>
-        <div className="mt-5 grid max-w-[66ch] gap-4 text-[16px] leading-relaxed"
+      <section id="fel" className="regel scroll-mt-6 py-16">
+        <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Hittar du ett fel?</h2>
+        <div className="mt-6 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
              style={{ color: 'var(--black-mjuk)' }}>
           <p>
             Varje votering på sajten har en egen sida med utskottets förslag och
@@ -560,36 +554,37 @@ export default async function Metod() {
             annat än underlaget, är det klarspråket som har fel.
           </p>
           <p>
-            Rapportera det, gärna med länk till voteringen och vad som borde stått.
-            Rättelser i underlaget kräver en ny körning och syns därför inte samma
-            dag, men de görs.
+            Rapportera det, gärna med länk till voteringen och vad som borde
+            stått. Rättelser i underlaget kräver en ny körning och syns därför
+            inte samma dag, men de görs.
           </p>
         </div>
         <a
           href="https://github.com/emarkensten/riksdagsgranskning/issues/new"
           target="_blank"
           rel="noreferrer"
-          className="mt-6 inline-block border-b pb-1 text-[14px] transition-opacity hover:opacity-60"
-          style={{ borderColor: 'var(--accent)' }}
+          className="mt-8 inline-block rounded-full px-[26px] py-[15px] text-[15px] font-semibold transition-[filter] duration-150 hover:brightness-[0.94]"
+          style={{ background: 'var(--accent)', color: '#ffffff' }}
         >
-          Anmäl ett fel på GitHub →
+          Anmäl ett fel på GitHub
         </a>
       </section>
 
-      <section id="hyckleri" className="regel-tjock mt-24 scroll-mt-6 pt-8">
-        <p className="text-[13px] uppercase tracking-[0.18em]" style={{ color: 'var(--accent)' }}>
-          Ett negativt resultat
-        </p>
-        <h2 className="display mt-4 text-[clamp(2rem,5.5vw,3.4rem)]">
-          Vi letade efter hyckleri<span style={{ color: 'var(--accent)' }}>.</span>
+      {/* Sidans enda mörka fält. Ett negativt resultat är metodsidans starkaste
+          innehåll och får därför bära det. */}
+      <section id="hyckleri" className="panel helbredd scroll-mt-6 py-16 sm:py-20">
+        <div className="mx-auto max-w-5xl px-5 sm:px-8">
+        <Etikett>Ett negativt resultat</Etikett>
+        <h2 className="display mt-6 max-w-[16ch] text-[clamp(2.2rem,6.5vw,72px)]">
+          Vi letade efter hyckleri.
         </h2>
-        <p className="mt-5 max-w-[54ch] text-[17px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
-          Den vanligaste idén om riksdagsgranskning är att hitta politiker som säger
-          en sak i talarstolen och röstar tvärtom. Vi prövade den. Den håller inte —
-          och här är varför.
+        <p className="mt-7 max-w-[54ch] text-[19px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
+          Den vanligaste idén om riksdagsgranskning är att hitta politiker som
+          säger en sak i talarstolen och röstar tvärtom. Vi prövade den. Den
+          håller inte — och här är varför.
         </p>
 
-        <ol className="mt-12 grid gap-8">
+        <ol className="mt-14 grid gap-10">
           <Steg
             nummer="1"
             rubrik="Enskilda ledamöter avviker inte"
@@ -616,51 +611,50 @@ export default async function Metod() {
           />
         </ol>
 
-        <div className="mt-14 grid max-w-[66ch] gap-4 text-[16px] leading-relaxed"
+        <div className="mt-16 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
              style={{ color: 'var(--black-mjuk)' }}>
           <p>
-            Skälet är detsamma som gör ja och nej svårlästa: ett parti som talar varmt
-            för mer resurser till skolan och sedan röstar nej har nästan alltid röstat
-            för sitt eget förslag om mer resurser till skolan.
+            Skälet är detsamma som gör ja och nej svårlästa: ett parti som talar
+            varmt för mer resurser till skolan och sedan röstar nej har nästan
+            alltid röstat för sitt eget förslag om mer resurser till skolan.
           </p>
           <p>
-            Ett verktyg som räknar det som en motsägelse producerar hundratals falska
-            anklagelser. Vi valde att inte bygga det.{' '}
-            <Link href="/samstammighet" className="underline hover:opacity-60">
-              Vem som röstar med vem
-            </Link>{' '}
-            säger betydligt mer om svensk politik — och bygger på rådata som vem som
-            helst kan räkna om.
+            Ett verktyg som räknar det som en motsägelse producerar hundratals
+            falska anklagelser. Vi valde att inte bygga det.
           </p>
         </div>
+        <Textlank href="/samstammighet" className="mt-8">
+          Se vem som röstar med vem i stället
+        </Textlank>
 
         {d.retorikTotalt > 0 && (
-          <div className="regel mt-12 pt-7">
-            <h3 className="display text-2xl">Underlaget, öppet</h3>
-            <p className="mt-2 text-[13px]" style={{ color: 'var(--black-svag)' }}>
-              {heltal(d.retorikTotalt)} bedömningar av anföranden mot
-              partiets röst i samma ärende.
+          <div className="regel mt-14 pt-9">
+            <h3 className="text-[26px] font-extrabold tracking-[-0.025em]">Underlaget, öppet</h3>
+            <p className="mt-2 text-[13.5px]" style={{ color: 'var(--black-svag)' }}>
+              {heltal(d.retorikTotalt)} bedömningar av anföranden mot partiets
+              röst i samma ärende.
             </p>
-            <table className="mt-5 w-full max-w-md text-[14px]">
-              <tbody>
-                {d.retorik.map(([k, v]) => (
-                  <tr key={k} className="regel">
-                    <td className="py-2">{k}</td>
-                    <td className="tabular py-2 text-right font-semibold">{v}</td>
-                    <td className="tabular whitespace-nowrap py-2 pl-6 text-right"
-                        style={{ color: 'var(--black-svag)' }}>
-                      {tal((100 * v) / d.retorikTotalt)} %
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="mt-4 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
-              Siffrorna blandar två promptformuleringar och ska inte läsas som ett
-              mått på riksdagen. De redovisas för att visa hur känsligt måttet är.
+            <div className="mt-6 max-w-md">
+              {d.retorik.map(([k, v]) => (
+                <div key={k}
+                     className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-6 py-2.5 text-[14.5px]"
+                     style={{ borderBottom: '1px solid var(--linje)' }}>
+                  <span>{k}</span>
+                  <span className="tabular font-bold">{heltal(v)}</span>
+                  <span className="tabular whitespace-nowrap text-right" style={{ color: 'var(--black-svag)' }}>
+                    {tal((100 * v) / d.retorikTotalt)} %
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-5 max-w-[64ch] text-[13.5px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
+              Siffrorna blandar två promptformuleringar och ska inte läsas som
+              ett mått på riksdagen. De redovisas för att visa hur känsligt måttet
+              är.
             </p>
           </div>
         )}
+        </div>
       </section>
     </main>
   )
@@ -669,14 +663,17 @@ export default async function Metod() {
 /** En rad i underlagstabellen: tal till vänster, hel mening till höger. */
 function Rad({ tal: n, text }: { tal: number; text: string }) {
   return (
-    <tr className="regel">
-      <td className="tabular display py-3 pr-5 text-right align-baseline text-[clamp(1.5rem,4vw,2.1rem)] leading-none">
+    <div
+      className="grid grid-cols-[auto_1fr] items-baseline gap-x-6 py-4"
+      style={{ borderBottom: '1px solid var(--linje)' }}
+    >
+      <span className="tabular min-w-[5ch] text-right text-[clamp(1.5rem,4vw,34px)] font-extrabold tracking-[-0.04em] leading-none">
         {heltal(n)}
-      </td>
-      <td className="py-3 align-baseline leading-snug" style={{ color: 'var(--black-mjuk)' }}>
+      </span>
+      <span className="text-[15.5px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
         {text}
-      </td>
-    </tr>
+      </span>
+    </div>
   )
 }
 
@@ -684,11 +681,11 @@ function Definition({ rubrik, regel, children }: {
   rubrik: string; regel: string; children: React.ReactNode
 }) {
   return (
-    <div className="grid gap-x-10 gap-y-3 sm:grid-cols-[minmax(0,15rem)_1fr]">
-      <h3 className="display text-[clamp(1.25rem,2.8vw,1.6rem)] leading-tight">{rubrik}</h3>
+    <div className="grid gap-x-10 gap-y-4 sm:grid-cols-[minmax(0,15rem)_1fr]">
+      <h3 className="rubrik text-[clamp(1.25rem,2.8vw,26px)]">{rubrik}</h3>
       <div className="max-w-[58ch]">
-        <p className="text-[17px] leading-snug">{regel}</p>
-        <div className="mt-3 grid gap-3 text-[15px] leading-relaxed"
+        <p className="text-[17px] font-semibold leading-[1.4]">{regel}</p>
+        <div className="mt-4 grid gap-4 text-[15.5px] leading-[1.6]"
              style={{ color: 'var(--black-mjuk)' }}>
           {children}
         </div>
@@ -700,8 +697,8 @@ function Definition({ rubrik, regel, children }: {
 function Begransning({ rubrik, children }: { rubrik: string; children: React.ReactNode }) {
   return (
     <div className="grid gap-x-10 gap-y-2 sm:grid-cols-[minmax(0,15rem)_1fr]">
-      <h3 className="text-[15px] font-semibold leading-snug">{rubrik}</h3>
-      <p className="max-w-[58ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
+      <h3 className="text-[16px] font-bold leading-snug">{rubrik}</h3>
+      <p className="max-w-[58ch] text-[15.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
         {children}
       </p>
     </div>
@@ -712,17 +709,20 @@ function Steg({ nummer, rubrik, tal, text }: {
   nummer: string; rubrik: string; tal: string; text: string
 }) {
   return (
-    <li className="grid gap-x-8 gap-y-2 sm:grid-cols-[auto_1fr]">
-      <div className="display tabular text-[clamp(2rem,5vw,3rem)] leading-none"
-           style={{ color: 'var(--accent)' }}>
+    // 12 rem och 34 px, inte displayskalans 46: talen har tre olika former
+    // ("0,14 %", "0,3–12,7 %", "0 av 9") och den bredaste får inte brytas.
+    // Fast spår, inte minmax: med min 0 krymper kolumnen till min-content och
+    // bryter "0,3–12,7 %" mitt itu.
+    <li className="grid gap-x-10 gap-y-3 sm:grid-cols-[12rem_1fr]">
+      <div className="siffra text-[clamp(1.8rem,4vw,34px)]" style={{ color: 'var(--lime)' }}>
         {tal}
       </div>
       <div>
-        <h3 className="text-[16px] font-semibold">
+        <h3 className="text-[17px] font-bold">
           <span style={{ color: 'var(--black-svag)' }}>{nummer}. </span>
           {rubrik}
         </h3>
-        <p className="mt-1.5 max-w-[60ch] text-[15px] leading-relaxed"
+        <p className="mt-2 max-w-[60ch] text-[15.5px] leading-[1.6]"
            style={{ color: 'var(--black-mjuk)' }}>
           {text}
         </p>

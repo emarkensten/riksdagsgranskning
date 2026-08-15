@@ -1,0 +1,201 @@
+import Link from 'next/link'
+import { PARTIFARG } from '@/lib/db'
+import { Info, PilHoger, PilVanster } from '@/components/ikoner'
+
+/**
+ * De sju byggstenar som återkommer på varje sida i Riktning 1a.
+ *
+ * De ligger här och inte i sidorna därför att designen är specificerad i
+ * exakta mått: en pill är 7×14 px i navigeringen och 15×26 px som knapp, och
+ * de måtten ska stå på ett ställe. Allt som färgsätts läser rollvariablerna,
+ * så komponenterna byter palett av sig själva inne i ett `.panel`.
+ */
+
+/** Monoetikett. Den enda plats i systemet där mono förekommer. */
+export function Etikett({
+  children,
+  className = '',
+  ton = 'dampad',
+}: {
+  children: React.ReactNode
+  className?: string
+  ton?: 'dampad' | 'signal'
+}) {
+  return (
+    <div
+      className={`etikett ${className}`}
+      style={ton === 'signal' ? { color: 'var(--accent)' } : undefined}
+    >
+      {children}
+    </div>
+  )
+}
+
+/**
+ * Nyckeltalet — periodens tal, satt så stort att det bär avsnittet.
+ *
+ * Över 24 px räcker 3:1, och därför får den ljusare signalen användas här.
+ * Under 24 px gäller alltid --accent.
+ */
+export function Nyckeltal({
+  children,
+  klass = 'text-[clamp(3.4rem,10vw,92px)]',
+  ton = 'black',
+}: {
+  children: React.ReactNode
+  klass?: string
+  ton?: 'black' | 'signal'
+}) {
+  return (
+    <div
+      className={`siffra ${klass}`}
+      style={{ color: ton === 'signal' ? 'var(--accent-display)' : 'var(--black)' }}
+    >
+      {children}
+    </div>
+  )
+}
+
+/** Textlänk med pil. Signalfärgad, 14,5 px, halvfet. */
+export function Textlank({
+  href,
+  children,
+  className = '',
+}: {
+  href: string
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <Link
+      href={href}
+      className={`inline-flex items-center gap-2 text-[14.5px] font-semibold transition-opacity duration-150 hover:opacity-70 ${className}`}
+      style={{ color: 'var(--accent)' }}
+    >
+      {children}
+      <PilHoger storlek={16} />
+    </Link>
+  )
+}
+
+/** Tillbakalänk med vänsterpil. Dämpad — den ska inte konkurrera med rubriken. */
+export function Tillbaka({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-2 text-[13.5px] font-semibold transition-opacity duration-150 hover:opacity-70"
+      style={{ color: 'var(--black-svag)' }}
+    >
+      <PilVanster storlek={15} />
+      {children}
+    </Link>
+  )
+}
+
+/** Pillerknapp. Primär = fylld signal, sekundär = hårlinjekant. */
+export function Knapp({
+  href,
+  children,
+  ton = 'primar',
+}: {
+  href: string
+  children: React.ReactNode
+  ton?: 'primar' | 'sekundar'
+}) {
+  const primar = ton === 'primar'
+  return (
+    <Link
+      href={href}
+      className="inline-block rounded-full px-[26px] py-[15px] text-[15px] font-semibold transition-[filter,background] duration-150 hover:brightness-[0.94]"
+      style={
+        primar
+          ? { background: 'var(--accent)', color: '#ffffff' }
+          : { border: '1px solid var(--linje-stark)', color: 'var(--black)' }
+      }
+    >
+      {children}
+    </Link>
+  )
+}
+
+/** Filterchip. Aktiv = fylld bläck, i övrigt kant. */
+export function Chip({
+  href,
+  children,
+  aktiv,
+}: {
+  href: string
+  children: React.ReactNode
+  aktiv: boolean
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={aktiv ? 'true' : undefined}
+      className="rounded-full px-[14px] py-2 text-[13.5px] font-medium transition-colors duration-150"
+      style={
+        aktiv
+          ? { background: 'var(--black)', color: 'var(--papper)', border: '1px solid var(--black)' }
+          : { border: '1px solid var(--linje-stark)', color: 'var(--black-mjuk)' }
+      }
+    >
+      {children}
+    </Link>
+  )
+}
+
+/**
+ * Förbehållet. Står alltid intill sin siffra, aldrig i en fotnot.
+ *
+ * Formuleringen ska stärka trovärdigheten, inte be om ursäkt: "aritmetik,
+ * inte en anklagelse". Se docs/DESIGN_GUIDELINES.md.
+ */
+export function Forbehall({
+  rubrik,
+  children,
+  className = '',
+  litet = false,
+}: {
+  rubrik?: string
+  children: React.ReactNode
+  className?: string
+  litet?: boolean
+}) {
+  return (
+    <div
+      className={`flex items-start gap-4 ${litet ? 'px-5 py-4' : 'px-6 py-5'} ${className}`}
+      style={{ background: 'var(--papper-djup)', borderLeft: '3px solid var(--accent)' }}
+    >
+      <span className="mt-0.5 shrink-0" style={{ color: 'var(--accent)' }}>
+        <Info storlek={litet ? 18 : 20} />
+      </span>
+      <p
+        className={`max-w-[76ch] ${litet ? 'text-[13.5px]' : 'text-[15px]'} leading-relaxed`}
+        style={{ color: 'var(--black-mjuk)' }}
+      >
+        {rubrik && <strong style={{ color: 'var(--black)' }}>{rubrik}</strong>}{' '}
+        {children}
+      </p>
+    </div>
+  )
+}
+
+/**
+ * Partifärgen som en fyrkant framför namnet.
+ *
+ * Färgen är data — den kodar vilket parti raden gäller. Den får aldrig
+ * användas som yta eller rubrikfärg.
+ */
+export function Partiprick({ parti, storlek = 12 }: { parti: string; storlek?: number }) {
+  return (
+    <span
+      aria-hidden
+      className="inline-block shrink-0 rounded-[3px]"
+      style={{
+        width: storlek,
+        height: storlek,
+        background: PARTIFARG[parti] ?? 'var(--linje-stark)',
+      }}
+    />
+  )
+}
