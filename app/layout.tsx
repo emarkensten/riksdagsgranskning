@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Instrument_Serif, IBM_Plex_Sans } from 'next/font/google'
 import Link from 'next/link'
+import { Navigation } from '@/components/navigation'
 import './globals.css'
 
 const display = Instrument_Serif({
@@ -32,15 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" className="display text-xl tracking-tight">
               Riksdags&shy;granskning
             </Link>
-            <nav className="text-[13px] uppercase tracking-[0.14em]">
-              <Link
-                href="/voteringar"
-                className="border-b border-transparent pb-0.5 transition-colors hover:border-current"
-                style={{ color: 'var(--black-mjuk)' }}
-              >
-                Voteringar
-              </Link>
-            </nav>
+            <Navigation />
           </header>
           {children}
           <footer
