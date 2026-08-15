@@ -159,13 +159,18 @@ export default async function Voteringar({
           vad frågan gällde, vad ett ja innebar och vad ett nej innebar.
         </p>
         {/* Startsidan säger 2 569 och den här sidan 2 587. Skillnaden är verklig
-            och ska stå här, inte lämnas åt läsaren att upptäcka. */}
+            och ska stå här, inte lämnas åt läsaren att upptäcka.
+
+            Rösterna för de 18 ÄR hämtade — 349 rader var. De är bara av en annan
+            sort: riksdagens fält `avser` säger 'motivfrågan', och parti_rost
+            räknar bara 'sakfrågan'. Att kalla dem saknade vore fel. */}
         <p className="stig mt-4 max-w-[62ch] text-[13.5px] leading-[1.6]"
            style={{ color: 'var(--black-svag)', animationDelay: '80ms' }}>
-          {heltal(d.medRoster)} av dem avgjordes med namnupprop och har
-          protokollförda röster. För de {heltal(d.totalt - d.medRoster)} övriga
-          finns voteringen registrerad, men inga röster i öppna data — de raderna
-          visas utan partiernas linjer.
+          {heltal(d.medRoster)} av dem avgjordes med namnupprop om sakfrågan. För
+          de {heltal(d.totalt - d.medRoster)} övriga gällde namnuppropet
+          motiveringen — hur beslutet skulle motiveras, inte vad som beslutades.
+          De rösterna säger inget om partiernas hållning i sakfrågan och räknas
+          därför inte, så raderna visas utan partiernas linjer.
         </p>
       </section>
 
