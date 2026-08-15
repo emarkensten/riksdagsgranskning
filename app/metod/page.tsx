@@ -190,7 +190,7 @@ export default async function Metod() {
           <Rad tal={d.forklarade} text="förslagspunkter har en klarspråksförklaring" />
           <Rad
             tal={utanRostdata}
-            text="av dem saknar röstdata — voteringen finns registrerad, men inga röster är protokollförda"
+            text="av dem avgjordes med namnupprop om motiveringen i stället för om sakfrågan. Rösterna är hämtade, men de säger hur beslutet skulle motiveras — inte vad som beslutades — och räknas därför inte in någonstans"
           />
           <Rad
             tal={d.utanNamnupprop}
