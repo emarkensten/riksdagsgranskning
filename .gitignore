@@ -45,3 +45,6 @@ validering-lager3-*.md
 lager3-batch.jsonl
 scratch/
 tsconfig.tsbuildinfo
+
+# Playwright-skärmdumpar (tillfälliga)
+.playwright-mcp/
