@@ -115,6 +115,11 @@ export default async function Start() {
   const aldrigEnsamma = d.rankade.filter((p) => p.ensam === 0).map((p) => namn(p.parti))
   const forlustPartier = [...new Set(d.forluster.flatMap((f) => f.motforslag_partier ?? []))]
   const storstEnsam = d.rankade[0]?.ensam || 1
+  // De av de tre utbytbara partierna som faktiskt står i ämnescitatet. Oftast
+  // ett, men paret kan bestå av två av dem, och då ska båda namnges.
+  const utpekade = d.amne
+    ? REGERINGSPARTIERNA.filter((p) => p === d.amne.avvikande_1 || p === d.amne.avvikande_2)
+    : []
 
   return (
     <main>
@@ -255,10 +260,12 @@ export default async function Start() {
             ut i förväg.
             {utbytbara(d.amne) && (
               <>
-                {' '}Att det står {namn(REGERINGSPARTIERNA.find((p) => p === d.amne.avvikande_1 || p === d.amne.avvikande_2))}{' '}
-                här avgörs av tiondelar: {lista(REGERINGSPARTIERNA.map(namn))}{' '}
-                röstar lika i {d.likhetsspann} av alla voteringar, så fyndet
-                gäller alla tre.
+                {/* filter och inte find: står två av de tre i citatet ska båda
+                    namnges, annars pekar meningen ut det ena utan att säga
+                    varför just det. */}
+                {' '}Att det står {lista(utpekade.map(namn))} här avgörs av
+                tiondelar: {lista(REGERINGSPARTIERNA.map(namn))} röstar lika i{' '}
+                {d.likhetsspann} av alla voteringar, så fyndet gäller alla tre.
               </>
             )}
           </p>
