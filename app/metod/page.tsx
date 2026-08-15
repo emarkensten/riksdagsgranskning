@@ -62,6 +62,7 @@ async function hamta() {
     anforanden,
     forluster,
     retorik,
+    listade,
   ] = await Promise.all([
     rader<Utfall>(klient.from('parti_utfall').select('*').order('andel', { ascending: false })),
     rader<{ avlagda: number; avvikande: number }>(
@@ -83,6 +84,12 @@ async function hamta() {
     rakna(antal(klient, 'utskottet_forlorade'), 'utskottsförluster'),
     rader<{ overensstammelse: string; antal: number }>(
       klient.from('retorik_summering').select('overensstammelse, antal')),
+    // Voteringssidans eget tal, läst ur voteringssidans egen vy. Att räkna om
+    // punkt_klartext här i stället vore att bygga in precis den glidning
+    // avsnittet #olika-tal finns för att förklara: votering_lista joinar mot
+    // betankande, klartext_summering gör det inte, och en punkt vars betänkande
+    // saknas faller ur den ena men inte ur den andra.
+    rakna(antal(klient, 'votering_lista'), 'listade beslut'),
   ])
 
   // PostgREST lämnar numeric som sträng. Talen måste därför gå genom Number()
@@ -143,6 +150,7 @@ async function hamta() {
     forluster,
     retorik: retorikRader,
     retorikTotalt: retorikRader.reduce((n, [, v]) => n + v, 0),
+    listade,
   }
 }
 
@@ -156,8 +164,12 @@ export default async function Metod() {
     .filter((u) => REGERINGSPARTIERNA.some((p) => p === u.parti))
     .sort((a, b) => b.med_vinnaren - a.med_vinnaren)[0]
   // Skillnaden mellan förklarade punkter och voteringar är punkter som fick en
-  // klarspråksförklaring men aldrig ett namnupprop.
+  // klarspråksförklaring men aldrig ett namnupprop om sakfrågan.
   const utanRostdata = d.forklarade - d.voteringar
+  // Samma skillnad, men räknad mellan de två tal sidorna faktiskt visar —
+  // voteringssidans lista och startsidans mönster. Det är den differensen
+  // #olika-tal ska förklara, och den ska härledas ur samma vyer som talen.
+  const motivupprop = d.listade - d.voteringar
 
   return (
     <main>
@@ -174,8 +186,11 @@ export default async function Metod() {
         </p>
       </section>
 
+      {/* Frågan om de två talen försvinner med sitt avsnitt den dag talen är
+          lika. Ett navpiller som lovar en förklaring till en skillnad som inte
+          finns är värre än inget piller alls. */}
       <nav aria-label="Frågor på sidan" className="regel flex flex-wrap gap-2 py-7">
-        {INNEHALL.map(([id, text]) => (
+        {INNEHALL.filter(([id]) => id !== 'olika-tal' || motivupprop > 0).map(([id, text]) => (
           <a
             key={id}
             href={`#${id}`}
@@ -454,40 +469,41 @@ export default async function Metod() {
         </Forbehall>
       </section>
 
-      <section id="olika-tal" className="regel scroll-mt-6 py-16">
-        <h2 className="rubrik max-w-[24ch] text-[clamp(1.8rem,4.4vw,44px)]">
-          Varför säger startsidan och voteringssidan olika många?
-        </h2>
-        <div className="mt-7 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
-             style={{ color: 'var(--black-mjuk)' }}>
-          <p>
-            Därför att de räknar två olika saker.{' '}
-            <strong style={{ color: 'var(--black)' }}>{heltal(d.forklarade)}</strong>{' '}
-            förslagspunkter har en klarspråksförklaring, och alla listas på
-            voteringssidan.{' '}
-            <strong style={{ color: 'var(--black)' }}>{heltal(d.voteringar)}</strong>{' '}
-            av dem avgjordes med namnupprop om sakfrågan, och det är de som bär
-            varje mönster på startsidan.
-          </p>
-          <p>
-            De {heltal(utanRostdata)} övriga fick också namnupprop, och rösterna
-            är hämtade — varje ledamot har sin rad, precis som i de andra. Men
-            uppropet gällde motivfrågan: hur beslutet skulle motiveras, inte vad
-            som beslutades. Rösterna säger alltså inget om partiernas hållning i
-            sakfrågan, och räknas därför inte in i någon partilinje,
-            samstämmighet eller frånvarosiffra.
-          </p>
-          <p>
-            Punkterna är inte borttagna för det. De ligger kvar i
-            voteringslistan, med sin klarspråksförklaring och utan partiernas
-            linjer. Att kalla dem <em>saknade röster</em> vore fel — det är
-            röster om en annan fråga.
-          </p>
-        </div>
-        <Textlank href="/voteringar" className="mt-8">
-          Se alla {heltal(d.forklarade)} beslut i listan
-        </Textlank>
-      </section>
+      {motivupprop > 0 && (
+        <section id="olika-tal" className="regel scroll-mt-6 py-16">
+          <h2 className="rubrik max-w-[24ch] text-[clamp(1.8rem,4.4vw,44px)]">
+            Varför säger startsidan och voteringssidan olika många?
+          </h2>
+          <div className="mt-7 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
+               style={{ color: 'var(--black-mjuk)' }}>
+            <p>
+              Därför att de räknar två olika saker. Voteringssidan listar{' '}
+              <strong style={{ color: 'var(--black)' }}>{heltal(d.listade)}</strong>{' '}
+              förslagspunkter med klarspråksförklaring.{' '}
+              <strong style={{ color: 'var(--black)' }}>{heltal(d.voteringar)}</strong>{' '}
+              av dem avgjordes med namnupprop om sakfrågan, och det är de som bär
+              varje mönster på startsidan.
+            </p>
+            <p>
+              De {heltal(motivupprop)} övriga fick också namnupprop, och rösterna
+              är hämtade — varje ledamot har sin rad, precis som i de andra. Men
+              uppropet gällde motivfrågan: hur beslutet skulle motiveras, inte
+              vad som beslutades. Rösterna säger alltså inget om partiernas
+              hållning i sakfrågan, och räknas därför inte in i någon partilinje,
+              samstämmighet eller frånvarosiffra.
+            </p>
+            <p>
+              Punkterna är inte borttagna för det. De ligger kvar i
+              voteringslistan, med sin klarspråksförklaring och utan partiernas
+              linjer. Att kalla dem <em>saknade röster</em> vore fel — det är
+              röster om en annan fråga.
+            </p>
+          </div>
+          <Textlank href="/voteringar" className="mt-8">
+            Se alla {heltal(d.listade)} beslut i listan
+          </Textlank>
+        </section>
+      )}
 
       <section id="regeringssidan" className="regel scroll-mt-6 py-16">
         <h2 className="rubrik max-w-[20ch] text-[clamp(1.9rem,5.5vw,46px)] leading-[1.05]">
