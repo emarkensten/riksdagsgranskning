@@ -75,7 +75,9 @@ async function hamta() {
 export default async function Amnen() {
   const { rader, perAmne } = await hamta()
   const mestOeniga = rader[0]
-  const voteringar = rader.reduce((n, r) => Math.max(n, r.voteringar), 0)
+  // Summan, inte det största ämnet. Varje votering hör till exakt ett ämne, så
+  // de 16 talen adderar till hela underlaget.
+  const voteringar = rader.reduce((n, r) => n + r.voteringar, 0)
 
   return (
     <main className="pb-10">

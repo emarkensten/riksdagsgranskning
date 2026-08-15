@@ -21,10 +21,17 @@ async function hamta({ amne, q }: Sok) {
   if (amne) fraga = fraga.eq('amne', amne)
   if (q) fraga = fraga.ilike('sakfraga', `%${q}%`)
 
-  const { data, error } = await fraga
+  // Hur många som matchar sökningen totalt. Listan kapas vid 120, och utan den
+  // här siffran ser en kapad lista ut som ett fullständigt svar.
+  let rakning = klient.from('punkt_klartext').select('*', { count: 'exact', head: true })
+  if (amne) rakning = rakning.eq('amne', amne)
+  if (q) rakning = rakning.ilike('sakfraga', `%${q}%`)
+
+  const [{ data, error }, { count }] = await Promise.all([fraga, rakning])
   if (error) throw new Error(error.message)
 
   const punkter = (data ?? []) as any[]
+  const traffar = count ?? 0
 
   // Partiernas röster hämtas i en enda fråga mot vyn.
   const voteringsIder = punkter
@@ -45,7 +52,7 @@ async function hamta({ amne, q }: Sok) {
   // den skulle kapas vid 1000 rader och tappa ämnen ur senare riksmöten.
   const amnesLista = [...AMNEN].sort((a, b) => a.localeCompare(b, 'sv'))
 
-  return { punkter, perVotering, amnesLista }
+  return { punkter, perVotering, amnesLista, traffar }
 }
 
 export default async function Voteringar({
@@ -54,14 +61,15 @@ export default async function Voteringar({
   searchParams: Promise<Sok>
 }) {
   const sok = await searchParams
-  const { punkter, perVotering, amnesLista } = await hamta(sok)
+  const { punkter, perVotering, amnesLista, traffar } = await hamta(sok)
 
   return (
     <main className="pb-10">
       <div className="regel-tjock pt-8">
         <h1 className="display text-[clamp(2rem,5vw,3.2rem)]">Voteringar</h1>
-        <p className="mt-3 max-w-[52ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
-          Riksmötet 2024/25. Varje rad är en fråga kammaren röstade om.
+        <p className="mt-3 max-w-[54ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
+          Mandatperioden 2022–2026. Varje rad är en fråga kammaren röstade om,
+          sammanfattad på vanlig svenska.
         </p>
       </div>
 
@@ -103,8 +111,15 @@ export default async function Voteringar({
         </button>
       </form>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <Rostnyckel />
+        {traffar > 0 && (
+          <p className="tabular text-[13px]" style={{ color: 'var(--black-svag)' }}>
+            {traffar > punkter.length
+              ? `Visar ${punkter.length} av ${traffar.toLocaleString('sv-SE')} träffar`
+              : `${traffar.toLocaleString('sv-SE')} träffar`}
+          </p>
+        )}
       </div>
 
       <ol className="mt-2">

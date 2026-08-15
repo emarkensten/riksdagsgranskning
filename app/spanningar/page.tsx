@@ -92,7 +92,8 @@ export default async function Spanningar() {
             <Link href="/samstammighet" className="underline hover:opacity-60">
               Vem som röstar med vem
             </Link>{' '}
-            säger betydligt mer om svensk politik — och kan inte ifrågasättas.
+            säger betydligt mer om svensk politik — och bygger på rådata som vem
+            som helst kan räkna om.
           </p>
         </div>
       </section>
