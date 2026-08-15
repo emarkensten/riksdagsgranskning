@@ -1,253 +1,158 @@
-# Design Guidelines - Riksdagsgranskning
+# Formspråk
 
-## Design Philosophy
+Sanningen bor i `app/globals.css` och i sidorna under `app/`. Det här dokumentet
+beskriver dem, och ska rättas när koden ändras — inte tvärtom.
 
-Every app should feel like it was designed by a professional team, not thrown together. These guidelines ensure consistency, readability, and usability across the entire application.
+---
 
-**Core Principle:** Substance over style. Professionalism through discipline.
+## Idén
 
-## Core Principles
+Sajten ska läsas som en välgjord tidningsbilaga om riksdagen, inte som ett
+dashboard. Därför **linjer i stället för kort**, varmt papper i stället för vitt,
+och en enda skarp accent.
 
-### 1. **Color with Discipline**
-- **Maximum 3-5 colors total** - never more
-- 1 primary color (brand), 2-3 neutral tones, 1-2 accent colors
-- Use semantic design tokens (`bg-background`, `text-foreground`) instead of hardcoded colors
-- **Avoid purple/violet** unless explicitly requested
-- **No gradients** unless specifically requested - solid colors look more professional
-- All components must support both light and dark modes seamlessly
+Det är ett granskningsprojekt. Gränssnittet får aldrig se ut att ta ställning,
+och varje siffra måste kunna spåras till sitt underlag.
 
-### 2. **Typography that Breathes**
-- Maximum 2 typefaces: one for headings, one for body text
-- Use `leading-relaxed` or `leading-6` for readability (1.4-1.6 line-height minimum)
-- Apply `text-balance` or `text-pretty` to headings for better breaks
-- Never use decorative typefaces for body text or text under 14px
-- Use semantic HTML heading tags (`<h1>`, `<h2>`, etc.) - never style `<p>` as headings
+---
 
-### 3. **Layout with Flexbox First**
-- Flexbox for 95% of layouts: `flex items-center justify-between`
-- CSS Grid only for complex 2D layouts
-- Use `gap-4`, `gap-x-2` for spacing - never use `space-*` classes
-- Mobile-first approach: design for mobile, enhance for desktop
-- No margin/padding on same element that has gap
+## De tre reglerna som är lätta att bryta av misstag
 
-### 4. **Tailwind CSS Precision**
-- Use Tailwind's spacing scale: `p-4`, `mx-2` (never `p-[16px]`)
-- Semantic classes: `items-center`, `justify-between`
-- Responsive prefixes: `md:grid-cols-2`, `lg:text-xl`
-- Never hardcode pixel values - use the scale
-- Consistent spacing through entire app
+### 1. Partifärger är data, aldrig dekor
 
-### 5. **Accessibility (WCAG 2.1 AA)**
-- All interactive elements must be keyboard accessible
-- Use semantic HTML (`<button>`, `<a>`, `<form>`, `<header>`, `<nav>`, etc.)
-- Maintain proper color contrast (4.5:1 for text)
-- Include proper ARIA labels and roles
-- Use `sr-only` for screen reader text
-- Alt-text for all meaningful images (except decorative)
+`PARTIFARG` i `lib/db.ts` finns för att avkoda vilket parti en rad gäller. Den
+får sitta i en smal understrykning eller en markör intill förkortningen.
 
-### 6. **Components That Scale**
-- Break everything into small, reusable components
-- Never create giant `page.tsx` files - extract separate components
-- Use shadcn/ui components as foundation (Button, Card, Dialog, etc.)
-- Server Components as default, Client Components only when necessary
-- Prop-based configuration for flexibility
+Den får **inte** användas för att färglägga en yta, en rubrik eller ett
+diagram där färgen inte betyder "det här partiet". I samstämmighetsmatrisen
+mäts *relationen* mellan partier, och där används accentskalan — inte
+partifärger — just därför att ingendera parten äger relationen.
 
-### 7. **Images and Icons with Purpose**
-- Use real images to create engagement (not blurry stock photos)
-- Consistent icon sizes: 16px, 20px, or 24px - no in-between
-- Never use emojis as UI icons
-- Real icons from icon libraries (lucide-react, etc.)
-- Decorative vs functional - always intentional
+Röstfärgerna (`--ja`, `--nej`, `--avstar`, `--franvarande`) lyder samma regel:
+de kodar en röst, inget annat. `--nej` och `--accent` har samma värde i ljust
+läge, vilket är avsiktligt — men det gör det extra viktigt att inte färga något
+rött som inte är ett nej.
 
-### 8. **Whitespace is Design**
-- Generous padding and margins
-- Let content breathe - tight = unprofessional
-- Consistent spacing throughout the app
-- No "floating" elements without context
+### 2. Varje siffra bär sitt förbehåll bredvid sig
 
-### 9. **Interaction Feels Good**
-- Hover-states on all clickable elements
-- Loading-states for async operations
-- Smooth transitions: `transition-colors`, `transition-transform`
-- Feedback on user interactions (no silent failures)
-- Clear focus indicators for keyboard navigation
+En stor siffra utan sin begränsning är ett påstående sajten inte kan försvara.
+Frånvarosiffran står intill upplysningen om kvittning; nollorna i "ensam mot
+alla" står intill förklaringen att de är mekaniska; en automatisk tolkning med
+låg säkerhet flaggas i sin egen ruta.
 
-### 10. **Interesting Over Boring**
-- Be creative within the framework
-- Professional doesn't mean boring
-- But always prioritize usability
-- Polish every detail - ship quality, not MVP
+Förbehållet ska formuleras så att det **stärker** trovärdigheten. Skriv "det här
+är aritmetik, inte en anklagelse", inte "vi kan tyvärr inte veta".
 
-## Color Palette
+### 3. Påståenden hämtas ur data, aldrig ur en hårdkodad mening
 
-**Maximum 3-5 total colors. Stick to it.**
+"Båda gångerna" och "de gjorde det aldrig" blir tyst osanna nästa gång ETL:n
+körs. Räkna fram dem. Se `lista()` och `namn()` i `lib/db.ts`.
 
-### Light Mode
-- **Background**: `white` (#FFFFFF)
-- **Surface**: `neutral-50` (#F9FAFB)
-- **Border**: `neutral-200` (#E5E7EB)
-- **Text Primary**: `neutral-900` (#111827)
-- **Text Secondary**: `neutral-600` (#4B5563)
-- **Accent (Primary)**: `blue-600` (#2563EB)
-- **Success**: `green-600` (#16A34A)
-- **Warning**: `yellow-600` (#CA8A04)
-- **Danger**: `red-600` (#DC2626)
+---
 
-### Dark Mode
-- **Background**: `neutral-950` (#030712)
-- **Surface**: `neutral-900` (#111827)
-- **Border**: `neutral-800` (#1F2937)
-- **Text Primary**: `neutral-50` (#F9FAFB)
-- **Text Secondary**: `neutral-400` (#9CA3AF)
-- **Accent (Primary)**: `blue-500` (#3B82F6)
-- **Success**: `green-500` (#22C55E)
-- **Warning**: `yellow-500` (#EAB308)
-- **Danger**: `red-500` (#EF4444)
+## Färg
 
-**No other colors. Ever.**
+Allt ligger som CSS-variabler i `:root`, med mörkt läge både via
+`prefers-color-scheme` och `[data-theme='dark']`.
 
-## Typography
+| Roll | Ljust | Mörkt |
+|---|---|---|
+| `--papper` | `#f4f1ea` | `#14120e` |
+| `--papper-djup` | `#eae5da` | `#1d1a15` |
+| `--black` | `#17140f` | `#f0ebe0` |
+| `--black-mjuk` | `#4a453c` | `#b8b0a1` |
+| `--black-svag` | `#7d7669` | `#857d6e` |
+| `--linje` | `#d5cec0` | `#332f27` |
+| `--accent` | `#a4301c` | `#e2705a` |
+| `--accent-svag` | `#f0e3df` | `#2a1e1a` |
 
-```typescript
-// Headings
-h1: text-4xl font-bold leading-tight
-h2: text-3xl font-bold leading-tight
-h3: text-2xl font-bold leading-snug
-h4: text-xl font-semibold leading-snug
+En accent. Inga gradienter. Inga skuggor — djup skapas med linjer.
 
-// Body
-body: text-base font-normal leading-relaxed
-small: text-sm font-normal leading-relaxed
-```
+Röstfärgerna har varsin **egen textfärg** (`--ja-text` och så vidare). Vit text
+klarar inte 4,5:1 mot `--avstar` och `--franvarande`, och röstetiketterna sätts i
+11 px. Använd `ROSTTEXT`, aldrig `text-white`.
 
-## Spacing
+---
 
-```
-xs: 0.25rem (4px)
-sm: 0.5rem (8px)
-md: 1rem (16px)
-lg: 1.5rem (24px)
-xl: 2rem (32px)
-2xl: 3rem (48px)
-```
+## Typografi
 
-Use consistent spacing for:
-- **Padding**: p-4, p-6, p-8 (internal content)
-- **Margin**: m-4, m-6, m-8 (spacing between sections)
-- **Gap**: gap-4, gap-6 (flex/grid layouts)
+Två snitt, laddade i `app/layout.tsx`:
 
-## Components
+- **Instrument Serif** (`--font-display`, vikt 400) — rubriker och alla tal.
+  Nås med klassen `.display`.
+- **IBM Plex Sans** (`--font-brod`, 400/500/600) — brödtext.
 
-### Navigation Header
-- Background: `bg-white dark:bg-neutral-900`
-- Border: `border-b border-neutral-200 dark:border-neutral-800`
-- Logo: 32px height, left-aligned
-- Menu items: Flex layout with 2rem gaps
-- Active indicator: Bottom border in accent color
+`.tabular` sätter `font-variant-numeric: tabular-nums` och ska sitta på varje
+tal i en tabell eller en kolumn, annars hoppar siffrorna i sidled.
 
-### Cards/Surfaces
-- Background: `bg-neutral-50 dark:bg-neutral-800`
-- Border: `border border-neutral-200 dark:border-neutral-700`
-- Padding: `p-6`
-- Corner radius: `rounded-lg` (8px)
-- Shadow: `shadow-sm` light mode, subtle shadow in dark
+### Tal ska ta plats
 
-### Forms
-- Label: `text-sm font-medium text-neutral-700 dark:text-neutral-300`
-- Input background: `bg-white dark:bg-neutral-800`
-- Input border: `border-neutral-300 dark:border-neutral-600`
-- Focus state: `ring-2 ring-blue-500`
-- Error state: `ring-2 ring-red-500`
+Nyckeltal sätts i `.display` på `clamp()` upp mot 7,5 rem, med `leading-[0.82]`
+så att talet blir en form och inte en textrad. Ett tal får en egen rad med luft
+omkring sig.
 
-### Buttons
-- **Primary**: `bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600`
-- **Secondary**: `bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-white`
-- **Ghost**: `text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-neutral-800`
-- **Disabled**: `opacity-50 cursor-not-allowed`
+Bredvid talet står en **hel mening**, inte en etikett. Meningen fullbordar talet
+grammatiskt: *2 569* / *"av 2 569 voteringar röstade Liberalerna och Moderaterna
+lika."* Rutnät av nyckeltalskort kryper ihop och ska undvikas.
 
-## Responsive Breakpoints
+### Svensk taltypografi
 
-```
-mobile:   < 640px
-tablet:   640px - 1024px
-desktop:  > 1024px
-```
+Använd `tal()` från `lib/db.ts`, aldrig `toFixed()`. Svenska har decimalkomma,
+tunt mellanrum i tusental och riktigt minustecken: `56,3 %`, `2 569`, `−23,0`.
 
-Use Tailwind responsive prefixes:
-```
-sm:  (640px)
-md:  (768px)
-lg:  (1024px)
-xl:  (1280px)
-2xl: (1536px)
-```
+Mellanslag före procenttecken.
 
-## Implementation Examples
+---
 
-### Dark Mode Toggle (App Level)
-```typescript
-// In layout.tsx or root provider
-<html lang="sv" suppressHydrationWarning>
-  <head>...</head>
-  <body>
-    <ThemeProvider attribute="class" defaultTheme="dark">
-      {children}
-    </ThemeProvider>
-  </body>
-</html>
-```
+## Layout
 
-### Component with Dark Mode
-```typescript
-export function MyComponent() {
-  return (
-    <div className="bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-50">
-      <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-        Title
-      </h1>
-    </div>
-  )
-}
-```
+`max-w-5xl` i `app/layout.tsx`, `px-5` som växer till `px-8`.
 
-### Interactive Elements
-```typescript
-// Always include focus states for accessibility
-<button className="focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900">
-  Click me
-</button>
-```
+| Klass | Vad |
+|---|---|
+| `.regel` | 1 px överlinje i `--linje` — standardavgränsaren |
+| `.regel-tjock` | 2 px i `--black` — inleder en sida eller ett större avsnitt |
+| `.stig` | engångsreveal vid sidladdning, respekterar `prefers-reduced-motion` |
 
-## Testing Checklist
+Sektioner separeras med `mt-16` till `mt-20` och en `.regel`. Mer luft ovanför en
+rubrik än under den. Kort, rundade hörn och skuggor hör inte hemma här.
 
-Before shipping any component:
-- [ ] Light mode appearance verified
-- [ ] Dark mode appearance verified
-- [ ] Keyboard navigation works
-- [ ] Focus states visible
-- [ ] Color contrast meets WCAG AA
-- [ ] Responsive on mobile/tablet/desktop
-- [ ] No console warnings
+Papperskänslan kommer från en nästan osynlig brusstruktur i `body::before`. Rör
+den inte — den är kalibrerad för att inte synas.
 
-## Tailwind CSS Configuration
+---
 
-Ensure `tailwind.config.js` includes:
-```javascript
-module.exports = {
-  darkMode: 'class',
-  theme: {
-    extend: {
-      fontFamily: {
-        sans: ['system-ui', 'sans-serif'],
-      },
-    },
-  },
-}
-```
+## Copy
 
-## Resources
+Skriv som en redaktör, inte som ett gränssnitt.
 
-- [shadcn/ui Documentation](https://ui.shadcn.com)
-- [Radix UI](https://radix-ui.com)
-- [Tailwind CSS](https://tailwindcss.com)
-- [Web Accessibility Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
+- Fulla partinamn i löpande text (`namn()`). Förkortningar bara i tabeller där
+  utrymmet kräver det — sajten skrivs för läsare som inte kan dem utantill.
+- Rubriker är påståenden eller frågor: *"Så röstade riksdagen."*, *"Var är
+  riksdagen oenig?"*, *"Vem var inte på plats?"*
+- Inga plastord, inga hedgar, ingen marknadsföringston. Om något är osäkert,
+  skriv exakt vad som är osäkert.
+- Länktexter namnger sitt mål: *"Se hela matrisen"*, inte *"Läs mer"*.
+
+---
+
+## Tillgänglighet
+
+- Kontrast minst 4,5:1 för brödtext, 3:1 för stor text. Röstetiketterna var
+  under gränsen en gång; det är därför `ROSTTEXT` finns.
+- Semantisk HTML. `<table>` för tabelldata med riktiga `<th>`.
+- Allt klickbart nås med tangentbord och har synligt fokus.
+- Färg får aldrig vara enda bäraren — röstetiketten har både färg och text.
+- Ingen horisontell scroll. Breda tabeller får `overflow-x-auto`.
+
+---
+
+## Innan något skickas
+
+- [ ] Ljust och mörkt läge
+- [ ] 375 px och 1440 px
+- [ ] Tangentbordsnavigering och fokusmarkering
+- [ ] Kontrast kontrollerad på nya färgkombinationer
+- [ ] Tal genom `tal()`, inte `toFixed()`
+- [ ] Varje påstående härlett ur data, inte hårdkodat
+- [ ] `npx tsc --noEmit` — kör aldrig `npm run build` medan dev-servern lever
