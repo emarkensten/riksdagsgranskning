@@ -10,7 +10,7 @@ import { Forstoringsglas } from '@/components/ikoner'
 // dynamiskt. En deklaration här hade sett ut som en cache som inte finns.
 
 export const metadata = {
-  title: 'Voteringarna — Riksdagsgranskning',
+  title: 'Voteringarna — Namnupprop',
   description:
     'Varje votering med namnupprop i mandatperioden 2022–2026, förklarad på vanlig svenska: vad frågan gällde, vad ett ja innebar och vad ett nej innebar.',
 }

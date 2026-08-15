@@ -1,4 +1,4 @@
-# Riksdagsgranskning
+# Namnupprop
 
 En granskningsapp som avslöjar dolda mönster i svenska riksdagspolitikers beteende genom att kombinera öppna data med AI-analys.
 

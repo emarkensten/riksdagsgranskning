@@ -8,7 +8,7 @@ import AMNEN from '@/lib/amnen.json'
 // dynamiskt. En deklaration här hade sett ut som en cache som inte finns.
 
 export const metadata = {
-  title: 'Vem röstar med vem — Riksdagsgranskning',
+  title: 'Vem röstar med vem — Namnupprop',
   description:
     'Hur ofta varje par av riksdagspartier landade på samma linje, mätt över alla voteringar med namnupprop 2022–2026.',
 }

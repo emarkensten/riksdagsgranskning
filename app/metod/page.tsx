@@ -9,7 +9,7 @@ import AMNEN from '@/lib/amnen.json'
 export const revalidate = 3600
 
 export const metadata = {
-  title: 'Så räknar vi — Riksdagsgranskning',
+  title: 'Så räknar vi — Namnupprop',
   description:
     'Svar på det som brukar frågas om sajten: hur talen räknas, om ett nej betyder motstånd, vem som skrev klarspråket, varför två sidor säger olika många — och vad materialet inte kan svara på.',
 }

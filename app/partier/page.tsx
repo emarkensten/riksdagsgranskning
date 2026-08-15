@@ -6,7 +6,7 @@ import { Etikett, Forbehall, Partiprick, Textlank } from '@/components/system'
 export const revalidate = 3600
 
 export const metadata = {
-  title: 'Partierna — Riksdagsgranskning',
+  title: 'Partierna — Namnupprop',
   description:
     'Åtta partier, åtta sidor. Vem varje parti röstar med, var det skiljer sig från sin egen normalnivå, och hur ofta det stod ensamt.',
 }

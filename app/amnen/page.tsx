@@ -7,7 +7,7 @@ import { regeringsspann } from '@/lib/partier'
 export const revalidate = 3600
 
 export const metadata = {
-  title: 'Var är riksdagen oenig? — Riksdagsgranskning',
+  title: 'Var är riksdagen oenig? — Namnupprop',
   description:
     'Enigheten i riksdagen, ämne för ämne. Alla 28 partipar mätta likadant över varje votering med namnupprop 2022–2026.',
 }

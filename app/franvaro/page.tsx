@@ -6,7 +6,7 @@ import { Etikett, Forbehall, Partiprick, Textlank } from '@/components/system'
 export const revalidate = 3600
 
 export const metadata = {
-  title: 'Vem var inte på plats? — Riksdagsgranskning',
+  title: 'Vem var inte på plats? — Namnupprop',
   description:
     'Frånvaron i riksdagen 2022–2026, riksmöte för riksmöte och parti för parti. Räknat på rösterna, inte på voteringarna.',
 }

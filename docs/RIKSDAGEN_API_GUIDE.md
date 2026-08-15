@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Riksdagen API provides access to data from the Swedish Parliament (Riksdagen). This guide documents all endpoints, parameters, and best practices discovered through development of Riksdagsgranskning.
+The Riksdagen API provides access to data from the Swedish Parliament (Riksdagen). This guide documents all endpoints, parameters, and best practices discovered through development of Namnupprop.
 
 **Base URL:** `https://data.riksdagen.se`
 
@@ -633,7 +633,7 @@ async function fetchAllVotings() {
 
 ## Last Updated
 
-**October 2025** - Riksdagsgranskning Development
+**October 2025** - Namnupprop Development
 
 **Major Updates (2025-10-20):**
 - ⭐ Discovered pagination parameter `p` (first documentation)
@@ -643,5 +643,5 @@ async function fetchAllVotings() {
 - ⭐ Tested full mandate period sync: 12,150/12,601 motions (96.4%)
 
 **Discovered by:** Testing and API exploration during MVP development
-**Compiled for:** Riksdagsgranskning project
+**Compiled for:** Namnupprop project
 **GitHub:** https://github.com/emarkensten/riksdagsgranskning

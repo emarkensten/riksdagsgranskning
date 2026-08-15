@@ -1,4 +1,4 @@
-# Setup Guide - Riksdagsgranskning
+# Setup Guide - Namnupprop
 
 ## Prerequisites
 
