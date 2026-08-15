@@ -32,6 +32,12 @@ export function namn(forkortning?: string) {
   return (forkortning && PARTINAMN[forkortning]) || forkortning || '—'
 }
 
+/** Svensk uppräkning: "A", "A och B", "A, B och C". */
+export function lista(delar: string[]) {
+  if (delar.length <= 1) return delar[0] ?? ''
+  return `${delar.slice(0, -1).join(', ')} och ${delar[delar.length - 1]}`
+}
+
 /** Riksdagens egna partifärger. Endast för dataavkodning. */
 export const PARTIFARG: Record<string, string> = {
   S: '#e8112d',
