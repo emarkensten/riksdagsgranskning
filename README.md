@@ -93,9 +93,19 @@ kammaren är därför systematiskt underrepresenterad.
   `select` och blockerar all skrivning
 - **OpenAI Batch API** — klarspråksförklaringarna, körda en gång och sparade
 
-Inga API-routes: sidorna läser databasen direkt i server components. Inget
-komponentbibliotek och inget diagrambibliotek — `components/system.tsx` bär
+Sidorna läser databasen direkt i server components. Det finns ingen API-yta att
+bygga mot — enda route handlern är `/underlag`, som lämnar ut röstdatan som CSV.
+Inget komponentbibliotek och inget diagrambibliotek: `components/system.tsx` bär
 byggstenarna och `components/ikoner.tsx` de åtta ikonerna.
+
+### Räkna om talen
+
+[`/underlag`](app/underlag/route.ts) ger en rad per votering och parti — 22 786
+rader — med ja, nej, avstår och frånvarande. Partilinje, samstämmighet,
+frånvaro, ensam mot alla och utfall går alla att härleda ur den filen plus
+definitionerna på `/metod#definitioner`. Det är avsiktligt: metodsidan påstår
+att varje tal går att räkna om, och utan rådata vore det ett påstående läsaren
+fick ta på förtroende.
 
 Sajten är inte publicerad ännu.
 

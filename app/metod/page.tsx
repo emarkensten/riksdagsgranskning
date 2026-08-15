@@ -243,6 +243,30 @@ export default async function Metod() {
           {d.riksmoten[d.riksmoten.length - 1]?.rm}, med betänkanden daterade{' '}
           {datum(d.forsta)} till {datum(d.sista)}.
         </p>
+
+        {/* Sidans inledning påstår att varje tal går att räkna om. Utan en väg
+            till rådata är det ett påstående läsaren får ta på förtroende —
+            alltså precis det sajten annars vägrar be om. Länken står därför här,
+            intill påståendet, och inte i en fotnot. */}
+        <div className="regel mt-12 pt-9">
+          <h3 className="text-[26px] font-extrabold tracking-[-0.025em]">Räkna om det själv</h3>
+          <p className="mt-3 max-w-[64ch] text-[15.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
+            En rad per votering och parti, med ja, nej, avstår och frånvarande —
+            samma tal som varje mått på sajten räknas ur. Partilinje,
+            samstämmighet, frånvaro, ensam mot alla och utfall går alla att
+            härleda ur den här filen och{' '}
+            <a href="#definitioner" className="underline hover:opacity-70">
+              definitionerna ovan
+            </a>.
+          </p>
+          <p className="mt-3 max-w-[64ch] text-[13.5px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
+            De {heltal(utanRostdata)} punkter vars namnupprop gällde motivfrågan
+            ingår inte, av samma skäl som de inte räknas in i något mått.
+          </p>
+          <Textlank href="/underlag" className="mt-6">
+            Hämta partirösterna som CSV
+          </Textlank>
+        </div>
       </section>
 
       <section id="definitioner" className="regel scroll-mt-6 py-16">

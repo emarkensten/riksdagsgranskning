@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Schibsted_Grotesk, IBM_Plex_Mono } from 'next/font/google'
 import Link from 'next/link'
 import { Navigation } from '@/components/navigation'
+import { Hamtat } from '@/components/hamtat'
 import { AVSANDARE, REPO, SAJT, SAJT_URL, UNDERTITEL } from '@/lib/sajt'
 import './globals.css'
 
@@ -94,6 +95,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 Källa: Sveriges riksdags öppna data. Voteringarnas innebörd är
                 sammanfattad automatiskt från utskottens förslag och reservationer —
                 varje sammanfattning kan granskas mot originaltexten.
+                <Hamtat />
               </p>
               {/* Ingen länk i meningen: länkraden intill bär redan "Om sajten",
                   och två likadana mål i samma sidfot är brus. */}
