@@ -1,17 +1,22 @@
 import { Metadata } from 'next'
-import { HomeHero } from '@/components/home/home-hero'
 
 export const metadata: Metadata = {
-  title: 'Riksdagsgranskning - Swedish Parliamentary Analysis',
-  description: 'AI-driven analysis of Swedish parliamentary motions, member activity, and the gap between rhetoric and voting behavior.',
+  title: 'Riksdagsgranskning',
+  description:
+    'Så röstade riksdagen 2022–2026. Byggt på öppna data från Sveriges riksdag.',
 }
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <main className="min-h-screen bg-white dark:bg-neutral-950">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
-        <HomeHero />
-      </div>
+    <main className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
+      <h1 className="text-3xl font-semibold tracking-tight">Riksdagsgranskning</h1>
+      <p className="mt-4 text-neutral-600 dark:text-neutral-400">
+        Så röstade riksdagen under mandatperioden 2022–2026. Byggt på öppna data
+        från Sveriges riksdag.
+      </p>
+      <p className="mt-8 text-sm text-neutral-500">
+        Datainsamlingen är på plats. Gränssnittet byggs härnäst.
+      </p>
     </main>
   )
 }

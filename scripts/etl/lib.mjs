@@ -17,12 +17,17 @@ const BASE = 'https://data.riksdagen.se'
 export const PARTIER = ['S', 'SD', 'M', 'C', 'V', 'KD', 'MP', 'L', '-']
 export const RIKSMOTEN = ['2022/23', '2023/24', '2024/25', '2025/26']
 
+let _client = null
+
+/** En delad klient — createClient i en skrivloop läcker resurser. */
 export function db() {
+  if (_client) return _client
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
     || `https://${process.env.SUPABASE_PROJECT_REF || 'chwvalgrgbebfhgfpnfb'}.supabase.co`
   const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!key) throw new Error('SUPABASE_SECRET_KEY saknas i .env.local')
-  return createClient(url, key, { auth: { persistSession: false } })
+  _client = createClient(url, key, { auth: { persistSession: false } })
+  return _client
 }
 
 export async function api(path, params = {}) {

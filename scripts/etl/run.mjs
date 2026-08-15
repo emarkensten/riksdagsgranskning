@@ -70,7 +70,14 @@ async function betankanden() {
     const punkter = []
 
     await pool(docs, 6, async (doc) => {
-      const dokId = doc.dok_id?.startsWith('HC') ? doc.dok_id : `HC01${doc.beteckning}`
+      // dok_id-prefixet kodar riksmötet (HA01=2022/23, HB01=2023/24, HC01=2024/25,
+      // HD01=2025/26). Hitta aldrig på ett prefix — fel prefix ger tyst ett giltigt
+      // dokument från ett ANNAT riksmöte.
+      const dokId = doc.dok_id
+      if (!dokId) {
+        console.error(`  ! ${doc.beteckning}: saknar dok_id, hoppas över`)
+        return
+      }
       const full = await api(`/dokument/${dokId}.json`)
       const status = full.dokumentstatus
       if (!status) return
@@ -116,8 +123,9 @@ async function roster() {
   for (const rm of riksmoten) {
     console.log(`\n== Röster ${rm} ==`)
     // Betäckningarna hämtas från vår egen tabell — betänkanden måste köras först.
+    // Explicit range — select() kapas annars tyst vid 1000 rader.
     const { data: bets, error } = await db()
-      .from('betankande').select('beteckning').eq('rm', rm)
+      .from('betankande').select('beteckning').eq('rm', rm).range(0, 9999)
     if (error) throw new Error(error.message)
     if (!bets?.length) {
       console.log('  (inga betänkanden — kör "betankanden" först)')
@@ -140,7 +148,8 @@ async function roster() {
       }))
     })
 
-    // Skriv per betänkande för att hålla minnet nere — det blir ~600k rader totalt.
+    // pool() samlar alla resultat innan loopen — ~227k rader ligger i minnet här.
+    // Fungerar i dag; behöver strömmas om volymen växer.
     for (const rows of batches) {
       if (!rows?.length) continue
       // En ledamot kan förekomma dubblerat i sak- och motivfråga; unik nyckel fångar det.
