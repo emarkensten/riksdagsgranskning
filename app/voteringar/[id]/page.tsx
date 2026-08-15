@@ -1,6 +1,10 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db, heltal, namn, rader, tal, PARTIFARG, ROSTFARG, partilinje } from '@/lib/db'
+import { db, heltal, namn, rader, partilinje } from '@/lib/db'
+import { Linjeetikett, Rostnyckel } from '@/components/rostrad'
+import { Stapel } from '@/components/stapel'
+import { Forbehall, Tillbaka } from '@/components/system'
+import { Bock, Kryss } from '@/components/ikoner'
 
 export const revalidate = 3600
 
@@ -49,6 +53,7 @@ export default async function Votering({ params }: { params: Promise<{ id: strin
   const { k, f, roster, reservationer, debatt } = data
   const anforanden = debatt.reduce((n, d) => n + Number(d.anforanden), 0)
   const talare = debatt.reduce((n, d) => n + Number(d.talare), 0)
+  const flestAnforanden = Math.max(...debatt.map((d) => Number(d.anforanden)), 0)
 
   // Utskottets förslag ställs som ja, reservationen som nej. Utfallet räknas
   // därför fram ur rösterna i stället för att läsas ur forslagspunkt.vinnare:
@@ -56,6 +61,9 @@ export default async function Votering({ params }: { params: Promise<{ id: strin
   // som utskottet faktiskt vann, och skulle visa fel vinnare för fyra av dem.
   const ja = roster.reduce((n, r) => n + Number(r.ja), 0)
   const nej = roster.reduce((n, r) => n + Number(r.nej), 0)
+  const avstar = roster.reduce((n, r) => n + Number(r.avstar), 0)
+  const franvarande = roster.reduce((n, r) => n + Number(r.franvarande), 0)
+  const avlagda = ja + nej + avstar
   const rostades = ja + nej > 0
   // Lika röstetal avgörs genom lottning. Det har inte inträffat i underlaget,
   // men får inte tyst hamna på reservationssidan om det gör det.
@@ -63,94 +71,98 @@ export default async function Votering({ params }: { params: Promise<{ id: strin
   const utskottetVann = rostades && ja > nej
 
   return (
-    <main className="pb-10">
-      <div className="regel-tjock pt-8">
-        <div className="flex flex-wrap items-baseline gap-x-3 text-[12px] uppercase tracking-[0.12em]"
-             style={{ color: 'var(--black-svag)' }}>
-          <Link href="/voteringar" className="hover:opacity-60">Voteringar</Link>
-          <span>·</span>
-          <span>{f.beteckning} punkt {f.punkt}</span>
-          <span>·</span>
+    <main>
+      <div className="pt-10">
+        <Tillbaka href="/voteringar">Alla voteringar</Tillbaka>
+      </div>
+
+      <section className="pb-10 pt-7">
+        <div className="mono flex flex-wrap gap-x-3.5 gap-y-1 text-[11.5px] uppercase tracking-[0.1em]"
+             style={{ color: 'var(--etikett)' }}>
+          <span>{f.beteckning} · punkt {f.punkt}</span>
           <span>{f.rm}</span>
           <span style={{ color: 'var(--accent)' }}>{k.amne}</span>
         </div>
-
-        <h1 className="display mt-5 max-w-[24ch] text-[clamp(1.9rem,4.6vw,3rem)]">
+        <h1 className="mt-5 max-w-[22ch] text-[clamp(2rem,5.8vw,60px)] font-extrabold leading-[0.98] tracking-[-0.04em]">
           {f.rubrik ?? k.sakfraga}
         </h1>
-        <p className="mt-4 max-w-[62ch] text-[17px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
+        <p className="mt-6 max-w-[62ch] text-[17px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
           {k.sakfraga}
         </p>
-        <p className="mt-3 text-[13px]" style={{ color: 'var(--black-svag)' }}>
+        <p className="mt-3 text-[13.5px]" style={{ color: 'var(--black-svag)' }}>
           Ur betänkandet <em>{f.betankande?.titel}</em> ({f.betankande?.organ})
         </p>
-      </div>
-
-      {k.sakerhet !== 'hög' && (
-        <p
-          className="mt-8 border-l-2 py-2 pl-4 text-[14px] leading-relaxed"
-          style={{ borderColor: 'var(--accent)', background: 'var(--accent-svag)', color: 'var(--black-mjuk)' }}
-        >
-          <strong style={{ color: 'var(--black)' }}>Osäker tolkning.</strong>{' '}
-          Underlaget för den här voteringen är ovanligt svårtolkat
-          {k.sakerhet === 'låg' ? '' : ' på någon punkt'}. Läs originaltexterna längst
-          ned innan du drar slutsatser.
-        </p>
-      )}
-
-      <section className="mt-12 grid gap-px sm:grid-cols-2">
-        <Innebord etikett="Ja innebar" text={k.ja_innebar} farg="var(--ja)"
-                  vann={utskottetVann} />
-        <Innebord etikett="Nej innebar" text={k.nej_innebar} farg="var(--nej)"
-                  vann={rostades && !utskottetVann && !oavgjort} />
       </section>
 
-      <section className="regel mt-12 pt-7">
-        <h2 className="display text-2xl">Så röstade partierna</h2>
-        <table className="mt-5 w-full text-[14px]">
-          <thead>
-            <tr className="text-left text-[12px] uppercase tracking-[0.1em]"
-                style={{ color: 'var(--black-svag)' }}>
-              <th className="pb-2 font-medium">Parti</th>
-              <th className="pb-2 font-medium">Linje</th>
-              <th className="pb-2 text-right font-medium">Ja</th>
-              <th className="pb-2 text-right font-medium">Nej</th>
-              <th className="pb-2 text-right font-medium">Avstår</th>
-              <th className="pb-2 text-right font-medium">Frånv.</th>
-            </tr>
-          </thead>
-          <tbody>
-            {roster
-              .sort((a, b) => Number(b.totalt) - Number(a.totalt))
-              .map((r) => {
-                const linje = partilinje(r)
-                return (
-                  <tr key={r.parti} className="regel">
-                    <td className="py-2 font-semibold">
-                      <span className="inline-flex items-center gap-2">
-                        <span className="inline-block h-3 w-1 rounded-sm"
-                              style={{ background: PARTIFARG[r.parti] ?? 'var(--linje)' }} />
-                        {r.parti}
-                      </span>
-                    </td>
-                    <td className="py-2">
-                      <span className="rounded-sm px-1.5 py-0.5 text-[12px] font-semibold text-white"
-                            style={{ background: ROSTFARG[linje] }}>
-                        {linje}
-                      </span>
-                    </td>
-                    <td className="tabular py-2 text-right">{r.ja}</td>
-                    <td className="tabular py-2 text-right">{r.nej}</td>
-                    <td className="tabular py-2 text-right">{r.avstar}</td>
-                    <td className="tabular py-2 text-right" style={{ color: 'var(--black-svag)' }}>
-                      {r.franvarande}
-                    </td>
-                  </tr>
-                )
-              })}
-          </tbody>
-        </table>
-        <p className="mt-3 text-[13px]" style={{ color: 'var(--black-svag)' }}>
+      {k.sakerhet !== 'hög' && (
+        <Forbehall rubrik="Osäker tolkning." className="mb-10">
+          Underlaget för den här voteringen är ovanligt svårtolkat
+          {k.sakerhet === 'låg' ? '' : ' på någon punkt'}. Läs originaltexterna
+          längst ned innan du drar slutsatser.
+        </Forbehall>
+      )}
+
+      {/* Vad ett ja och ett nej innebar — sidans viktigaste upplysning */}
+      <section className="grid border-y sm:grid-cols-2" style={{ borderColor: 'var(--linje)' }}>
+        <Innebord
+          etikett="Ett ja innebar"
+          text={k.ja_innebar}
+          farg="var(--ja)"
+          vann={utskottetVann}
+          ikon={<Bock storlek={18} />}
+          delare
+        />
+        <Innebord
+          etikett="Ett nej innebar"
+          text={k.nej_innebar}
+          farg="var(--nej)"
+          vann={rostades && !utskottetVann && !oavgjort}
+          ikon={<Kryss storlek={18} />}
+        />
+      </section>
+
+      {/* Rösträkningen */}
+      <section className="py-12" style={{ borderBottom: '1px solid var(--linje)' }}>
+        <div className="flex flex-wrap items-baseline gap-x-8 gap-y-3">
+          <Tal antal={ja} ord="ja" />
+          <Tal antal={nej} ord="nej" farg="var(--nej)" />
+          <Tal antal={avstar} ord="avstår" dampad />
+          <Tal antal={franvarande} ord="frånv." dampad />
+        </div>
+
+        {avlagda > 0 && (
+          <div className="mt-6 flex h-5 overflow-hidden rounded" role="img"
+               aria-label={`${ja} ja, ${nej} nej, ${avstar} avstår`}>
+            <span style={{ width: `${(100 * ja) / avlagda}%`, background: 'var(--ja)' }} />
+            <span style={{ width: `${(100 * nej) / avlagda}%`, background: 'var(--nej)' }} />
+            <span style={{ width: `${(100 * avstar) / avlagda}%`, background: 'var(--avstar)' }} />
+          </div>
+        )}
+
+        {roster.length > 0 && (
+          <>
+            <div className="mt-6 flex flex-wrap gap-1.5">
+              {[...roster]
+                .sort((a, b) => Number(b.totalt) - Number(a.totalt))
+                .map((r) => {
+                  const linje = partilinje(r)
+                  return (
+                    <Linjeetikett
+                      key={r.parti}
+                      parti={r.parti}
+                      linje={linje}
+                      titel={`${r.parti}: ${linje} (Ja ${r.ja}, Nej ${r.nej}, Avstår ${r.avstar}, Frånv. ${r.franvarande})`}
+                    />
+                  )
+                })}
+            </div>
+            <div className="mt-3.5">
+              <Rostnyckel />
+            </div>
+          </>
+        )}
+
+        <p className="mt-6 max-w-[70ch] text-[14.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
           {!rostades
             ? 'Ingen omröstning med namnupprop på den här punkten.'
             : oavgjort
@@ -162,101 +174,174 @@ export default async function Votering({ params }: { params: Promise<{ id: strin
             ? ` Motförslaget stöddes av ${f.motforslag_partier.join(', ')}.`
             : ''}
         </p>
+
+        {/* Full uppdelning per parti. Etikettraden ovan visar linjen; den här
+            visar hur många ledamöter som faktiskt låg bakom den. */}
+        {roster.length > 0 && (
+          <details className="mt-6">
+            <summary className="cursor-pointer text-[14px] font-semibold transition-opacity duration-150 hover:opacity-70">
+              Ledamot för ledamot, per parti
+            </summary>
+            <div className="mt-4 max-w-2xl">
+              <div className="etikett grid grid-cols-[1fr_repeat(4,minmax(0,56px))] gap-x-3 pb-2.5"
+                   style={{ borderBottom: '1px solid var(--linje)' }}>
+                <span>Parti</span>
+                <span className="text-right">Ja</span>
+                <span className="text-right">Nej</span>
+                <span className="text-right">Avstår</span>
+                <span className="text-right">Frånv.</span>
+              </div>
+              {[...roster]
+                .sort((a, b) => Number(b.totalt) - Number(a.totalt))
+                .map((r) => (
+                  <div key={r.parti}
+                       className="grid grid-cols-[1fr_repeat(4,minmax(0,56px))] items-center gap-x-3 py-2.5"
+                       style={{ borderBottom: '1px solid var(--linje)' }}>
+                    <span className="text-[15px] font-semibold">{namn(r.parti)}</span>
+                    <span className="tabular text-right text-[15px]">{r.ja}</span>
+                    <span className="tabular text-right text-[15px]">{r.nej}</span>
+                    <span className="tabular text-right text-[15px]">{r.avstar}</span>
+                    <span className="tabular text-right text-[15px]" style={{ color: 'var(--black-svag)' }}>
+                      {r.franvarande}
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </details>
+        )}
       </section>
 
-      {anforanden > 0 && (
-        <section className="regel mt-12 pt-7">
-          <h2 className="display text-2xl">Debatten</h2>
-          <p className="mt-3 max-w-[64ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
-            <strong style={{ color: 'var(--black)' }}>
-              {heltal(anforanden)} anföranden
-            </strong>{' '}
-            av {heltal(talare)} talare hölls i kammardebatten om betänkandet{' '}
-            <em>{f.betankande?.titel}</em>.
+      {/* Debatten och originalet, sida vid sida */}
+      <section className="grid gap-12 py-12 lg:grid-cols-2">
+        <div>
+          <h2 className="text-[26px] font-extrabold tracking-[-0.025em]">Debatten</h2>
+          {anforanden > 0 ? (
+            <>
+              <p className="mt-4 max-w-[46ch] text-[15px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
+                {heltal(anforanden)} anföranden av {heltal(talare)} talare hölls i
+                kammardebatten om betänkandet <em>{f.betankande?.titel}</em>.
+              </p>
+              <div className="mt-5 flex flex-col gap-2.5">
+                {debatt.map((rad) => (
+                  <div key={rad.parti}
+                       className="grid grid-cols-[56px_1fr_40px] items-center gap-3.5 text-[14.5px]">
+                    <span className="font-bold">{rad.parti}</span>
+                    <Stapel
+                      andel={(100 * Number(rad.anforanden)) / (flestAnforanden || 1)}
+                      hojd={10}
+                    />
+                    <span className="tabular text-right">{heltal(Number(rad.anforanden))}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Nivåskillnaden måste stå utskriven. Anförandena hör till hela
+                  betänkandet; att fördela dem på enskilda förslagspunkter kräver
+                  tolkning, och sajten tolkar inte anföranden. */}
+              <p className="mt-5 max-w-[52ch] text-[13.5px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
+                Antalet anföranden i <strong style={{ color: 'var(--black)' }}>hela
+                betänkandets</strong> debatt, inte bara den här punkten. Säger något
+                om engagemanget, inget om innehållet. Ett försök att jämföra tal mot
+                röst redovisas på{' '}
+                <Link href="/metod#hyckleri" className="underline hover:opacity-70">metodsidan</Link>,
+                och det höll inte.
+              </p>
+            </>
+          ) : (
+            <p className="mt-4 max-w-[46ch] text-[15px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
+              Inga anföranden är registrerade för betänkandets debatt.
+            </p>
+          )}
+        </div>
+
+        <div>
+          <h2 className="text-[26px] font-extrabold tracking-[-0.025em]">Originalet</h2>
+          <p className="mt-4 max-w-[46ch] text-[15px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
+            Texterna klarspråket bygger på, ordagrant ur betänkandet.
           </p>
 
-          <table className="mt-6 w-full max-w-lg text-[14px]">
-            <tbody>
-              {debatt.map((d) => (
-                <tr key={d.parti} className="regel">
-                  <td className="py-2 font-semibold">
-                    <span className="inline-flex items-center gap-2">
-                      <span className="inline-block h-3 w-1 rounded-sm" aria-hidden
-                            style={{ background: PARTIFARG[d.parti] ?? 'var(--linje)' }} />
-                      {namn(d.parti)}
-                    </span>
-                  </td>
-                  <td className="tabular py-2 pl-4 text-right font-semibold">
-                    {heltal(Number(d.anforanden))}
-                  </td>
-                  <td className="tabular whitespace-nowrap py-2 pl-5 text-right"
-                      style={{ color: 'var(--black-svag)' }}>
-                    {tal(100 * Number(d.anforanden) / anforanden)} %
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="mt-5 flex flex-col gap-2.5">
+            <Kalla titel="Utskottets förslag" text={f.forslag} />
+            {reservationer.map((r) => (
+              <Kalla
+                key={r.nummer}
+                titel={`Reservation ${r.nummer}${r.partier?.length ? ` (${r.partier.join(', ')})` : ''}`}
+                text={r.text}
+              />
+            ))}
+          </div>
 
-          {/* Nivåskillnaden måste stå utskriven. Anförandena hör till hela
-              betänkandet; att fördela dem på enskilda förslagspunkter kräver
-              tolkning, och sajten tolkar inte anföranden. */}
-          <p className="mt-5 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
-            Debatten gällde <strong style={{ color: 'var(--black)' }}>hela betänkandet</strong>,
-            inte bara den här förslagspunkten — ett betänkande innehåller ofta
-            flera punkter som debatteras i ett svep. Vad som sades sammanfattas
-            inte här. Ett försök att jämföra tal mot röst redovisas på{' '}
-            <Link href="/metod#hyckleri" className="underline hover:opacity-60">
-              metodsidan
-            </Link>
-            , och det höll inte.
-          </p>
-        </section>
-      )}
-
-      <section className="regel mt-12 pt-7">
-        <h2 className="display text-2xl">Underlaget</h2>
-        <p className="mt-2 text-[13px]" style={{ color: 'var(--black-svag)' }}>
-          Sammanfattningen ovan är gjord automatiskt ({k.modell}, säkerhet: {k.sakerhet}).
-          Här är originaltexterna den bygger på.
-        </p>
-
-        <details className="regel mt-5 py-3">
-          <summary className="cursor-pointer text-[14px] font-medium">Utskottets förslag</summary>
-          <pre className="mt-3 whitespace-pre-wrap text-[13px] leading-relaxed"
-               style={{ color: 'var(--black-mjuk)' }}>{f.forslag}</pre>
-        </details>
-
-        {reservationer.map((r) => (
-          <details key={r.nummer} className="regel py-3">
-            <summary className="cursor-pointer text-[14px] font-medium">
-              Reservation {r.nummer}
-              {r.partier?.length ? ` (${r.partier.join(', ')})` : ''}
-            </summary>
-            <pre className="mt-3 whitespace-pre-wrap text-[13px] leading-relaxed"
-                 style={{ color: 'var(--black-mjuk)' }}>{r.text}</pre>
-          </details>
-        ))}
+          <Forbehall className="mt-5" litet>
+            Klarspråket är maskinsammanfattat ur utskottets text ({k.modell},
+            självskattad säkerhet: {k.sakerhet}). Jämför alltid mot originalet.
+          </Forbehall>
+        </div>
       </section>
     </main>
   )
 }
 
-function Innebord({ etikett, text, farg, vann }: {
-  etikett: string; text: string; farg: string; vann: boolean
+/** En cell i "vad ett ja/nej innebar". Ikonen och etiketten delar röstfärg. */
+function Innebord({ etikett, text, farg, vann, ikon, delare = false }: {
+  etikett: string
+  text: string
+  farg: string
+  vann: boolean
+  ikon: React.ReactNode
+  delare?: boolean
 }) {
   return (
-    <div className="regel py-6 sm:pr-8">
-      <div className="flex items-center gap-2">
-        <span className="inline-block h-3 w-3 rounded-sm" style={{ background: farg }} />
-        <span className="text-[13px] uppercase tracking-[0.12em]">{etikett}</span>
+    <div
+      className={`py-9 ${delare ? 'border-b sm:border-b-0 sm:border-r sm:pr-10' : 'sm:pl-10'}`}
+      style={{ borderColor: 'var(--linje)' }}
+    >
+      <div className="flex items-center gap-2.5" style={{ color: farg }}>
+        {ikon}
+        <span className="etikett" style={{ color: farg }}>{etikett}</span>
         {vann && (
-          <span className="text-[11px] uppercase tracking-[0.1em]" style={{ color: 'var(--accent)' }}>
-            vann
-          </span>
+          <span className="etikett" style={{ color: 'var(--accent)' }}>· vann</span>
         )}
       </div>
-      <p className="mt-3 text-[15px] leading-relaxed">{text}</p>
+      <p className="mt-3.5 max-w-[44ch] text-[17px] leading-[1.55]" style={{ color: 'var(--black-mjuk)' }}>
+        {text}
+      </p>
     </div>
+  )
+}
+
+/** Ett tal i rösträkningen: siffran stor, enhetsordet litet bredvid. */
+function Tal({ antal, ord, farg, dampad = false }: {
+  antal: number
+  ord: string
+  farg?: string
+  dampad?: boolean
+}) {
+  return (
+    <span
+      className="tabular text-[clamp(2rem,5vw,44px)] font-extrabold leading-none"
+      style={{ color: farg ?? (dampad ? 'var(--black-svag)' : 'var(--black)') }}
+    >
+      {heltal(antal)}{' '}
+      <span className="text-[20px] font-semibold" style={{ color: 'var(--black-svag)' }}>
+        {ord}
+      </span>
+    </span>
+  )
+}
+
+/** Originaltext som ett kort. Fälls ut — texterna är långa. */
+function Kalla({ titel, text }: { titel: string; text: string }) {
+  return (
+    <details
+      className="rounded-lg px-5 py-4"
+      style={{ border: '1px solid var(--linje-stark)' }}
+    >
+      <summary className="cursor-pointer text-[15px] font-semibold transition-opacity duration-150 hover:opacity-70">
+        {titel}
+      </summary>
+      <pre className="mt-3.5 whitespace-pre-wrap font-[inherit] text-[14px] leading-[1.6]"
+           style={{ color: 'var(--black-mjuk)' }}>
+        {text}
+      </pre>
+    </details>
   )
 }

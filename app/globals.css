@@ -1,25 +1,56 @@
 @tailwind base;
 @tailwind components;
-@tailwind utilities;
+/*
+  `@tailwind utilities` ligger SIST i filen, inte här.
+
+  Klasserna nedan — .display, .rubrik, .siffra, .etikett — sätter font-weight,
+  line-height och color. Låg specificitet, precis som Tailwinds utilities, så
+  den som står sist i filen vinner. Med utilities överst blev
+  `className="rubrik leading-[1.05]"` tyst 1.0: .rubrik kom senare och tog över.
+  Nu vinner utilityn, som man förväntar sig.
+*/
 
 /*
-  Redaktionell civic-print. Tanken: det här ska läsas som en välgjord
-  tidningsbilaga om riksdagen, inte som ett dashboard. Därför linjer istället
-  för kort, varmt papper istället för vitt, och en enda skarp accent.
+  Riktning 1a — "Klarhet".
+
+  Samma redaktionella allvar som tidigare, men modernt: sval nästan-vit i
+  stället för varmt papper, en grotesk i stället för antikva, hårlinjer i
+  stället för kort, och exakt ett mörkt fält per sida som bär periodens
+  tyngsta tal.
+
+  Inga skuggor någonstans. Djupet kommer från hårlinjer och det mörka fältet.
 
   Partifärger är DATA och används aldrig som dekor — annars börjar
   gränssnittet självt se ut att ta ställning.
 */
 
 :root {
-  --papper: #f4f1ea;
-  --papper-djup: #eae5da;
-  --black: #17140f;
-  --black-mjuk: #4a453c;
-  --black-svag: #7d7669;
-  --linje: #d5cec0;
-  --accent: #a4301c;
-  --accent-svag: #f0e3df;
+  --papper: #fbfbf9;
+  --papper-djup: #f1f0ea;
+  --linje: #e6e4dd;
+  /* Ram runt något klickbart. Hårlinjen är för svag för en knappkant. */
+  --linje-stark: #ddd9d0;
+
+  --black: #0b0b0c;
+  --black-mjuk: #45454a;
+  --black-svag: #6b6b70;
+  /* Monoetiketterna sätts i 11,5 px och räknas därför som brödtext, inte som
+     stor text. #86867f låg på 3,5:1 och föll. */
+  --etikett: #6f6f68;
+
+  --accent: #cf3c14;
+  /* Samma signal, en nyans ljusare. Klarar 3:1 och får därför bara användas
+     på tal över 24 px. Under det alltid --accent. */
+  --accent-display: #e0431c;
+  --spar: #eeece5;
+
+  --panel: #0b0b0c;
+  --panel-text: #fbfbf9;
+  --panel-mjuk: #d5d5cf;
+  --panel-svag: #8e8d85;
+  --panel-linje: #2f2f2c;
+  --panel-linje-stark: #3a3a35;
+  --lime: #d9ff4a;
 
   --ja: #2f6b4f;
   --nej: #a4301c;
@@ -27,50 +58,89 @@
   --franvarande: #b9b1a1;
 
   /* Textfärg ovanpå respektive röstfärg. Vit text klarar inte 4,5:1 mot de
-     ljusare av dem, och röstetiketterna är 11 px — de måste hålla måttet. */
+     ljusare av dem, och röstetiketterna är 12,5 px — de måste hålla måttet. */
   --ja-text: #ffffff;
   --nej-text: #ffffff;
   --avstar-text: #17140f;
   --franvarande-text: #17140f;
 }
 
+/* Mörkt läge: samma roller, egna värden. Signalen LJUSNAR i stället för att
+   mörkna — #cf3c14 hade legat på 2,1:1 mot #101010. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --papper: #14120e;
-    --papper-djup: #1d1a15;
-    --black: #f0ebe0;
-    --black-mjuk: #b8b0a1;
-    --black-svag: #857d6e;
-    --linje: #332f27;
-    --accent: #e2705a;
-    --accent-svag: #2a1e1a;
+    --papper: #101010;
+    --papper-djup: #1a1a19;
+    --linje: #2b2b28;
+    --linje-stark: #3a3a35;
+
+    --black: #f4f3ef;
+    --black-mjuk: #c9c7bf;
+    --black-svag: #8e8d85;
+    --etikett: #8e8d85;
+
+    --accent: #ff6a3d;
+    --accent-display: #ff6a3d;
+    --spar: #2b2b28;
+
+    /* Fältet måste fortfarande skilja sig från sidan, så det stiger i stället
+       för att sjunka. */
+    --panel: #1a1a19;
+    --panel-text: #f4f3ef;
 
     --ja: #6aab8a;
     --nej: #e2705a;
     --avstar: #a89b80;
     --franvarande: #5c554a;
 
-    --ja-text: #14120e;
-    --nej-text: #14120e;
-    --avstar-text: #14120e;
-    --franvarande-text: #f0ebe0;
+    --ja-text: #101010;
+    --nej-text: #101010;
+    --avstar-text: #101010;
+    --franvarande-text: #f4f3ef;
   }
 }
 
 :root[data-theme='dark'] {
-  --papper: #14120e;
-  --papper-djup: #1d1a15;
-  --black: #f0ebe0;
-  --black-mjuk: #b8b0a1;
-  --black-svag: #857d6e;
-  --linje: #332f27;
-  --accent: #e2705a;
-  --accent-svag: #2a1e1a;
+  --papper: #101010;
+  --papper-djup: #1a1a19;
+  --linje: #2b2b28;
+  --linje-stark: #3a3a35;
+
+  --black: #f4f3ef;
+  --black-mjuk: #c9c7bf;
+  --black-svag: #8e8d85;
+  --etikett: #8e8d85;
+
+  --accent: #ff6a3d;
+  --accent-display: #ff6a3d;
+  --spar: #2b2b28;
+
+  --panel: #1a1a19;
+  --panel-text: #f4f3ef;
 
   --ja: #6aab8a;
   --nej: #e2705a;
   --avstar: #a89b80;
   --franvarande: #5c554a;
+
+  --ja-text: #101010;
+  --nej-text: #101010;
+  --avstar-text: #101010;
+  --franvarande-text: #f4f3ef;
+}
+
+/* Aldrig horisontell sidscroll. `clip` i stället för `hidden`, som annars
+   skulle göra body till en scrollcontainer. */
+html { overflow-x: clip; }
+
+/*
+  Bryter ut ur innehållskolumnen och går kant i kant med fönstret.
+  Används av det mörka fältet, som ska ligga som ett band tvärs över sidan —
+  ett halvt utbrott, till kolumnens ytterkant, hade bara sett nästan rätt ut.
+*/
+.helbredd {
+  margin-inline: calc(50% - 50vw);
+  width: 100vw;
 }
 
 body {
@@ -81,31 +151,69 @@ body {
   font-feature-settings: 'kern' 1;
 }
 
-/* Pappersstruktur — knappt synlig, men tar bort den platta skärmkänslan. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.5;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+/*
+  Det mörka fältet.
+
+  Skrivs som en omdefiniering av rollerna i stället för som egna klasser på
+  varje barn: allt inuti — etiketter, staplar, länkar, förbehåll — byter palett
+  av sig självt, och en komponent behöver aldrig veta att den ligger här.
+  Signalen blir lime, som bara får förekomma mot den här bakgrunden.
+*/
+.panel {
+  --papper: var(--panel);
+  --papper-djup: #1f1f1d;
+  --black: var(--panel-text);
+  --black-mjuk: var(--panel-mjuk);
+  --black-svag: var(--panel-svag);
+  --etikett: var(--panel-svag);
+  --linje: var(--panel-linje);
+  --linje-stark: var(--panel-linje-stark);
+  --accent: var(--lime);
+  --accent-display: var(--lime);
+  --spar: var(--panel-linje);
+  background: var(--panel);
+  color: var(--panel-text);
 }
 
+/* Rubriker. Tre steg, inte fem — skalan bärs av storleken, inte av vikten. */
 .display {
-  font-family: var(--font-display), Georgia, serif;
-  font-weight: 400;
-  letter-spacing: -0.02em;
-  line-height: 0.95;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 0.88;
 }
 
-/* Siffror i tabeller måste stå i kolumn. */
+.rubrik {
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+/* Nyckeltalet. Alltid tabular — annars vandrar siffrorna i en kolumn. */
+.siffra {
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 0.82;
+  font-variant-numeric: tabular-nums;
+}
+
 .tabular { font-variant-numeric: tabular-nums; }
 
-.regel { border-top: 1px solid var(--linje); }
-.regel-tjock { border-top: 2px solid var(--black); }
+.mono { font-family: var(--font-mono), ui-monospace, monospace; }
 
-/* Staplad reveal vid sidladdning — en gång, inte överallt. */
+/* Monoetiketten: 11,5 px, versal, gles. Den enda plats mono används. */
+.etikett {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--etikett);
+  line-height: 1;
+}
+
+.regel { border-top: 1px solid var(--linje); }
+
+/* Staplad reveal vid sidladdning — en gång, i heron, inte överallt. */
 @keyframes stig {
   from { opacity: 0; transform: translateY(0.6rem); }
   to   { opacity: 1; transform: none; }
@@ -118,4 +226,14 @@ body::before {
 
 a { color: inherit; }
 
-::selection { background: var(--accent); color: var(--papper); }
+/* Fokus syns på allt klickbart, i signalfärgen, med luft omkring sig. */
+:where(a, button, input, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+::selection { background: var(--accent); color: #ffffff; }
+
+/* Sist, så att en utility alltid vinner över klasserna ovan. Se kommentaren överst. */
+@tailwind utilities;

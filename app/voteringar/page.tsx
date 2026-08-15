@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { antal, db, datum, heltal, rader, rakna } from '@/lib/db'
 import AMNEN from '@/lib/amnen.json'
 import { Rostrad, Rostnyckel, type PartiRad } from '@/components/rostrad'
+import { Chip } from '@/components/system'
+import { Forstoringsglas } from '@/components/ikoner'
 
 // Ingen revalidate: sidan läser searchParams och renderas därför alltid
 // dynamiskt. En deklaration här hade sett ut som en cache som inte finns.
@@ -16,6 +18,7 @@ export const metadata = {
 const PER_SIDA = 40
 
 type Sok = { amne?: string; q?: string; rm?: string; sida?: string }
+type Valt = { amne?: string; rm?: string; q?: string }
 
 type Rad = {
   forslagspunkt_id: number
@@ -96,19 +99,30 @@ async function hamta({ amne, q, rm, sida }: Sok) {
     sidor,
     nr,
     riksmoten: riksmoten.map((r) => r.rm),
-    valt: { amne: valtAmne, rm: valtRm, q: sok },
+    valt: { amne: valtAmne, rm: valtRm, q: sok } as Valt,
   }
 }
 
-/** Länk till en annan sida i samma sökning. Filtren måste följa med. */
-function sidlank(valt: { amne?: string; rm?: string; q?: string }, sida: number) {
+/** Adress till samma sökning med ett filter eller sidnummer utbytt. */
+function lank(valt: Valt, andring: Partial<Valt & { sida: number }>) {
+  const slut = { ...valt, sida: 1, ...andring }
   const p = new URLSearchParams()
-  if (valt.q) p.set('q', valt.q)
-  if (valt.amne) p.set('amne', valt.amne)
-  if (valt.rm) p.set('rm', valt.rm)
-  if (sida > 1) p.set('sida', String(sida))
+  if (slut.q) p.set('q', slut.q)
+  if (slut.amne) p.set('amne', slut.amne)
+  if (slut.rm) p.set('rm', slut.rm)
+  if (slut.sida && slut.sida > 1) p.set('sida', String(slut.sida))
   const s = p.toString()
   return s ? `/voteringar?${s}` : '/voteringar'
+}
+
+/**
+ * Sidnumren som ska synas: alltid första och sista, plus ett fönster runt den
+ * aktuella. `null` är ett hopp och renderas som ett ellipstecken.
+ */
+function sidnummer(nr: number, sidor: number): (number | null)[] {
+  const visa = new Set([1, sidor, nr - 1, nr, nr + 1])
+  const lista = [...visa].filter((n) => n >= 1 && n <= sidor).sort((a, b) => a - b)
+  return lista.flatMap((n, i) => (i > 0 && n - lista[i - 1] > 1 ? [null, n] : [n]))
 }
 
 export default async function Voteringar({
@@ -120,150 +134,171 @@ export default async function Voteringar({
   // Ett sidnummer bortom sista sidan är inte en tom lista, det är en adress
   // som inte finns.
   if (!d) notFound()
-  const filtrerat = Boolean(d.valt.amne || d.valt.rm || d.valt.q)
   const forsta = d.traffar === 0 ? 0 : (d.nr - 1) * PER_SIDA + 1
   const sista = Math.min(d.nr * PER_SIDA, d.traffar)
+  const amnen = [...AMNEN].sort((a, b) => a.localeCompare(b, 'sv'))
 
   return (
-    <main className="pb-10">
-      <section className="regel-tjock pt-8">
-        <p className="stig text-[13px] uppercase tracking-[0.18em]"
-           style={{ color: 'var(--accent)', animationDelay: '0ms' }}>
-          Mandatperioden 2022–2026
-        </p>
-        <h1 className="display stig mt-5 text-[clamp(2.6rem,8vw,5.5rem)]"
-            style={{ animationDelay: '80ms' }}>
-          Varje beslut<span style={{ color: 'var(--accent)' }}>.</span>
+    <main>
+      <section className="pb-8 pt-16">
+        <h1 className="display stig text-[clamp(2.6rem,7.5vw,80px)]">
+          {heltal(d.totalt)} beslut.
         </h1>
-        <p className="stig mt-7 max-w-[50ch] text-[17px] leading-relaxed"
-           style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}>
-          Riksdagen röstade om {heltal(d.totalt)} frågor med namnupprop. Var och
-          en står här förklarad på vanlig svenska: vad frågan gällde, vad ett ja
-          innebar och vad ett nej innebar.
+        <p
+          className="stig mt-6 max-w-[50ch] text-[19px] leading-[1.5]"
+          style={{ color: 'var(--black-mjuk)', animationDelay: '80ms' }}
+        >
+          Varje votering med namnupprop, med vad ett ja och ett nej innebar.
         </p>
       </section>
 
-      <form className="regel mt-12 flex flex-wrap items-end gap-x-6 gap-y-5 pt-7">
-        <label className="flex-1 basis-56">
-          <span className="block text-[12px] uppercase tracking-[0.12em]" style={{ color: 'var(--black-svag)' }}>
-            Sök i sakfrågan
+      {/* Sökfältet är ett vanligt GET-formulär. Filtren följer med som dolda
+          fält, annars nollställs de av en sökning. */}
+      <form className="flex flex-col gap-4 pb-7">
+        {d.valt.amne && <input type="hidden" name="amne" value={d.valt.amne} />}
+        {d.valt.rm && <input type="hidden" name="rm" value={d.valt.rm} />}
+        <label
+          className="flex max-w-[520px] items-center gap-3 rounded-full px-[22px] py-3.5"
+          style={{ border: '1px solid var(--linje-stark)' }}
+        >
+          <span className="shrink-0" style={{ color: 'var(--black-svag)' }}>
+            <Forstoringsglas storlek={18} />
           </span>
           <input
             name="q"
             defaultValue={d.valt.q ?? ''}
-            placeholder="t.ex. strandskydd"
-            className="mt-1.5 w-full bg-transparent pb-1.5 text-[15px] outline-none"
-            style={{ borderBottom: '1px solid var(--linje)' }}
+            placeholder="Sök på sakfråga, beteckning eller utskott"
+            aria-label="Sök i sakfrågan"
+            className="w-full bg-transparent text-[15.5px] outline-none placeholder:text-[var(--black-svag)]"
           />
+          <button type="submit" className="sr-only">Sök</button>
         </label>
-        <label>
-          <span className="block text-[12px] uppercase tracking-[0.12em]" style={{ color: 'var(--black-svag)' }}>
-            Ämne
-          </span>
-          <select
-            name="amne"
-            defaultValue={d.valt.amne ?? ''}
-            className="mt-1.5 bg-transparent pb-1.5 text-[15px] outline-none"
-            style={{ borderBottom: '1px solid var(--linje)' }}
-          >
-            <option value="">alla ämnen</option>
-            {[...AMNEN].sort((a, b) => a.localeCompare(b, 'sv')).map((a) => (
-              <option key={a} value={a}>{a}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span className="block text-[12px] uppercase tracking-[0.12em]" style={{ color: 'var(--black-svag)' }}>
-            Riksmöte
-          </span>
-          <select
-            name="rm"
-            defaultValue={d.valt.rm ?? ''}
-            className="mt-1.5 bg-transparent pb-1.5 text-[15px] outline-none"
-            style={{ borderBottom: '1px solid var(--linje)' }}
-          >
-            <option value="">alla riksmöten</option>
-            {d.riksmoten.map((rm) => (
-              <option key={rm} value={rm}>{rm}</option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="submit"
-          className="border-b-2 pb-1 text-[14px] font-medium transition-opacity hover:opacity-60"
-          style={{ borderColor: 'var(--accent)' }}
-        >
-          Visa
-        </button>
-        {filtrerat && (
-          <Link href="/voteringar" className="pb-1 text-[14px] transition-opacity hover:opacity-60"
-                style={{ color: 'var(--black-svag)' }}>
-            Rensa
-          </Link>
-        )}
+
+        <div className="flex flex-wrap items-stretch gap-2">
+          <Chip href={lank(d.valt, { amne: undefined })} aktiv={!d.valt.amne}>Alla ämnen</Chip>
+          {amnen.map((a) => (
+            <Chip
+              key={a}
+              href={lank(d.valt, { amne: d.valt.amne === a ? undefined : a })}
+              aktiv={d.valt.amne === a}
+            >
+              {a}
+            </Chip>
+          ))}
+          <span aria-hidden className="mx-2 my-1 w-px shrink-0" style={{ background: 'var(--linje-stark)' }} />
+          {d.riksmoten.map((rm) => (
+            <Chip
+              key={rm}
+              href={lank(d.valt, { rm: d.valt.rm === rm ? undefined : rm })}
+              aktiv={d.valt.rm === rm}
+            >
+              {rm}
+            </Chip>
+          ))}
+        </div>
       </form>
 
-      <div className="mt-7 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2 pb-4">
         <Rostnyckel />
         {d.traffar > 0 && (
-          <p className="tabular text-[13px]" style={{ color: 'var(--black-svag)' }}>
+          <p className="tabular text-[14px]" style={{ color: 'var(--black-svag)' }}>
             Visar {heltal(forsta)}–{heltal(sista)} av {heltal(d.traffar)}
           </p>
         )}
       </div>
 
-      <ol className="mt-3">
+      <ol>
         {d.punkter.map((p) => {
           const roster = (p.votering_id && d.perVotering.get(p.votering_id)) || []
+          const ja = roster.reduce((n, r) => n + Number(r.ja), 0)
+          const nej = roster.reduce((n, r) => n + Number(r.nej), 0)
+          const avstar = roster.reduce((n, r) => n + Number(r.avstar), 0)
           return (
-          <li key={p.forslagspunkt_id} className="regel py-5">
-            <Link href={`/voteringar/${p.forslagspunkt_id}`} className="group block">
-              <div className="flex flex-wrap items-baseline gap-x-3 text-[12px] uppercase tracking-[0.1em]"
-                   style={{ color: 'var(--black-svag)' }}>
-                <span>{p.beteckning} · punkt {p.punkt}</span>
-                <span>{datum(p.datum)}</span>
-                <span style={{ color: 'var(--accent)' }}>{p.amne}</span>
-                {p.sakerhet !== 'hög' && <span>osäker tolkning</span>}
-              </div>
-              <p className="mt-1.5 max-w-[68ch] text-[16px] leading-snug transition-opacity group-hover:opacity-60">
-                {p.sakfraga}
-              </p>
-            </Link>
-            {roster.length > 0 && (
-              <div className="mt-3">
-                <Rostrad rader={roster} />
-              </div>
-            )}
-          </li>
+            <li key={p.forslagspunkt_id}>
+              <Link
+                href={`/voteringar/${p.forslagspunkt_id}`}
+                // 356 px, inte designens 300: alla åtta partier ska rymmas på en
+                // rad. Med 300 bryter etiketterna 6 + 2 och mönstret går förlorat.
+                className="grid items-start gap-x-8 gap-y-4 py-6 transition-opacity duration-150 hover:opacity-70 md:grid-cols-[1fr_356px]"
+                style={{ borderTop: '1px solid var(--linje)' }}
+              >
+                <div>
+                  <div className="mono flex flex-wrap gap-x-3.5 gap-y-1 text-[11.5px] uppercase tracking-[0.1em]"
+                       style={{ color: 'var(--etikett)' }}>
+                    <span>{p.beteckning} · punkt {p.punkt}</span>
+                    <span>{datum(p.datum)}</span>
+                    <span style={{ color: 'var(--accent)' }}>{p.amne}</span>
+                    {p.sakerhet !== 'hög' && <span>osäker tolkning</span>}
+                  </div>
+                  <p className="mt-2.5 max-w-[56ch] text-[19px] font-semibold leading-[1.35] tracking-[-0.01em]">
+                    {p.sakfraga}
+                  </p>
+                </div>
+                {roster.length > 0 && (
+                  <div className="flex flex-col gap-2.5 md:items-end">
+                    <Rostrad rader={roster} kompakt />
+                    <span className="tabular text-[13.5px]" style={{ color: 'var(--black-svag)' }}>
+                      {heltal(ja)} ja · {heltal(nej)} nej
+                      {avstar > 0 && ` · ${heltal(avstar)} avstår`}
+                    </span>
+                  </div>
+                )}
+              </Link>
+            </li>
           )
         })}
       </ol>
 
       {d.punkter.length === 0 && (
-        <p className="regel py-12 text-[16px]" style={{ color: 'var(--black-svag)' }}>
+        <p className="regel py-14 text-[16.5px]" style={{ color: 'var(--black-svag)' }}>
           Inga voteringar matchade sökningen.{' '}
-          <Link href="/voteringar" className="underline hover:opacity-60">Visa alla</Link>
+          <Link href="/voteringar" className="underline hover:opacity-70">Visa alla</Link>
         </p>
       )}
 
       {d.sidor > 1 && (
-        <nav className="regel mt-2 flex items-center justify-between gap-4 pt-6 text-[14px]"
-             aria-label="Sidnavigering">
-          {d.nr > 1 ? (
-            <Link href={sidlank(d.valt, d.nr - 1)} className="border-b pb-1 transition-opacity hover:opacity-60"
-                  style={{ borderColor: 'var(--accent)' }}>
-              ← Föregående
-            </Link>
-          ) : <span />}
-          <span className="tabular" style={{ color: 'var(--black-svag)' }}>
-            Sida {heltal(d.nr)} av {heltal(d.sidor)}
+        <nav
+          className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 py-7"
+          style={{ borderTop: '1px solid var(--linje)' }}
+          aria-label="Sidnavigering"
+        >
+          <span className="tabular text-[14px]" style={{ color: 'var(--black-svag)' }}>
+            Visar {heltal(forsta)}–{heltal(sista)} av {heltal(d.traffar)}
           </span>
-          {d.nr < d.sidor ? (
-            <Link href={sidlank(d.valt, d.nr + 1)} className="border-b pb-1 transition-opacity hover:opacity-60"
-                  style={{ borderColor: 'var(--accent)' }}>
-              Nästa →
-            </Link>
-          ) : <span />}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {sidnummer(d.nr, d.sidor).map((n, i) =>
+              n === null ? (
+                <span key={`hopp-${i}`} className="px-1.5" style={{ color: 'var(--etikett)' }}>…</span>
+              ) : n === d.nr ? (
+                <span
+                  key={n}
+                  aria-current="page"
+                  className="tabular rounded-full px-3.5 py-2.5 text-[14px] font-semibold"
+                  style={{ background: 'var(--black)', color: 'var(--papper)' }}
+                >
+                  {n}
+                </span>
+              ) : (
+                <Link
+                  key={n}
+                  href={lank(d.valt, { sida: n })}
+                  className="tabular rounded-full px-3.5 py-2.5 text-[14px] transition-colors duration-150 hover:bg-[var(--papper-djup)]"
+                  style={{ color: 'var(--black-mjuk)' }}
+                >
+                  {n}
+                </Link>
+              ),
+            )}
+            {d.nr < d.sidor && (
+              <Link
+                href={lank(d.valt, { sida: d.nr + 1 })}
+                className="ml-2 rounded-full px-[18px] py-2.5 text-[14px] font-semibold transition-colors duration-150 hover:bg-[var(--papper-djup)]"
+                style={{ border: '1px solid var(--linje-stark)' }}
+              >
+                Nästa
+              </Link>
+            )}
+          </div>
         </nav>
       )}
     </main>

@@ -1,8 +1,7 @@
 import Link from 'next/link'
-import {
-  db, heltal, lista, namn, rader, tal, PARTIER, PARTIFARG, REGERINGSPARTIERNA,
-} from '@/lib/db'
+import { db, heltal, lista, namn, rader, tal, PARTIER, REGERINGSPARTIERNA } from '@/lib/db'
 import { Stapel } from '@/components/stapel'
+import { Chip, Etikett, Forbehall, Nyckeltal } from '@/components/system'
 import AMNEN from '@/lib/amnen.json'
 
 // Ingen revalidate: sidan läser searchParams och renderas därför alltid
@@ -42,13 +41,19 @@ async function hamta(amne: string) {
   return { karta, par, gemensamma }
 }
 
-/** Färgskala från neutral till accent. Inga partifärger — det är relationen som mäts. */
-function ruta(v: number | undefined) {
-  if (v === undefined) return { background: 'transparent', color: 'var(--black-svag)' }
-  const t = Math.max(0, (v - 40) / 60)
+/**
+ * Mättnadsskalan. Golvet läses ur urvalet i stället för att stå som en
+ * konstant: i ett ämne där ingen ligger under 60 % vore en skala som börjar på
+ * 36 % nästan tom, och alla rutor hade sett likadana ut.
+ *
+ * Inga partifärger — det är relationen som mäts, och ingen av parterna äger
+ * den.
+ */
+function mattnad(v: number, golv: number) {
+  const t = 0.1 + 0.9 * Math.max(0, Math.min(1, (v - golv) / Math.max(1, 100 - golv)))
   return {
-    background: `color-mix(in oklab, var(--accent) ${Math.round(t * 88)}%, var(--papper-djup))`,
-    color: t > 0.55 ? 'var(--papper)' : 'var(--black-mjuk)',
+    background: `color-mix(in oklab, var(--accent) ${Math.round(t * 100)}%, var(--papper-djup))`,
+    color: t > 0.62 ? 'var(--papper)' : 'var(--black-mjuk)',
   }
 }
 
@@ -63,6 +68,7 @@ export default async function Samstammighet({
 
   const topp = par[0]
   const botten = par[par.length - 1]
+  const golv = Math.floor(botten?.samstammighet ?? 36)
   // Regeringsblockets inbördes par, räknade ur samma svar. Spannet skrivs ut
   // i stället för att stå som en formulering om samarbete — sajten redovisar
   // vad partierna gjorde, inte varför.
@@ -72,101 +78,106 @@ export default async function Samstammighet({
     .map((p) => p.samstammighet)
 
   return (
-    <main className="pb-10">
-      <section className="regel-tjock pt-8">
-        <p className="stig text-[13px] uppercase tracking-[0.18em]"
-           style={{ color: 'var(--accent)', animationDelay: '0ms' }}>
+    <main>
+      <section className="pb-8 pt-16">
+        <Etikett className="stig" ton="signal">
           {valt === 'alla' ? 'Mandatperioden 2022–2026' : `Frågor om ${valt}`}
-        </p>
-        <h1 className="display stig mt-5 text-[clamp(2.4rem,7vw,4.6rem)]"
-            style={{ animationDelay: '80ms' }}>
-          Vem röstar med vem<span style={{ color: 'var(--accent)' }}>?</span>
+        </Etikett>
+        <h1 className="display stig mt-6 text-[clamp(2.4rem,7vw,72px)]" style={{ animationDelay: '80ms' }}>
+          Vem röstar med vem?
         </h1>
-
-        {topp && (
-          <div className="stig mt-10" style={{ animationDelay: '160ms' }}>
-            <div className="display tabular text-[clamp(3.2rem,13vw,7.5rem)] leading-[0.82]"
-                 style={{ color: 'var(--accent)' }}>
-              {heltal(topp.lika)}
-            </div>
-            <p className="mt-6 max-w-[46ch] text-[19px] leading-snug">
-              av {heltal(topp.gemensamma)} voteringar röstade{' '}
-              {namn(topp.parti_1)} och {namn(topp.parti_2)} lika
-              {valt === 'alla' ? '' : ` i frågor om ${valt}`}.
-              {topp.lika === topp.gemensamma
-                ? ' Deras linjer gick aldrig isär.'
-                : ` Det är ${tal(topp.samstammighet)} % — inget par röstade oftare lika.`}
-            </p>
-          </div>
-        )}
+        <p className="stig mt-6 max-w-[54ch] text-[19px] leading-[1.5]"
+           style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}>
+          Alla {heltal(par.length)} partipar, mätta på samma sätt över{' '}
+          {heltal(gemensamma)} voteringar. Mättnaden visar hur ofta paret hamnade
+          på samma linje — partifärger används inte, eftersom ingen av parterna
+          äger relationen.
+        </p>
       </section>
 
-      <section className="regel mt-16 pt-8">
-        <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">Alla {heltal(par.length)} par</h2>
-        <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
-          Andelen av {heltal(gemensamma)} voteringar där de två partierna hade
-          samma linje. Ingen höger–vänsteraxel, ingen viktning, inget par valt i
-          förväg.
-        </p>
+      {topp && (
+        <section className="grid gap-y-6 border-y py-11 md:grid-cols-[auto_1fr] md:items-end md:gap-x-10"
+                 style={{ borderColor: 'var(--linje)' }}>
+          <Nyckeltal>{heltal(topp.lika)}</Nyckeltal>
+          <p className="max-w-[46ch] pb-2 text-[18px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
+            av {heltal(topp.gemensamma)} voteringar röstade {namn(topp.parti_1)} och{' '}
+            {namn(topp.parti_2)} lika{valt === 'alla' ? '' : ` i frågor om ${valt}`}.
+            {topp.lika === topp.gemensamma
+              ? ' Deras linjer gick aldrig isär.'
+              : ` Det är ${tal(topp.samstammighet)} % — inget par röstade oftare lika.`}
+          </p>
+        </section>
+      )}
 
-        <div className="mt-8 flex flex-wrap gap-1.5">
-          <Amnesknapp href="/samstammighet" text="alla ämnen" aktiv={valt === 'alla'} />
-          {AMNEN.map((a) => (
-            <Amnesknapp
+      <section className="py-12">
+        <div className="flex flex-wrap gap-2">
+          <Chip href="/samstammighet" aktiv={valt === 'alla'}>Alla ämnen</Chip>
+          {[...AMNEN].sort((a, b) => a.localeCompare(b, 'sv')).map((a) => (
+            <Chip
               key={a}
               href={`/samstammighet?amne=${encodeURIComponent(a)}`}
-              text={a}
               aktiv={valt === a}
-            />
+            >
+              {a}
+            </Chip>
           ))}
         </div>
 
+        {/*
+          Riktig tabell, inte ett rutnät av div:ar.
+
+          Åtta gånger åtta nakna tal är det enda ställe på sajten där
+          kopplingen rad–kolumn måste finnas i markupen: utan `scope` läser en
+          skärmläsare upp "44,1" utan att säga vilka två partier det gäller.
+          Designens 4 px mellanrum blir `border-spacing`, som tabeller kan.
+
+          Aldrig horisontell sidscroll — behållaren scrollar i stället, med
+          720 px som minsta bredd.
+        */}
         <div className="mt-10 overflow-x-auto">
-          <table className="w-full min-w-[560px] table-fixed text-center text-[13px] sm:text-[15px]">
+          <table
+            className="w-full min-w-[720px] table-fixed"
+            style={{ borderCollapse: 'separate', borderSpacing: 4 }}
+          >
             <caption className="sr-only">
-              Andel voteringar med samma linje, för varje par av partier.
+              Andel voteringar där de två partierna hade samma linje.
             </caption>
             <thead>
               <tr>
-                <th className="w-[9%]" />
+                <th className="w-14" />
                 {PARTIER.map((p) => (
-                  <th key={p} scope="col" className="pb-3 text-[12px] font-semibold sm:text-[13px]">
-                    <span className="inline-flex flex-col items-center gap-1">
-                      <span className="inline-block h-1 w-5 rounded-sm" aria-hidden
-                            style={{ background: PARTIFARG[p] }} />
-                      {p}
-                    </span>
-                  </th>
+                  <th key={p} scope="col" className="pb-1.5 text-[13px] font-bold">{p}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {PARTIER.map((rad) => (
                 <tr key={rad}>
-                  <th scope="row" className="py-1 pr-3 text-right text-[12px] font-semibold sm:text-[13px]">
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className="inline-block h-3 w-1 rounded-sm" aria-hidden
-                            style={{ background: PARTIFARG[rad] }} />
-                      {rad}
-                    </span>
-                  </th>
+                  <th scope="row" className="text-left text-[13px] font-bold">{rad}</th>
                   {PARTIER.map((kol) => {
                     if (rad === kol) {
                       return (
-                        <td key={kol} className="p-1">
-                          <span className="block rounded-sm py-3 sm:py-5"
-                                style={{ background: 'var(--papper-djup)' }}>—</span>
-                        </td>
+                        <td key={kol} className="h-[60px] rounded-[3px]"
+                            style={{ background: 'var(--papper-djup)' }} />
                       )
                     }
                     const v = karta.get(`${rad}|${kol}`)
+                    if (v === undefined) {
+                      return (
+                        <td key={kol}
+                            className="h-[60px] rounded-[3px] text-center text-[14px]"
+                            style={{ background: 'var(--papper-djup)', color: 'var(--black-svag)' }}>
+                          ·
+                        </td>
+                      )
+                    }
                     return (
-                      <td key={kol} className="p-1">
-                        <span className="tabular block rounded-sm py-3 font-medium sm:py-5"
-                              style={ruta(v)}
-                              title={`${namn(rad)} och ${namn(kol)}: ${v === undefined ? 'saknas' : `${tal(v)} %`}`}>
-                          {v === undefined ? '·' : heltal(v)}
-                        </span>
+                      <td
+                        key={kol}
+                        className="tabular h-[60px] rounded-[3px] text-center text-[14px] font-bold"
+                        style={mattnad(v, golv)}
+                      >
+                        {tal(v)}
                       </td>
                     )
                   })}
@@ -176,91 +187,88 @@ export default async function Samstammighet({
           </table>
         </div>
 
-        <p className="mt-6 max-w-[68ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
-          <strong style={{ color: 'var(--black)' }}>Samma linje</strong> betyder
-          att båda partierna hamnade på samma alternativ — ja, nej eller avstår.
-          Partiets linje är det alternativ flest av dess närvarande ledamöter
-          valde, så enstaka ledamöter som röstar annorlunda ändrar den inte. Ett
-          par som båda avstod räknas som eniga, eftersom avstår är ett
-          ställningstagande och inte ett uteblivet svar. Färgen är accentskalan,
-          inte partifärger: det är relationen som mäts, och ingen av parterna
-          äger den.{' '}
-          <Link href="/metod#definitioner" className="underline hover:opacity-60">
+        <div className="mt-6 flex flex-wrap items-center gap-4">
+          <Etikett>Skala</Etikett>
+          <span aria-hidden className="flex h-3 w-[260px] overflow-hidden rounded-[2px]">
+            {[0.1, 0.32, 0.55, 0.78, 1].map((t) => (
+              <span
+                key={t}
+                className="flex-1"
+                style={{ background: `color-mix(in oklab, var(--accent) ${t * 100}%, var(--papper-djup))` }}
+              />
+            ))}
+          </span>
+          <span className="tabular text-[13px]" style={{ color: 'var(--black-svag)' }}>
+            {golv} % → 100 %
+          </span>
+        </div>
+
+        <Forbehall rubrik="Samma linje, inte samma åsikt." className="mt-7">
+          Måttet räknar hur ofta partiernas majoritetslinje sammanföll i samma
+          votering. Partiets linje är det alternativ flest av dess närvarande
+          ledamöter valde, så enstaka avvikande ledamöter ändrar den inte. Ett
+          par som båda avstod räknas som eniga — avstår är ett ställningstagande,
+          inte ett uteblivet svar. Två partier kan rösta lika av rakt motsatta
+          skäl.
+        </Forbehall>
+      </section>
+
+      <section className="regel py-16">
+        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
+          <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Paren, rangordnade</h2>
+          {topp && botten && (
+            <p className="max-w-[46ch] text-[14.5px] sm:text-right" style={{ color: 'var(--black-mjuk)' }}>
+              Från {namn(topp.parti_1)} och {namn(topp.parti_2)} på{' '}
+              {tal(topp.samstammighet)} % till {namn(botten.parti_1)} och{' '}
+              {namn(botten.parti_2)} på {tal(botten.samstammighet)} %.
+            </p>
+          )}
+        </div>
+
+        <div className="mt-7">
+          {par.map((p) => (
+            <div
+              key={`${p.parti_1}${p.parti_2}`}
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-5 gap-y-2 py-3.5 sm:grid-cols-[minmax(150px,200px)_96px_1fr_80px]"
+              style={{ borderBottom: '1px solid var(--linje)' }}
+            >
+              <span className="flex items-center gap-2 text-[16px] font-bold sm:text-[17px]">
+                <Link href={`/partier/${p.parti_1.toLowerCase()}`} className="hover:opacity-70">
+                  {p.parti_1}
+                </Link>
+                <span style={{ color: 'var(--black-svag)' }}>+</span>
+                <Link href={`/partier/${p.parti_2.toLowerCase()}`} className="hover:opacity-70">
+                  {p.parti_2}
+                </Link>
+              </span>
+              <span className="tabular text-right text-[16px] font-bold sm:text-left sm:text-[19px]">
+                {tal(p.samstammighet)} %
+              </span>
+              <span className="hidden sm:block">
+                <Stapel andel={p.samstammighet} />
+              </span>
+              <span className="tabular col-span-2 text-[15px] sm:col-span-1 sm:text-right"
+                    style={{ color: 'var(--black-svag)' }}>
+                {heltal(p.lika)} st
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-6 max-w-[64ch] text-[13.5px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
+          Antalet voteringar med samma linje, av {heltal(gemensamma)}.
+          {block.length > 0 && (
+            <>
+              {' '}De tre inbördes paren bland {lista(REGERINGSPARTIERNA.map(namn))} ligger
+              på {tal(Math.min(...block))}–{tal(Math.max(...block))} %, så ett fynd
+              som namnger ett av dem gäller i praktiken alla tre.
+            </>
+          )}{' '}
+          <Link href="/metod#definitioner" className="underline hover:opacity-70">
             Så räknas samstämmighet
           </Link>
         </p>
       </section>
-
-      <section className="regel mt-16 pt-8">
-        <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">Paren, rangordnade</h2>
-        {topp && botten && (
-          <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
-            Från {namn(topp.parti_1)} och {namn(topp.parti_2)} på{' '}
-            {tal(topp.samstammighet)} % till {namn(botten.parti_1)} och{' '}
-            {namn(botten.parti_2)} på {tal(botten.samstammighet)} %.
-          </p>
-        )}
-        <table className="mt-7 w-full max-w-2xl text-[15px]">
-          <tbody>
-            {par.map((p) => (
-              <tr key={`${p.parti_1}${p.parti_2}`} className="regel">
-                <td className="py-2.5 font-semibold">
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="inline-block h-3 w-1 rounded-sm" aria-hidden
-                          style={{ background: PARTIFARG[p.parti_1] }} />
-                    <Link href={`/partier/${p.parti_1.toLowerCase()}`} className="hover:opacity-60">
-                      {p.parti_1}
-                    </Link>
-                    <span style={{ color: 'var(--black-svag)' }}>+</span>
-                    <span className="inline-block h-3 w-1 rounded-sm" aria-hidden
-                          style={{ background: PARTIFARG[p.parti_2] }} />
-                    <Link href={`/partier/${p.parti_2.toLowerCase()}`} className="hover:opacity-60">
-                      {p.parti_2}
-                    </Link>
-                  </span>
-                </td>
-                <td className="tabular py-2.5 pl-4 text-right" style={{ color: 'var(--black-svag)' }}>
-                  {heltal(p.lika)}
-                </td>
-                <td className="tabular whitespace-nowrap py-2.5 pl-5 text-right font-semibold">
-                  {tal(p.samstammighet)} %
-                </td>
-                <td className="hidden w-1/2 py-2.5 pl-5 sm:table-cell">
-                  <Stapel andel={p.samstammighet} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="mt-5 max-w-[64ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
-          Antalet voteringar med samma linje, av {heltal(gemensamma)}. Måttet
-          säger vad partierna gjorde, inte varför — två partier kan rösta lika av
-          rakt motsatta skäl.
-          {block.length > 0 && (
-            <>
-              {' '}De tre inbördes paren bland {lista(REGERINGSPARTIERNA.map(namn))} ligger
-              på {tal(Math.min(...block))}–{tal(Math.max(...block))} %, så ett
-              fynd som namnger ett av dem gäller i praktiken alla tre.
-            </>
-          )}
-        </p>
-      </section>
     </main>
-  )
-}
-
-function Amnesknapp({ href, text, aktiv }: { href: string; text: string; aktiv: boolean }) {
-  return (
-    <Link
-      href={href}
-      className="rounded-sm px-2.5 py-1 text-[12px] transition-opacity hover:opacity-70"
-      style={{
-        background: aktiv ? 'var(--black)' : 'transparent',
-        color: aktiv ? 'var(--papper)' : 'var(--black-mjuk)',
-        border: `1px solid ${aktiv ? 'var(--black)' : 'var(--linje)'}`,
-      }}
-    >
-      {text}
-    </Link>
   )
 }

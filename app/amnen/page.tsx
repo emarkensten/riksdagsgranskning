@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { db, heltal, lista, namn, rader, tal, REGERINGSPARTIERNA } from '@/lib/db'
 import { Linjeetikett } from '@/components/rostrad'
+import { Etikett, Forbehall, Textlank } from '@/components/system'
 import { regeringsspann } from '@/lib/partier'
 
 export const revalidate = 3600
@@ -82,11 +83,7 @@ async function hamta() {
     perAmne.set(e.amne, [...(perAmne.get(e.amne) ?? []), e])
   }
 
-  return {
-    rader: rows,
-    perAmne,
-    likhetsspann,
-  }
+  return { rader: rows, perAmne, likhetsspann }
 }
 
 export default async function Amnen() {
@@ -102,68 +99,61 @@ export default async function Amnen() {
   const svaga = rows.filter((r) => Math.abs(r.avvikande_delta) < SVAG)
 
   return (
-    <main className="pb-10">
-      <section className="regel-tjock pt-8">
-        <p className="stig text-[13px] uppercase tracking-[0.18em]"
-           style={{ color: 'var(--accent)', animationDelay: '0ms' }}>
-          Mandatperioden 2022–2026
-        </p>
-
-        <h1 className="display stig mt-5 max-w-[15ch] text-[clamp(2.6rem,8vw,5.5rem)]"
+    <main>
+      <section className="pb-8 pt-16">
+        <Etikett className="stig" ton="signal">Mandatperioden 2022–2026</Etikett>
+        <h1 className="display stig mt-6 max-w-[15ch] text-[clamp(2.6rem,7.5vw,80px)]"
             style={{ animationDelay: '80ms' }}>
-          Var är riksdagen oenig<span style={{ color: 'var(--accent)' }}>?</span>
+          Var är riksdagen oenig?
         </h1>
-
-        <p className="stig mt-7 max-w-[54ch] text-[17px] leading-relaxed"
+        <p className="stig mt-6 max-w-[54ch] text-[19px] leading-[1.5]"
            style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}>
           För varje ämne mäts alla 28 partipar likadant: hur ofta de hamnade på
           samma linje. Talet nedan är genomsnittet — sannolikheten att två
-          slumpvis valda partier röstade lika. Ingen höger–vänsteraxel, ingen
-          viktning, inget parti utpekat i förväg.
+          slumpvis valda partier röstade lika.
         </p>
       </section>
 
-      <section className="mt-14">
-        <ol>
+      <section className="pb-12">
+        <div className="regel">
           {rows.map((r, i) => (
-            <li key={r.amne} className={i === 0 ? 'regel-tjock' : 'regel'}>
-              <Link
-                href={`#${ankare(r.amne)}`}
-                className="group flex flex-wrap items-baseline gap-x-5 gap-y-2 py-5 transition-opacity hover:opacity-60"
+            <Link
+              key={r.amne}
+              href={`#${ankare(r.amne)}`}
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-2 py-5 transition-opacity duration-150 hover:opacity-70 sm:grid-cols-[110px_1fr_auto_240px]"
+              style={{ borderBottom: '1px solid var(--linje)' }}
+            >
+              <span
+                className="tabular order-2 text-right text-[clamp(1.8rem,5vw,44px)] font-extrabold tracking-[-0.04em] sm:order-none sm:text-left"
+                style={{ color: i < 3 ? 'var(--accent-display)' : 'var(--black)' }}
               >
-                <span
-                  className="display tabular w-[4.5ch] shrink-0 text-[clamp(2rem,5vw,3.2rem)] leading-none"
-                  style={{ color: i < 3 ? 'var(--accent)' : 'var(--black)' }}
-                >
-                  {tal(r.kammarens_enighet)}
-                </span>
-                <span className="display min-w-[9ch] flex-1 text-[clamp(1.15rem,2.6vw,1.6rem)] leading-tight">
-                  {r.amne}
-                </span>
-                <span
-                  className="tabular basis-full text-[12px] uppercase tracking-[0.1em] sm:basis-auto"
-                  style={{ color: 'var(--black-svag)' }}
-                >
-                  {heltal(r.voteringar)} voteringar
-                </span>
+                {tal(r.kammarens_enighet)}
+              </span>
+              <span className="text-[clamp(1.05rem,2.4vw,26px)] font-extrabold tracking-[-0.03em]">
+                {r.amne}
+              </span>
+              <span className="etikett order-3 sm:order-none">
+                {heltal(r.voteringar)} voteringar
+              </span>
+              <span className="order-4 col-span-2 sm:order-none sm:col-span-1">
                 <Spann lagsta={r.lagsta} medel={r.kammarens_enighet} />
-              </Link>
-            </li>
+              </span>
+            </Link>
           ))}
-        </ol>
-        <p className="regel mt-1 max-w-[62ch] pt-4 text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
+        </div>
+        <p className="mt-5 max-w-[62ch] text-[13.5px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
           Stapeln visar spannet i ämnet: från det mest oeniga partiparet till det
           mest eniga, som alltid ligger på 100 %. Strecket är genomsnittet för
           alla 28 par. En lång stapel betyder att kammaren spänner brett.
         </p>
       </section>
 
-      <section className="regel-tjock mt-20 pt-8">
-        <h2 className="display max-w-[20ch] text-[clamp(1.7rem,4.5vw,2.8rem)] leading-[1.05]">
-          Riksdagen är minst enig om {mestOeniga?.amne}
-          <span style={{ color: 'var(--accent)' }}>.</span>
-        </h2>
-        <p className="mt-5 max-w-[56ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
+      <section className="regel py-16">
+        <p className="rubrik max-w-[20ch] text-[clamp(1.9rem,5.5vw,46px)] leading-[1.05]">
+          Riksdagen är minst enig om{' '}
+          <span style={{ color: 'var(--accent)' }}>{mestOeniga?.amne}</span>.
+        </p>
+        <p className="mt-6 max-w-[56ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
           Nedan bryts varje ämne ned till den skillnad som är störst i just det
           ämnet: paret som röstar mest olikt jämfört med hur de brukar rösta i
           alla frågor. Underlaget är {heltal(voteringar)} voteringar, och varje
@@ -181,33 +171,36 @@ export default async function Amnen() {
       ))}
 
       {svaga.length > 0 && (
-        <section className="regel mt-20 pt-8">
-          <h2 className="display text-[clamp(1.6rem,4vw,2.4rem)]">
+        <section className="regel py-16">
+          <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">
             {svaga.length === 1 ? 'Ett ämne saknar' : `${storBokstav(raknord(svaga.length))} ämnen saknar`} tydlig avvikelse
           </h2>
-          <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed" style={{ color: 'var(--black-mjuk)' }}>
+          <p className="mt-5 max-w-[62ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
             Här ligger det mest avvikande paret mindre än {SVAG} procentenheter
             från sin egen normalnivå. Det är för lite för att kalla ett mönster,
             och de får därför inga egna avsnitt — en jättesiffra på{' '}
             {tal(Math.min(...svaga.map((r) => Math.abs(r.avvikande_delta))))} vore
             motsatsen till trovärdighet.
           </p>
-          <table className="mt-7 w-full max-w-2xl text-[15px]">
-            <tbody>
-              {svaga.map((r) => (
-                <tr key={r.amne} id={ankare(r.amne)} className="regel scroll-mt-6">
-                  <td className="py-3 font-medium">{r.amne}</td>
-                  <td className="tabular py-3 pl-4 text-right" style={{ color: 'var(--black-svag)' }}>
-                    {heltal(r.voteringar)} voteringar
-                  </td>
-                  <td className="tabular whitespace-nowrap py-3 pl-5 text-right font-semibold">
-                    {tal(Math.abs(r.avvikande_delta))} p.e.
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="mt-4 max-w-[62ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
+          <div className="mt-8 max-w-2xl">
+            {svaga.map((r) => (
+              <div
+                key={r.amne}
+                id={ankare(r.amne)}
+                className="grid scroll-mt-6 grid-cols-[1fr_auto] items-center gap-x-5 gap-y-1 py-3.5 sm:grid-cols-[1fr_auto_120px]"
+                style={{ borderBottom: '1px solid var(--linje)' }}
+              >
+                <span className="text-[17px] font-bold">{r.amne}</span>
+                <span className="tabular text-[14px]" style={{ color: 'var(--black-svag)' }}>
+                  {heltal(r.voteringar)} voteringar
+                </span>
+                <span className="tabular col-span-2 text-[16px] font-bold sm:col-span-1 sm:text-right">
+                  {tal(Math.abs(r.avvikande_delta))} p.e.
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-5 max-w-[62ch] text-[13.5px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
             {/* Meningen får inte räkna med att de svaga alltid är exakt två.
                 Enighetstalen listas i samma ordning som tabellen ovan. */}
             Procentenheter under parets normalnivå. Att avvikelsen är liten
@@ -219,24 +212,14 @@ export default async function Amnen() {
         </section>
       )}
 
-      <section className="regel mt-20 pt-8">
-        <h2 className="display text-2xl">Om måttet</h2>
-        <div className="mt-4 grid max-w-[68ch] gap-4 text-[15px] leading-relaxed"
+      <section className="regel py-16">
+        <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Om måttet</h2>
+        <div className="mt-6 grid max-w-[68ch] gap-4 text-[16.5px] leading-[1.6]"
              style={{ color: 'var(--black-mjuk)' }}>
           <p>
             Ett partis linje i en votering är det alternativ flest av dess
-            närvarande ledamöter valde. Underlaget är {heltal(voteringar)} voteringar
-            med namnupprop, alla från mandatperioden 2022–2026.
-          </p>
-          <p>
-            <strong style={{ color: 'var(--black)' }}>
-              {lista(REGERINGSPARTIERNA.map(namn))} röstar lika i {likhetsspann} av
-              alla voteringar.
-            </strong>{' '}
-            När ett av dem namnges ovan gäller fyndet i praktiken alla tre —
-            vilket av de tre som står där avgörs av tiondelar. Av samma skäl
-            redovisas inte det mest eniga paret i varje ämne: det är alltid
-            två av dessa tre, och alltid 100 %.
+            närvarande ledamöter valde. Underlaget är {heltal(voteringar)}{' '}
+            voteringar med namnupprop, alla från mandatperioden 2022–2026.
           </p>
           <p>
             Ämnesindelningen är gjord automatiskt utifrån utskottens förslag och
@@ -244,11 +227,18 @@ export default async function Amnen() {
             inom någon av de femton övriga.
           </p>
         </div>
-        <Link href="/metod#klarsprak"
-              className="mt-6 inline-block border-b pb-1 text-[14px] transition-opacity hover:opacity-60"
-              style={{ borderColor: 'var(--accent)' }}>
-          Så gjordes ämnesindelningen →
-        </Link>
+        <Forbehall
+          rubrik={`${lista(REGERINGSPARTIERNA.map(namn))} röstar lika i ${likhetsspann} av alla voteringar.`}
+          className="mt-8"
+        >
+          När ett av dem namnges ovan gäller fyndet i praktiken alla tre — vilket
+          av de tre som står där avgörs av tiondelar. Av samma skäl redovisas
+          inte det mest eniga paret i varje ämne: det är alltid två av dessa tre,
+          och alltid 100 %.
+        </Forbehall>
+        <Textlank href="/metod#klarsprak" className="mt-8">
+          Så gjordes ämnesindelningen
+        </Textlank>
       </section>
     </main>
   )
@@ -267,16 +257,16 @@ function storBokstav(s: string) {
 function Spann({ lagsta, medel }: { lagsta: number; medel: number }) {
   return (
     <span
-      className="relative block h-2 w-full shrink-0 sm:w-44 md:w-60"
-      style={{ background: 'var(--papper-djup)' }}
       aria-hidden
+      className="relative block h-2.5 w-full rounded-[2px]"
+      style={{ background: 'var(--spar)' }}
     >
       <span
-        className="absolute inset-y-0 block"
+        className="absolute inset-y-0 block rounded-[2px]"
         style={{ left: `${lagsta}%`, right: 0, background: 'var(--black-svag)' }}
       />
       <span
-        className="absolute inset-y-[-4px] block w-[3px]"
+        className="absolute inset-y-[-4px] block w-[3px] rounded-[1px]"
         style={{ left: `${medel}%`, background: 'var(--accent)' }}
       />
     </span>
@@ -287,64 +277,60 @@ function Amnesavsnitt({ rad, exempel, oppen }: { rad: Amne; exempel: Exempel[]; 
   const { avvikande_1: a, avvikande_2: b } = rad
 
   return (
-    <section id={ankare(rad.amne)} className="regel mt-16 scroll-mt-6 pt-7">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-        <h3 className="display text-[clamp(1.5rem,3.4vw,2.2rem)]">{rad.amne}</h3>
-        <span className="tabular text-[13px] uppercase tracking-[0.1em]"
-              style={{ color: 'var(--black-svag)' }}>
+    <section id={ankare(rad.amne)} className="regel scroll-mt-6 py-14">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2">
+        <h3 className="rubrik text-[clamp(1.5rem,3.4vw,32px)]">{rad.amne}</h3>
+        <Etikett>
           {heltal(rad.voteringar)} voteringar · {tal(rad.kammarens_enighet)} % enighet
-        </span>
+        </Etikett>
       </div>
 
-      <div className="mt-7 flex flex-wrap items-end gap-x-8 gap-y-4">
+      <div className="mt-8 flex flex-wrap items-end gap-x-10 gap-y-5">
         <div>
           {/* Beloppet utan tecken. "−19,9" läses som ett räknefel; etiketten
               bär riktningen i stället. */}
-          <div className="display tabular text-[clamp(3rem,11vw,6.5rem)] leading-[0.85]"
-               style={{ color: 'var(--accent)' }}>
+          <div className="siffra text-[clamp(3.4rem,10vw,92px)]"
+               style={{ color: 'var(--accent-display)' }}>
             {tal(Math.abs(rad.avvikande_delta))}
           </div>
-          <div className="mt-3 max-w-[16ch] text-[12px] uppercase tracking-[0.12em]"
-               style={{ color: 'var(--black-svag)' }}>
-            procentenheter lägre än normalt
-          </div>
+          <Etikett className="mt-4 max-w-[16ch]">procentenheter lägre än normalt</Etikett>
         </div>
-        <p className="display max-w-[28ch] flex-1 text-[clamp(1.2rem,2.8vw,1.75rem)] leading-[1.12]">
+        <p className="mb-1 max-w-[28ch] flex-1 text-[clamp(1.2rem,2.8vw,26px)] font-extrabold leading-[1.15] tracking-[-0.03em]">
           {namn(a)} och {namn(b)} röstade lika i {tal(rad.avvikande_har)} % av
-          voteringarna om {rad.amne} — mot {tal(rad.avvikande_normalt)} % i
-          alla frågor.
+          voteringarna om {rad.amne} — mot {tal(rad.avvikande_normalt)} % i alla
+          frågor.
         </p>
       </div>
 
-      <p className="mt-6 max-w-[62ch] text-[13px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
+      <p className="mt-6 max-w-[62ch] text-[13.5px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
         Största avvikelsen bland ämnets 28 partipar. Mest oeniga i absoluta tal:{' '}
         {namn(rad.lagsta_1)} och {namn(rad.lagsta_2)}, {tal(rad.lagsta)} %.
       </p>
 
       {exempel.length > 0 ? (
-        <details className="mt-6" open={oppen}>
-          <summary className="cursor-pointer text-[14px] font-medium transition-opacity hover:opacity-60">
+        <details className="mt-7" open={oppen}>
+          <summary className="cursor-pointer text-[14.5px] font-semibold transition-opacity duration-150 hover:opacity-70">
             {exempel.length === 1
               ? 'Voteringen där de gick isär'
               : `De ${raknord(exempel.length)} senaste voteringarna där de gick isär`}
           </summary>
-          <ol className="mt-3">
+          <ol className="mt-4">
             {exempel.map((e) => (
-              <li key={e.forslagspunkt_id} className="regel py-4">
+              <li key={e.forslagspunkt_id} className="regel py-5">
                 <Link href={`/voteringar/${e.forslagspunkt_id}`} className="group block">
-                  <div className="flex flex-wrap items-baseline gap-x-3 text-[12px] uppercase tracking-[0.1em]"
-                       style={{ color: 'var(--black-svag)' }}>
+                  <div className="mono flex flex-wrap gap-x-3.5 gap-y-1 text-[11.5px] uppercase tracking-[0.1em]"
+                       style={{ color: 'var(--etikett)' }}>
                     <span>{e.beteckning} · punkt {e.punkt}</span>
                     <span>{e.datum}</span>
                   </div>
-                  <p className="mt-1.5 max-w-[68ch] text-[16px] leading-snug transition-opacity group-hover:opacity-60">
+                  <p className="mt-2.5 max-w-[56ch] text-[19px] font-semibold leading-[1.35] tracking-[-0.01em] transition-opacity duration-150 group-hover:opacity-70">
                     {e.sakfraga}
                   </p>
                 </Link>
-                <div className="mt-3 flex items-center gap-1.5">
+                <div className="mt-3.5 flex flex-wrap items-center gap-2">
                   <Linjeetikett parti={e.parti_1} linje={e.linje_1} />
                   <Linjeetikett parti={e.parti_2} linje={e.linje_2} />
-                  <span className="ml-1 text-[12px]" style={{ color: 'var(--black-svag)' }}>
+                  <span className="text-[13.5px]" style={{ color: 'var(--black-svag)' }}>
                     {e.linje_1} mot {e.linje_2}
                   </span>
                 </div>
@@ -353,7 +339,7 @@ function Amnesavsnitt({ rad, exempel, oppen }: { rad: Amne; exempel: Exempel[]; 
           </ol>
         </details>
       ) : (
-        <p className="regel mt-6 py-4 text-[14px]" style={{ color: 'var(--black-svag)' }}>
+        <p className="regel mt-7 py-5 text-[15px]" style={{ color: 'var(--black-svag)' }}>
           {namn(a)} och {namn(b)} hamnade aldrig på olika linje i det här ämnet.
         </p>
       )}

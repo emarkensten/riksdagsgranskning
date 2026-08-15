@@ -13,21 +13,31 @@ const SIDOR = [
   { href: '/metod', text: 'Metod' },
 ]
 
+/**
+ * Pillernavigering. Aktiv sida = fylld bläck, resten dämpad text.
+ *
+ * Aktiv sida härleds ur sökvägen, inte ur en prop: /partier/v ska markera
+ * Partier utan att partisidan behöver veta om navigeringen.
+ */
 export function Navigation() {
   const sokvag = usePathname()
   return (
-    <nav className="flex flex-wrap gap-x-5 gap-y-1 text-[13px] uppercase tracking-[0.14em]">
+    <nav className="-mx-1.5 flex flex-wrap gap-1.5 text-[13.5px] font-medium">
       {SIDOR.map((s) => {
-        const aktiv = sokvag?.startsWith(s.href)
+        const aktiv = sokvag === s.href || sokvag?.startsWith(`${s.href}/`)
         return (
           <Link
             key={s.href}
             href={s.href}
-            className="border-b pb-0.5 transition-colors"
-            style={{
-              color: aktiv ? 'var(--black)' : 'var(--black-mjuk)',
-              borderColor: aktiv ? 'var(--accent)' : 'transparent',
-            }}
+            aria-current={aktiv ? 'page' : undefined}
+            className={`rounded-full px-[14px] py-[7px] transition-colors duration-150 ${
+              aktiv ? '' : 'hover:bg-[var(--papper-djup)] hover:text-[var(--black)]'
+            }`}
+            style={
+              aktiv
+                ? { background: 'var(--black)', color: 'var(--papper)' }
+                : { color: 'var(--black-svag)' }
+            }
           >
             {s.text}
           </Link>
