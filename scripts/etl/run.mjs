@@ -217,10 +217,19 @@ async function anforanden() {
 /**
  * Aggregaten är materialiserade vyer och blir inaktuella så fort nya röster
  * skrivits. Utan den här uppdateringen visar sajten gamla siffror helt tyst.
+ *
+ * Vilka vyer som ingår, och i vilken ordning, avgörs i databasen. Den tidigare
+ * varianten räknade upp vynamnen här, och då missades varje vy som lades till
+ * senare — utan att något felade.
+ *
+ * En vy per anrop: elva refresh i samma anrop spränger PostgREST:s
+ * statement timeout.
  */
 async function uppdateraAggregat() {
   console.log('\n== Uppdaterar aggregat ==')
-  for (const vy of ['parti_rost', 'ledamot_franvaro', 'riksmote_summering']) {
+  const { data: vyer, error: listfel } = await db().rpc('aggregat_vyer')
+  if (listfel) throw new Error(listfel.message)
+  for (const vy of vyer) {
     const { error } = await db().rpc('refresh_aggregat', { vy })
     if (error) throw new Error(`${vy}: ${error.message}`)
     console.log(`  ${vy} uppdaterad`)
