@@ -209,9 +209,12 @@ begin
 end;
 $$;
 
--- Samma publika läsrätt som övriga aggregat. punkt_linje och punkt_ensam är
--- mellansteg och lämnas oåtkomliga — de har fler rader än PostgREST ändå
--- lämnar ut och har ingen egen läsare.
+-- Samma publika läsrätt som övriga aggregat.
 grant select on parti_ensam, ensam_exempel, amne_oversikt, amne_exempel,
                 utskottet_forlorade
   to anon, authenticated;
+
+-- punkt_linje och punkt_ensam är mellansteg utan egen läsare i frontend. Att
+-- utelämna dem ovan räcker inte: Supabase delar ut läsrätt till anon som
+-- standard, så de måste återkallas uttryckligen.
+revoke select on punkt_linje, punkt_ensam from anon, authenticated;

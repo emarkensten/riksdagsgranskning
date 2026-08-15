@@ -40,7 +40,19 @@ opålitlig för verifiering).
 - Projekt-ref: `chwvalgrgbebfhgfpnfb`
 - Nycklar i `.env.local` (`SUPABASE_SECRET_KEY`, `SUPABASE_PUBLISHABLE_KEY`)
 
-⚠️ **RLS är avstängt på alla tabeller.** Måste åtgärdas innan publik lansering.
+### Åtkomst — kontrollerad 2026-08-15 mot REST-API:et med anon-nyckeln
+
+RLS är **på** för alla åtta tabeller, med exakt en policy var: `SELECT` för
+`anon` och `authenticated`. Skrivning är stängd — ett `INSERT` med anon-nyckeln
+svarar 401.
+
+Kvarstående risk att känna till: Supabase delar ut `grant all` till `anon` som
+standard, och det är bara RLS som stoppar skrivningarna. **En ny tabell i
+`public` utan `enable row level security` är därför öppen för skrivning från
+internet.** Slå på RLS i samma migration som skapar tabellen.
+
+Materialiserade vyer stöder inte RLS och skyddas bara av `grant`. Ge dem
+`select` till `anon` bara om frontend faktiskt läser dem.
 
 ---
 
