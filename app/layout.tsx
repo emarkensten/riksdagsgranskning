@@ -58,7 +58,7 @@ const FOTLANKAR = [
   { href: '/metod', text: 'Metod' },
   { href: '/metod#begransningar', text: 'Begränsningar' },
   { href: REPO, text: 'Källkod' },
-  { href: 'https://data.riksdagen.se', text: 'Om data' },
+  { href: 'https://data.riksdagen.se', text: 'Riksdagens öppna data' },
 ]
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

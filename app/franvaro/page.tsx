@@ -152,8 +152,8 @@ export default async function Franvaro() {
           </div>
           <p className="stig mt-7 max-w-[40ch] text-[20px] leading-[1.45]"
              style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}>
-            av {heltal(d.hela.roster)} röstningstillfällen stod tomma. Att rösta i
-            kammaren är riksdagsledamotens mest grundläggande uppgift.
+            av {heltal(d.hela.roster)} röstningstillfällen stod tomma. Skälen —
+            kvittning, uppdrag, ledighet, sjukdom — syns inte i öppna data.
           </p>
         </div>
 

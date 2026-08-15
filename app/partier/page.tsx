@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { PARTIER, lista, namn, slug, tal, REGERINGSPARTIERNA } from '@/lib/db'
+import { PARTIER, heltal, lista, namn, slug, tal, REGERINGSPARTIERNA } from '@/lib/db'
 import { hamtaAlla, motparter, snitt } from '@/lib/partier'
 import { Etikett, Forbehall, Partiprick, Textlank } from '@/components/system'
 import { sidmetadata } from '@/lib/sajt'
@@ -45,7 +45,7 @@ export default async function Partier() {
           className="stig mt-7 max-w-[52ch] text-[clamp(17px,2.2vw,20px)] leading-[1.45]"
           style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}
         >
-          Varje parti mätt på samma sätt över {voteringar.toLocaleString('sv-SE')} voteringar:
+          Varje parti mätt på samma sätt över {heltal(voteringar)} voteringar:
           vem det röstar med, var det avviker från sin egen normalnivå, hur ofta
           det stod ensamt, och hur ofta det inte var på plats.
         </p>

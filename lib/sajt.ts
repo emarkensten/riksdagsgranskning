@@ -79,3 +79,12 @@ export function sidmetadata({
 
 /** Den som svarar för innehållet. Utan namn är sajtens hållning inte någons. */
 export const AVSANDARE = 'Erik Markensten'
+
+/**
+ * Kontot bakom koden.
+ *
+ * Ett namn utan något att kontrollera det mot går inte att skilja från en
+ * pseudonym, och sajten ber läsaren om förtroende i just den frågan. Profilen
+ * visar samma konto som äger repot och commit-historiken.
+ */
+export const PROFIL = 'https://github.com/emarkensten'

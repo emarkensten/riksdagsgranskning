@@ -1,9 +1,10 @@
 import Link from 'next/link'
-import { antal, db, heltal, lista, namn, rader, rakna, tal, REGERINGSPARTIERNA } from '@/lib/db'
+import { antal, datum, db, heltal, lista, namn, rader, rakna, tal, REGERINGSPARTIERNA } from '@/lib/db'
 import { Linjeetikett } from '@/components/rostrad'
 import { Etikett, Forbehall, Knapp, Nyckeltal, Partiprick, Textlank } from '@/components/system'
 import { Stapel } from '@/components/stapel'
 import { regeringsspann } from '@/lib/partier'
+import AMNEN from '@/lib/amnen.json'
 
 export const revalidate = 3600
 
@@ -114,6 +115,11 @@ export default async function Start() {
   const aldrigEnsamma = d.rankade.filter((p) => p.ensam === 0).map((p) => namn(p.parti))
   const forlustPartier = [...new Set(d.forluster.flatMap((f) => f.motforslag_partier ?? []))]
   const storstEnsam = d.rankade[0]?.ensam || 1
+  // De av de tre utbytbara partierna som faktiskt står i ämnescitatet. Oftast
+  // ett, men paret kan bestå av två av dem, och då ska båda namnges.
+  const utpekade = d.amne
+    ? REGERINGSPARTIERNA.filter((p) => p === d.amne.avvikande_1 || p === d.amne.avvikande_2)
+    : []
 
   return (
     <main>
@@ -250,16 +256,20 @@ export default async function Start() {
           </p>
           <p className="mt-6 max-w-[56ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
             Ingen annan ämnesskillnad i riksdagen är större. Alla 28 partipar är
-            mätta likadant i alla 16 ämnen, utan att något par valts ut i förväg.
+            mätta likadant i alla {AMNEN.length} ämnen, utan att något par valts
+            ut i förväg.
             {utbytbara(d.amne) && (
               <>
-                {' '}Vilket av de tre som står här avgörs av tiondelar:{' '}
-                {lista(REGERINGSPARTIERNA.map(namn))} röstar lika i{' '}
+                {/* filter och inte find: står två av de tre i citatet ska båda
+                    namnges, annars pekar meningen ut det ena utan att säga
+                    varför just det. */}
+                {' '}Att det står {lista(utpekade.map(namn))} här avgörs av
+                tiondelar: {lista(REGERINGSPARTIERNA.map(namn))} röstar lika i{' '}
                 {d.likhetsspann} av alla voteringar, så fyndet gäller alla tre.
               </>
             )}
           </p>
-          <Textlank href="/amnen" className="mt-5">Se alla 16 ämnen</Textlank>
+          <Textlank href="/amnen" className="mt-5">Se alla {AMNEN.length} ämnen</Textlank>
         </section>
       )}
 
@@ -323,7 +333,7 @@ export default async function Start() {
                     <div className="mono flex flex-wrap gap-x-3.5 gap-y-1 text-[11.5px] uppercase tracking-[0.1em]"
                          style={{ color: 'var(--etikett)' }}>
                       <span>{e.beteckning} · punkt {e.punkt}</span>
-                      <span>{e.datum}</span>
+                      <span>{datum(e.datum)}</span>
                       <span style={{ color: 'var(--accent)' }}>{e.amne}</span>
                     </div>
                     <p className="mt-2.5 max-w-[56ch] text-[19px] font-semibold leading-[1.35] tracking-[-0.01em] transition-opacity duration-150 group-hover:opacity-70">
@@ -357,7 +367,7 @@ export default async function Start() {
               <div className="mono flex flex-wrap gap-x-3.5 gap-y-1 text-[11.5px] uppercase tracking-[0.1em]"
                    style={{ color: 'var(--etikett)' }}>
                 <span>{f.beteckning} · punkt {f.punkt}</span>
-                <span>{f.datum}</span>
+                <span>{datum(f.datum)}</span>
               </div>
               <Link href={`/voteringar/${f.forslagspunkt_id}`} className="group block">
                 <p className="mt-2.5 max-w-[56ch] text-[19px] font-semibold leading-[1.35] tracking-[-0.01em] transition-opacity duration-150 group-hover:opacity-70">

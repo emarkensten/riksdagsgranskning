@@ -41,7 +41,7 @@ med vem, vem står ensam, var är kammaren oenig, vem var inte på plats.
 - **13,4 %** frånvaro. Ett tiotal voteringar hade kunnat sluta annorlunda om alla
   frånvarande röstat med sitt parti.
 
-**4. Poängen — avsluta här.** Det mest intressanta är vad sajten *inte* gör. Vi
+**4. Poängen — avsluta här.** Det mest intressanta är vad sajten *inte* gör. Jag
 letade efter hyckleri: politiker som säger en sak i talarstolen och röstar
 tvärtom. Tre resultat sänkte idén.
 
@@ -53,7 +53,7 @@ tvärtom. Tre resultat sänkte idén.
 - Av de nio starkaste fallen överlevde **noll** en granskning som var satt att
   motbevisa dem.
 
-Så vi byggde det inte. Vi publicerade det negativa resultatet på metodsidan i
+Så jag byggde det inte. Det negativa resultatet ligger på metodsidan i
 stället.
 
 ---
@@ -95,6 +95,6 @@ på var och en av de tre sidorna — det är ett resultat, inte ett fel i mätni
 
 **"Kan man lita på siffrorna?"**
 Varje tal går att räkna om ur riksdagens öppna data, och metodsidan har
-definitionen bakom vart och ett. Sajten redovisar dessutom sju saker materialet
+definitionen bakom vart och ett. Sajten redovisar dessutom öppet vad materialet
 *inte* kan svara på, bland annat att kvittningen inte syns och att de flesta
 besluten togs helt utan omröstning.
