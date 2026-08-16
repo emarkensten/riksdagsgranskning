@@ -13,7 +13,7 @@
  *
  * Avkodningen är avsiktligt textbaserad och inte HTML-tolkning: fälten
  * innehåller inga taggar alls (kontrollerat: 0 av 8 977 respektive 0 av
- * 11 316), och `dangerouslySetInnerHTML` på text från en extern källa vore
+ * 11 274), och `dangerouslySetInnerHTML` på text från en extern källa vore
  * fel pris för att slippa den här funktionen.
  */
 

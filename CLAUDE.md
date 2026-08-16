@@ -109,7 +109,10 @@ det är den vanligaste felkällan i det här projektet.
   14,0 / 14,9 / 14,7 / 10,6 %. Blanda inte ihop dem.
 - **56 177** anföranden totalt, varav **23 740** i ärendedebatt.
 - Medellängd anförandetext: **2 953 tecken**.
-- **11 316** reservationer och **1 141** särskilda yttranden.
+- **11 274** reservationer och **1 013** särskilda yttranden. Talen var
+  11 316 och 1 141 fram till 2026-08-16. Skillnaden är 170 tomma
+  `<p class="Reservationsrubrik">`-stycken som uppmärkningen innehåller och som
+  lagrades som verkliga poster — inte data som gått förlorad.
 
 ### Reservation och särskilt yttrande är två olika saker
 
