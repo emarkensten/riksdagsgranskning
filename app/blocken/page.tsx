@@ -43,6 +43,14 @@ type Stickprovsrad = {
   rubrik: string
   partier: string[] | null
 }
+type Sjalvforklaring = {
+  anforande_id: string
+  talare: string
+  parti: string
+  datum: string
+  avsnittsrubrik: string
+  rel_dok_id: string | null
+}
 
 /**
  * Stickprovet mot källan.
@@ -68,6 +76,32 @@ const STICKPROV = {
   kontrollerat: '2026-08-16',
 }
 
+/**
+ * Anföranden där partiets egna företrädare förklarar varför reservationerna
+ * saknas.
+ *
+ * Framsökta 2026-08-16 med fritextsökning i `anforande.text` över
+ * ärendedebatterna — "inte har några reservationer", "inga reservationer i
+ * betänkandet", "samordnar vi inom Tidö". Sökningen gav tre träffar i
+ * {senaste riksmötet}, alla från samma parti som resten av sidan handlar om.
+ *
+ * Id:na står här och inte som en fråga med sökmönstret inbakat, av samma skäl
+ * som STICKPROV: ett mönster som körs vid varje rendering skulle tyst byta ut
+ * exemplen när datan växer, och kortet påstår något om just de här tre.
+ *
+ * Tre anföranden funna med fritextsökning är vittnesmål, inte en mätning, och
+ * kortet skriver ut det. Poängen är inte hur många de är utan vad de säger:
+ * invändningen mot sidans tolkning kommer från partiet självt, i kammaren.
+ */
+const SJALVFORKLARINGAR = {
+  sokt: '2026-08-16',
+  ids: [
+    '86560d3f-dd55-f111-8b6f-6805cafea079', // Aspling, arbetskraftsinvandring
+    'b4c25ccd-5a5b-f111-8b6f-6805cafea079', // Andersson, energipolitik
+    '7548eaf4-032e-f111-8812-6805cad9744d', // Fransson, elmarknadsfrågor
+  ],
+}
+
 /** Två riksmöten i tidslinjen: året före brottet och året det inträffade. */
 const FONSTER = 24
 
@@ -80,7 +114,8 @@ const UTSKOTTSGRANS = 20
 async function hamta() {
   const klient = db()
 
-  const [linjer, reservationer, manader, volym, utskottsrader, stickprov] = await Promise.all([
+  const [linjer, reservationer, manader, volym, utskottsrader, stickprov, sjalvforklaringar]
+    = await Promise.all([
     rader<Linjerad>(klient.from('parti_linje').select('parti, rm, voteringar, andel')),
     rader<Reservationsrad>(
       klient.from('parti_reservation_rm')
@@ -108,6 +143,13 @@ async function hamta() {
         .select('bet_dok_id, beteckning, nummer, rubrik, partier')
         .eq('rm', STICKPROV.rm)
         .eq('beteckning', STICKPROV.beteckning)),
+    // Texten hämtas inte. Kortet namnger debatten och länkar till riksdagens
+    // protokoll — 43 MB anförandetext ligger i databasen som verifierings-
+    // underlag, och ska inte gå genom en sidrendering för tre citat.
+    rader<Sjalvforklaring>(
+      klient.from('anforande')
+        .select('anforande_id, talare, parti, datum, avsnittsrubrik, rel_dok_id')
+        .in('anforande_id', SJALVFORKLARINGAR.ids)),
   ])
 
   // PostgREST skickar numeric som sträng och bigint som tal. Att blanda dem i
@@ -144,6 +186,8 @@ async function hamta() {
     stickprov: stickprov
       .filter((s) => s.partier?.includes(STICKPROV.parti))
       .sort((a, b) => Number(a.nummer) - Number(b.nummer)),
+    // Kronologiskt, inte i den ordning id:na råkar stå i konstanten.
+    sjalvforklaringar: [...sjalvforklaringar].sort((a, b) => a.datum.localeCompare(b.datum)),
   }
 }
 
@@ -598,6 +642,91 @@ export default async function Blocken() {
         </p>
 
         <div className="mt-10 grid gap-6 md:grid-cols-2">
+          {/*
+            Först, och över båda spalterna: det här är den invändning som ligger
+            närmast till hands, och till skillnad från de tre andra kan sidan
+            inte avfärda den. De övriga prövar om talen håller. Den här prövar
+            om tolkningen gör det, och svaret är att materialet inte räcker.
+
+            Att lägga den sist hade sett ut som en fotnot. Den ska stå först.
+          */}
+          <div className="p-8 md:col-span-2"
+               style={{ border: '1px solid var(--linje-stark)', borderRadius: 8 }}>
+            <h3 className="text-[21px] font-bold leading-[1.25] tracking-[-0.02em]">
+              Är färre reservationer framgång i stället för tystnad?
+            </h3>
+            <div className="mt-4 grid max-w-[74ch] gap-4 text-[16px] leading-[1.6]"
+                 style={{ color: 'var(--black-mjuk)' }}>
+              <p>
+                En reservation är per definition ett tecken på att partiet
+                förlorade en förhandling i utskottet. Ett parti som går från
+                opposition till regeringsunderlag får sina krav prövade tidigare
+                — i regeringens proposition, innan betänkandet ens skrivs — och
+                behöver då inte reservera sig. Under den läsningen är nedgången
+                inflytande, inte tystnad, och ett regeringsunderlag som ständigt
+                reserverade sig mot sin egen regering vore det udda.
+              </p>
+              <p>
+                <strong style={{ color: 'var(--black)' }}>
+                  Sidan kan inte avgöra saken.
+                </strong>{' '}
+                Reservationerna finns i öppna data. Vad som står i regeringens
+                propositioner, och vilka krav som kom dit på vägen, gör det
+                inte. Att skilja de två läsningarna åt kräver ett underlag som
+                inte ligger här, och sidan påstår därför ingen orsak — bara att
+                de tre måtten rör sig samtidigt.
+              </p>
+              {d.sjalvforklaringar.length > 0 && (
+                <p>
+                  Vad som däremot går att belägga är att invändningen kommer
+                  från partiet självt. I {d.sjalvforklaringar.length} debatter
+                  under {senaste} förklarar {namn(brottet.parti)}s företrädare i
+                  talarstolen varför partiet saknar reservationer i just det
+                  betänkandet — att förslagen de talar om ligger i regeringens
+                  proposition, eller att frågorna samordnas inom
+                  regeringsunderlaget.
+                </p>
+              )}
+            </div>
+
+            {d.sjalvforklaringar.length > 0 && (
+              <ul className="mt-6 flex flex-col gap-3">
+                {d.sjalvforklaringar.map((a) => (
+                  <li key={a.anforande_id}
+                      className="flex flex-wrap items-baseline gap-x-4 gap-y-1 pb-3 text-[15px]"
+                      style={{ borderBottom: '1px solid var(--linje)' }}>
+                    <span className="etikett">{datum(a.datum)}</span>
+                    <span className="font-medium">{a.avsnittsrubrik}</span>
+                    <span style={{ color: 'var(--black-svag)' }}>{a.talare}</span>
+                    {a.rel_dok_id && (
+                      <a
+                        href={`https://www.riksdagen.se/sv/dokument-och-lagar/dokument/betankande/_${a.rel_dok_id}/`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[14px] font-semibold underline hover:opacity-70"
+                        style={{ color: 'var(--accent)' }}
+                      >
+                        Betänkandet
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Måttet på vad de tre anförandena är värda står bredvid dem, inte
+                i en fotnot längst ned. Tre träffar ur en fritextsökning är
+                vittnesmål och ingen mätning, och läsaren ska veta det innan
+                hen väger dem. */}
+            <p className="mt-5 max-w-[74ch] text-[13.5px] leading-[1.55]"
+               style={{ color: 'var(--black-svag)' }}>
+              De tre anförandena är framsökta {datum(SJALVFORKLARINGAR.sokt)} med
+              fritextsökning i ärendedebatterna, inte räknade fram. De visar att
+              förklaringen ges, inte hur ofta den gäller — och de är alltså inte
+              ett mått vid sidan av de andra på sidan.
+            </p>
+          </div>
+
           <div className="p-8" style={{ background: 'var(--papper-djup)', borderRadius: 8 }}>
             <h3 className="text-[21px] font-bold leading-[1.25] tracking-[-0.02em]">
               Är det sista riksmötet ofullständigt?
