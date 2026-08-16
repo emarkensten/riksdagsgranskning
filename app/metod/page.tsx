@@ -183,9 +183,10 @@ export default async function Metod() {
     .map((u) => u.med_vinnaren)
   const hogst = regeringens.length ? Math.max(...regeringens) : 0
   const samst = regeringens.length ? Math.min(...regeringens) : 0
-  // Skillnaden mellan förklarade punkter och voteringar är punkter som fick en
-  // klarspråksförklaring men aldrig ett namnupprop om sakfrågan.
-  const utanRostdata = d.forklarade - d.voteringar
+  // punkt_uppropstyp räknar de tre fallen var för sig. Raderna nedan använde
+  // tidigare differensen forklarade − voteringar och kallade den "namnupprop om
+  // motivfrågan" — men differensen rymmer båda skälen till att en punkt saknar
+  // röstdata. Talen är lika i dag bara därför att utanUpprop är noll.
   // Avsnittet #olika-tal finns när voteringssidan listar fler beslut än
   // startsidan räknar mönster på — oavsett vilket av de två skälen som gör det.
   // Att bara fråga efter motivfrågorna hade dolt avsnittet, och därmed
@@ -252,9 +253,17 @@ export default async function Metod() {
           {/* Kort här med flit. Varför de 18 inte räknas är en egen fråga med
               eget avsnitt — den här raden ska bara få talen att gå ihop. */}
           <Rad
-            tal={utanRostdata}
+            tal={d.motivupprop}
             text="av dem fick namnupprop om motivfrågan i stället för om sakfrågan, och räknas därför inte in i något mönster"
           />
+          {/* Egen rad, inte hopslagen med motivfrågorna: talen ska gå ihop även
+              när en punkt saknar röstdata av det andra skälet. */}
+          {d.utanUpprop > 0 && (
+            <Rad
+              tal={d.utanUpprop}
+              text="av dem avgjordes utan namnupprop alls, och räknas därför inte heller"
+            />
+          )}
           <Rad
             tal={d.utanNamnupprop}
             text={`av totalt ${heltal(d.punkter)} förslagspunkter avgjordes helt utan omröstning`}
@@ -290,8 +299,9 @@ export default async function Metod() {
             </a>.
           </p>
           <p className="mt-3 max-w-[64ch] text-[13.5px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
-            De {heltal(utanRostdata)} punkter vars namnupprop gällde motivfrågan
-            ingår inte, av samma skäl som de inte räknas in i något mått.
+            De {heltal(d.motivupprop)} punkter vars namnupprop gällde
+            motivfrågan ingår inte, av samma skäl som de inte räknas in i något
+            mått.
           </p>
           <Textlank href="/underlag" className="mt-6">
             Hämta partirösterna som CSV

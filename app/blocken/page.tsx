@@ -324,6 +324,13 @@ export default async function Blocken() {
 
   const senasteVolym = d.volym.find((v) => v.rm === senaste)
   const tidigare = d.volym.filter((v) => v.rm !== senaste)
+  // Invändningen "är sista riksmötet ofullständigt?" besvarades med en skriven
+  // mening om att det är periodens största. Den prövas nu mot volymtabellen
+  // som står tio rader längre ned — annars är det enda stället på sidan där ett
+  // påstående inte följer datat det illustreras med.
+  const storst = (falt: 'betankanden' | 'voteringar') =>
+    !!senasteVolym && tidigare.every((v) => senasteVolym[falt] > v[falt])
+  const senasteArStorst = storst('betankanden') && storst('voteringar')
 
   const manadsnamn = (iso: string) =>
     new Date(iso).toLocaleDateString('sv-SE', { month: 'long', year: 'numeric', timeZone: 'UTC' })
@@ -339,10 +346,19 @@ export default async function Blocken() {
         <p className="stig mt-8 max-w-[58ch] text-[20px] leading-[1.5] sm:text-[22px]"
            style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}>
           Under mandatperiodens sista riksmöte rör sig partierna åt var sitt håll.
-          Det syns i tre mått som mäter olika saker och som inte påverkar
-          varandra: hur ofta ett parti reserverar sig mot utskottets förslag, hur
-          ofta det ändå röstar med förslaget, och hur ofta det skriver
-          reservationer tillsammans med andra.
+          Det syns i tre mått som mäter olika saker: hur ofta ett parti
+          reserverar sig mot utskottets förslag, hur ofta det ändå röstar med
+          förslaget, och hur ofta det skriver reservationer tillsammans med
+          andra.
+        </p>
+        <p className="mt-4 max-w-[58ch] text-[16.5px] leading-[1.6]"
+           style={{ color: 'var(--black-svag)' }}>
+          {/* Stod tidigare som "mått … som inte påverkar varandra". De två
+              första gör det: den som skrivit motförslaget röstar nej på det.
+              Att skriva ut kopplingen är starkare än att förneka den. */}
+          De två första hänger ihop mekaniskt i den enskilda voteringen — den
+          som skrivit motförslaget röstar nej på det — så de är inte oberoende
+          belägg för varandra.
         </p>
         <p className="mt-5 max-w-[58ch] text-[16.5px] leading-[1.6]"
            style={{ color: 'var(--black-svag)' }}>
@@ -835,10 +851,19 @@ export default async function Blocken() {
               Är det sista riksmötet ofullständigt?
             </h3>
             <p className="mt-4 text-[16px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
-              Nej — det är periodens största. Fler betänkanden och fler
-              voteringar än något tidigare riksmöte i perioden. Nedgången ligger
-              alltså i ett år med mer att reservera sig mot, inte i ett hål i
-              datan.{' '}
+              {senasteArStorst ? (
+                <>
+                  Nej — det är periodens största. Fler betänkanden och fler
+                  voteringar än något tidigare riksmöte i perioden. Nedgången
+                  ligger alltså i ett år med mer att reservera sig mot, inte i
+                  ett hål i datan.
+                </>
+              ) : (
+                <>
+                  Volymen står i tabellen nedan, så jämför själv. Nedgången ska
+                  läsas mot hur mycket riksmötet hade att reservera sig mot.
+                </>
+              )}{' '}
               {senasteVolym && (
                 <>
                   {heltal(senasteVolym.utan_parti)} av{' '}

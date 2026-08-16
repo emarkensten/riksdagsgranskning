@@ -50,9 +50,22 @@ export const arr = (x) => (x == null ? [] : Array.isArray(x) ? x : [x])
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-/** Kör tasks med begränsad samtidighet. */
+/**
+ * Kör tasks med begränsad samtidighet.
+ *
+ * Ett item som failade loggades tidigare med en rad och blev null, varpå
+ * körningen fortsatte och rapporterade succé. Ett betänkande som föll bort tog
+ * med sig sina förslagspunkter, voteringar och reservationer — tyst, och inget
+ * steg jämförde antalet lyckade mot antalet förväntade.
+ *
+ * api() gör redan fyra försök med backoff. Kommer ett item ändå inte hem är det
+ * ett verkligt bortfall, och då ska körningen stanna hellre än skriva ett
+ * ofullständigt underlag som ser komplett ut. Alla items körs färdigt först, så
+ * felraden visar hela bortfallet och inte bara det som hann bli fel först.
+ */
 export async function pool(items, limit, worker) {
   const results = []
+  const fel = []
   let idx = 0
   const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
     while (idx < items.length) {
@@ -61,11 +74,17 @@ export async function pool(items, limit, worker) {
         results[i] = await worker(items[i], i)
       } catch (err) {
         results[i] = null
-        console.error(`  ! ${items[i]?.beteckning ?? items[i]?.anforande_id ?? i}: ${err.message}`)
+        const namn = items[i]?.beteckning ?? items[i]?.anforande_id ?? i
+        fel.push(`${namn}: ${err.message}`)
+        console.error(`  ! ${namn}: ${err.message}`)
       }
     }
   })
   await Promise.all(runners)
+  if (fel.length) {
+    throw new Error(
+      `${fel.length} av ${items.length} hämtningar misslyckades: ${fel.slice(0, 3).join(' | ')}`)
+  }
   return results
 }
 
@@ -104,6 +123,29 @@ export async function upsert(table, rows, opts = {}) {
   }
   if (rows.length) process.stdout.write('\n')
   return done
+}
+
+/**
+ * Uppdaterar de materialiserade aggregaten, i beroendeordning.
+ *
+ * Ordningen ligger i databasen (aggregat_vyer) och inte här, så en ny vy inte
+ * kan glömmas bort på ett ställe. En vy per anrop — elva refresh i samma anrop
+ * spränger PostgREST:s statement timeout.
+ *
+ * Bor här och inte i run.mjs därför att aggregaten hänger på mer än rösterna.
+ * punkt_klartext skrivs av lager 2, och den vägen lämnade matvyerna inaktuella
+ * tills någon råkade köra ett ETL-steg. Den som skriver ett underlag ska kunna
+ * uppdatera det som räknar på det.
+ */
+export async function uppdateraAggregat() {
+  console.log('\n== Uppdaterar aggregat ==')
+  const { data: vyer, error: listfel } = await db().rpc('aggregat_vyer')
+  if (listfel) throw new Error(listfel.message)
+  for (const vy of vyer) {
+    const { error } = await db().rpc('refresh_aggregat', { vy })
+    if (error) throw new Error(`${vy}: ${error.message}`)
+    console.log(`  ${vy} uppdaterad`)
+  }
 }
 
 /** Riksdagens texter är HTML-fragment. Vi vill ha ren text för LLM och sökning. */

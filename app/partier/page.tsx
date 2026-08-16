@@ -33,6 +33,11 @@ export default async function Partier() {
   // hur bra partierna är. Talet säger var i kammaren partiet står, inget annat.
   const sorterade = [...rader].sort((a, b) => b.snitt - a.snitt)
   const voteringar = rader[0]?.voteringar ?? 0
+  // Partier vars närmaste motpart ändå ligger under hälften. Stod tidigare som
+  // "S har inget parti det röstar lika med ens hälften av gångerna" — sant, men
+  // med tre tiondelars marginal (S–V på 49,7 %) och därför en mening som kunde
+  // bli tyst osann vid nästa import.
+  const utanHalva = rader.filter((r) => (r.narmast?.samstammighet ?? 0) < 50)
 
   return (
     <main>
@@ -117,8 +122,14 @@ export default async function Partier() {
         <p className="mt-6 max-w-[68ch] text-[14px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
           Snittet är partiets genomsnittliga samstämmighet med de sju andra. Ett
           högt tal betyder att partiet står nära kammarens mitt — inte att det
-          har rätt eller får igenom mest. {namn('S')} har inget parti det röstar
-          lika med ens hälften av gångerna.
+          har rätt eller får igenom mest.
+          {utanHalva.length > 0 && (
+            <>
+              {' '}{lista(utanHalva.map((r) => namn(r.parti)))} har inget parti{' '}
+              {utanHalva.length === 1 ? 'det röstar' : 'de röstar'} lika med ens
+              hälften av gångerna.
+            </>
+          )}
         </p>
       </section>
 
