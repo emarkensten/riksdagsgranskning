@@ -8,7 +8,12 @@
  * fyrdubblar volymen.
  */
 import { db, lasAlla } from '../etl/lib.mjs'
-import { partilinjeSQL } from './partilinje.mjs'
+// Samma funktion som gränssnittet, inte en kopia av den. Regeln fanns tidigare
+// i tre exemplar — här, i lib/db.ts och i SQL — och två av dem beskrev sig
+// själva som speglingar av den tredje. Node 22 kan importera .ts direkt, så
+// den här kan dela implementation med frontend. SQL-versionen kan inte, och
+// hålls i stället i schack av scripts/kontrollera-partilinje.mjs.
+import { partilinje } from '../../lib/db.ts'
 
 export async function hamtaAnforanden({ rm, baraNya = true, gransTecken = 1500 } = {}) {
   const anforanden = await lasAlla((fran, till) => {
@@ -98,7 +103,7 @@ export async function hamtaAnforanden({ rm, baraNya = true, gransTecken = 1500 }
           nej_innebar: p.punkt_klartext.nej_innebar,
           motforslag_partier: p.motforslag_partier,
           reservationspartier: [...(reservationerPerPunkt.get(`${p.bet_dok_id}|${p.punkt}`) ?? [])],
-          partiets_rost: r ? partilinjeSQL(r) : null,
+          partiets_rost: r ? partilinje(r) : null,
         }
       }),
     })
