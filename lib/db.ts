@@ -224,9 +224,17 @@ export type PartiRost = {
  * hade positionen Ja — att redovisa "Frånvarande" som partiets hållning vore
  * ett sakfel.
  *
- * Fallet där ingen enda ledamot röstade har inte inträffat: 0 av 20 552
- * partigrupper i mandatperioden. Grenen finns för att den annars skulle
- * returnera fel linje den dagen det händer.
+ * Regeln finns också i SQL, som `partilinje(ja, nej, avstar)`, och matar därifrån
+ * varje materialiserad vy. De två kan inte dela implementation.
+ * `npm run kontrollera` prövar dem mot varandra på alla 433 kombinationer som
+ * förekommer i datan plus ett tiotal konstruerade, och fäller om de går isär.
+ *
+ * **Ingen röstade** är den enda skillnad som är avsedd: här blir svaret
+ * 'Frånvarande', i SQL null. Vyerna filtrerar bort null och håller gruppen
+ * utanför statistiken; voteringssidan ska tvärtom skriva ut att partiet inte
+ * var på plats. Fallet inträffar 101 gånger av 22 786 — alla i gruppen `-`,
+ * de partilösa, som PARTIER inte innehåller och gränssnittet därför aldrig
+ * frågar om. För de åtta partierna har det aldrig hänt: 0 av 20 552.
  */
 export function partilinje(r: Omit<PartiRost, 'parti' | 'linje'>): PartiRost['linje'] {
   const avlagda: [PartiRost['linje'], number][] = [

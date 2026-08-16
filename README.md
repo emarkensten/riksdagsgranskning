@@ -120,6 +120,13 @@ cp .env.example .env.local
 npm run dev
 ```
 
+`npm run kontrollera` är repots enda test. Partilinjen — det alternativ flest
+av ett partis närvarande ledamöter valde — är skriven två gånger, som
+SQL-funktion och i `lib/db.ts`, och kan inte dela implementation. Testet prövar
+dem mot varandra på varje kombination av (ja, nej, avstår) som förekommer i
+datan. Går de isär visar startsidan och voteringssidan olika linje för samma
+votering utan att något felar.
+
 ETL-skripten ligger i `scripts/etl/`. `run.mjs` är kommenterad, och funktionen
 `aggregat_vyer()` i databasen styr vilka materialiserade vyer som uppdateras och
 i vilken ordning.

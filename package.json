@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "kontrollera": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/kontrollera-partilinje.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.75.1",

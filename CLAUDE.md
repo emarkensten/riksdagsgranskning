@@ -130,8 +130,14 @@ rubriken avgörs ofta av tiondelar. Skriv alltid ut det bredvid siffran.
 ## Kommandon
 
 ```bash
-npm run dev        # utvecklingsserver
+npm run dev          # utvecklingsserver
+npm run kontrollera  # prövar partilinje() i SQL mot den i TypeScript
 ```
+
+`npm run kontrollera` är repots enda test. Den finns därför att partilinjen är
+skriven två gånger — som SQL-funktion och i `lib/db.ts` — och inte kan dela
+implementation. Går de isär visar startsidan och voteringssidan olika linje för
+samma votering, utan att något felar. Kör den efter varje ändring i endera.
 
 ETL-skript ligger i `scripts/etl/`. Det finns ingen separat ETL-dokumentation —
 `run.mjs` är kommenterad och `aggregat_vyer()` i databasen styr vilka
