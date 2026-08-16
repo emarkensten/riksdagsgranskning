@@ -103,6 +103,15 @@ export default async function Amnen() {
   // bara hur meningen formuleras.
   const starka = rows.filter((r) => r.avvikande_storlek >= SVAG)
   const svaga = rows.filter((r) => r.avvikande_storlek < SVAG)
+  // Att ett ämne saknar avvikelse säger bara att inget par lämnat sin egen
+  // normalnivå — ingenting om ämnets absoluta enighet. De två råkade följas åt
+  // när urvalet bara mätte åt ena hållet, och meningen nedan skrevs som om det
+  // vore en regel. Den prövas i stället mot datat innan den skrivs ut.
+  // Sant bara om de svaga ämnena ligger överst i enighetsrangordningen: det
+  // minst eniga av dem är ändå enigare än det enigaste av de övriga.
+  const svagaArEnigast = svaga.length > 0
+    && Math.min(...svaga.map((r) => r.kammarens_enighet))
+       >= Math.max(...starka.map((r) => r.kammarens_enighet), 0)
 
   return (
     <main>
@@ -212,9 +221,18 @@ export default async function Amnen() {
                 Enighetstalen listas i samma ordning som tabellen ovan. */}
             Procentenheter från parets normalnivå. Att avvikelsen är liten
             betyder inte att kammaren är enig i sak —{' '}
-            {svaga.length === 1 ? 'ämnet har' : 'ämnena har'} tvärtom riksdagens{' '}
-            <em>högsta</em> enighetstal:{' '}
-            {lista(svaga.map((r) => `${tal(r.kammarens_enighet)} %`))}.
+            {svagaArEnigast ? (
+              <>
+                {svaga.length === 1 ? 'ämnet har' : 'ämnena har'} tvärtom
+                riksdagens <em>högsta</em> enighetstal
+              </>
+            ) : (
+              <>
+                måttet säger bara att inget partipar lämnat sin vanliga nivå
+                här. {svaga.length === 1 ? 'Ämnets enighetstal' : 'Ämnenas enighetstal'}
+              </>
+            )}
+            : {lista(svaga.map((r) => `${tal(r.kammarens_enighet)} %`))}.
           </p>
         </section>
       )}

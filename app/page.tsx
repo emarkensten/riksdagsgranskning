@@ -46,8 +46,11 @@ async function hamta() {
     // Storleken, inte tecknet. Sorterat på avvikande_delta vann alltid det par
     // som röstar mer olikt än vanligt, och ett par som röstar ovanligt lika
     // kunde aldrig nå citatet — hur stort utslaget än var.
+    // Sekundärsorteringen är inte kosmetisk: två ämnen kan dela toppvärde
+    // (jämställdhet och övrigt ligger båda på 19,9), och utan den avgör
+    // radordningen i den materialiserade vyn vilket som blir sidans citat.
     rader<any>(klient.from('amne_oversikt').select('*')
-      .order('avvikande_storlek', { ascending: false }).limit(1)),
+      .order('avvikande_storlek', { ascending: false }).order('amne').limit(1)),
     regeringsspann(),
     rakna(antal(klient, 'jamn_votering').lte('marginal', 3), 'jämna voteringar'),
     // Samma marginalvillkor som raden ovan: siffran presenteras som en delmängd
