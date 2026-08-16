@@ -166,20 +166,44 @@ i vilken ordning.
 
 ---
 
+## Hur repot är byggt
+
+Koden är i allt väsentligt skriven med Claude Code. Det syns i historiken —
+merparten av commitarna är samsignerade — och står här för att repot är lättare
+att läsa när man vet det.
+
+Arbetsreglerna ligger i [CLAUDE.md](CLAUDE.md) och läses vid varje session.
+Flera av dem är formulerade i efterhand, efter att något gått fel:
+
+- **Aldrig ett batchjobb utan validering på 20–50 exempel först** — $22 brändes
+  i oktober 2025 på en prompt som mätte fel sak
+- **Verifiera mot databasen i stället för att anta** — `forslagspunkt.vinnare`
+  ser ut att ange vem som vann och gör det inte; den ger 5 förluster där rätt
+  svar är 2
+- **Skriv ut när ett fynd gäller flera partier** — M, KD och L röstar lika i
+  99,9–100 % av voteringarna, så vilket av dem som hamnar i en rubrik avgörs av
+  tiondelar
+
+Det är den delen av arbetet som inte går att lämna ifrån sig, och skälet till
+att `/metod` redovisar ett negativt huvudfynd i stället för en snyggare historia.
+
+---
+
 ## Läs vidare
 
 | Dokument | Vad |
 |---|---|
 | [CLAUDE.md](CLAUDE.md) | Arbetsregler, verifierade API-begränsningar och mätta grundfakta |
+| [docs/README.md](docs/README.md) | Vägvisare till dokumenten, med vad som är aktuellt och vad som är historik |
 | [docs/LAGE_2026-08.md](docs/LAGE_2026-08.md) | Vad sajten är i dag och vad som återstår |
-| [docs/DESIGN_GUIDELINES.md](docs/DESIGN_GUIDELINES.md) | Formspråk och copy-regler |
 | [docs/BESLUT_2026-08.md](docs/BESLUT_2026-08.md) | Varför hyckleriidén lades ned |
-| [docs/PITCH.md](docs/PITCH.md) | Sajten i pitchform, med demo-rutt |
+| [docs/DESIGN_GUIDELINES.md](docs/DESIGN_GUIDELINES.md) | Formspråk och copy-regler — styr all frontend |
+| [docs/VALIDERING.md](docs/VALIDERING.md) | Vad de två LLM-valideringarna visade före batch |
 
-Fyra dokument från projektets första vecka — `SETUP.md`, `QUICKSTART.md`,
-`API.md` och `DEVELOPMENT.md` — beskrev ett åtta veckors MVP-upplägg som aldrig
-byggdes, med endpoints under `/api/admin/` som inte finns. De är borttagna.
-Git-historiken bär dem om någon behöver se vad som var tänkt.
+Dokumentation som beskrev något som aldrig byggdes, eller som senare mätningar
+motsade, är borttagen i stället för att stå kvar med förbehåll — listan finns i
+[`docs/README.md`](docs/README.md#vad-som-är-borttaget). Git-historiken bär den
+om någon behöver se vad som var tänkt.
 
 ## Källa
 
