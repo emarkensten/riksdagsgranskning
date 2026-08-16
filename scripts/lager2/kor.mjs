@@ -11,7 +11,7 @@
  */
 import fs from 'node:fs'
 import { config } from 'dotenv'
-import { db } from '../etl/lib.mjs'
+import { db, uppdateraAggregat } from '../etl/lib.mjs'
 import { SYSTEM, SCHEMA, byggUserPrompt } from './prompt.mjs'
 import { hamtaPunkter } from './underlag.mjs'
 
@@ -137,6 +137,11 @@ async function hamta(id) {
       .from('punkt_klartext').upsert(rader.slice(i, i + 500), { onConflict: 'forslagspunkt_id' })
     if (error) throw new Error(error.message)
   }
+
+  // Ämnesindelningen och samstämmigheten räknas på punkt_klartext. Utan den här
+  // raden låg nya klartexter i tabellen medan sajten visade aggregat som inte
+  // kände till dem — tyst, tills någon råkade köra ett ETL-steg.
+  if (rader.length) await uppdateraAggregat()
 
   const pris = PRIS[MODELL] ?? { in: 0, ut: 0 }
   const kostnad = (tokIn / 1e6) * pris.in + (tokUt / 1e6) * pris.ut

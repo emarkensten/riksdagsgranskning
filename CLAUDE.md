@@ -107,8 +107,12 @@ det är den vanligaste felkällan i det här projektet.
   (1 070 av 770 029). Individuell "sagt vs röstat" är därför inte en produkt.
 - **13,4 %** — frånvaro över hela perioden (119 768 av 896 581). Per riksmöte:
   14,0 / 14,9 / 14,7 / 10,6 %. Blanda inte ihop dem.
-- **56 177** anföranden totalt, varav **23 740** i ärendedebatt.
-- Medellängd anförandetext: **2 953 tecken**.
+- **56 177** anföranden totalt, varav **23 740** i ärendedebatt. Av dem saknar
+  **28** text: de hämtades men kom aldrig hem, och `pool()` svalde bortfallet
+  tyst fram till 2026-08-16. Nu stannar körningen i stället.
+- Medellängd anförandetext: **2 666 tecken**, räknat på de 23 712 som har text.
+  Stod som 2 953 fram till 2026-08-16 — mätt på något annat, inte på den här
+  populationen.
 - **11 274** reservationer och **1 013** särskilda yttranden. Talen var
   11 316 och 1 141 fram till 2026-08-16. Skillnaden är 170 tomma
   `<p class="Reservationsrubrik">`-stycken som uppmärkningen innehåller och som
@@ -162,6 +166,11 @@ Det finns ingen `app/api`-katalog. Sidorna läser databasen direkt i server
 components, och enda route handlern är `/underlag`. Dokument som beskriver
 endpoints under `/api/admin/` är borttagna — de beskrev ett upplägg som aldrig
 byggdes.
+
+`docs/DATABASE.md` är borttagen av samma skäl (2026-08-16). Den beskrev
+tabellerna `voteringar`, `motioner`, `fragor` och `interpellationer` med 1,3
+miljoner rader från 2010 — inte ett enda av namnen finns i schemat. Schemat
+står i migrationerna; de är källan.
 
 ---
 

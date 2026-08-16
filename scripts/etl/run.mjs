@@ -11,7 +11,7 @@
  * Utan riksmöte körs hela mandatperioden 2022–2026.
  */
 import {
-  api, arr, pool, upsert, stripHtml, parsePartier, toDate,
+  api, arr, pool, upsert, stripHtml, parsePartier, toDate, uppdateraAggregat,
   PARTIER, RIKSMOTEN, db,
 } from './lib.mjs'
 
@@ -47,15 +47,27 @@ async function ledamoter() {
 
 // ------------------------------------------------- betänkanden + förslagspunkter
 
+const SIDOR = 5
+const PER_SIDA = 200
+
 async function betankandeLista(rm) {
   const out = new Map()
-  for (let p = 1; p <= 5; p++) {
-    const d = await api('/dokumentlista/', { doktyp: 'bet', rm, utformat: 'json', sz: 200, p })
+  let sistaFull = false
+  for (let p = 1; p <= SIDOR; p++) {
+    const d = await api('/dokumentlista/', { doktyp: 'bet', rm, utformat: 'json', sz: PER_SIDA, p })
     const docs = arr(d.dokumentlista?.dokument)
-    if (!docs.length) break
+    if (!docs.length) { sistaFull = false; break }
+    sistaFull = docs.length >= PER_SIDA
     for (const doc of docs) {
       if (doc.beteckning) out.set(doc.beteckning, doc)
     }
+  }
+  // Taket är 1 000 betänkanden per riksmöte, och det kapar tyst. Ett riksmöte
+  // som fyller sista sidan kan ha fler än vi hämtat, och då blir varje siffra
+  // nedströms för låg utan att något felar. 473 är rekordet hittills.
+  if (sistaFull) {
+    throw new Error(
+      `${rm}: betänkandelistan fyllde alla ${SIDOR} sidor à ${PER_SIDA} — höj taket, annars saknas betänkanden`)
   }
   return [...out.values()]
 }
@@ -225,17 +237,6 @@ async function anforanden() {
  * En vy per anrop: elva refresh i samma anrop spränger PostgREST:s
  * statement timeout.
  */
-async function uppdateraAggregat() {
-  console.log('\n== Uppdaterar aggregat ==')
-  const { data: vyer, error: listfel } = await db().rpc('aggregat_vyer')
-  if (listfel) throw new Error(listfel.message)
-  for (const vy of vyer) {
-    const { error } = await db().rpc('refresh_aggregat', { vy })
-    if (error) throw new Error(`${vy}: ${error.message}`)
-    console.log(`  ${vy} uppdaterad`)
-  }
-}
-
 // ----------------------------------------------------------------------- main
 
 const stages = { ledamoter, betankanden, roster, anforanden, aggregat: uppdateraAggregat }
@@ -244,8 +245,11 @@ if (stage === 'alla') {
   for (const fn of [ledamoter, betankanden, roster, anforanden, uppdateraAggregat]) await fn()
 } else if (stages[stage]) {
   await stages[stage]()
-  // Röstimport ändrar underlaget för samtliga aggregat.
-  if (stage === 'roster') await uppdateraAggregat()
+  // Aggregaten bygger på både forslagspunkt och rost, så betänkandesteget måste
+  // trigga dem lika mycket som röststeget. Bara roster gjorde det tidigare, och
+  // en omkörning av betankanden lämnade därför matvyerna inaktuella tills någon
+  // råkade köra ett annat steg — sajten visade gamla siffror utan att något felade.
+  if (stage === 'roster' || stage === 'betankanden') await uppdateraAggregat()
 } else {
   console.error(`Okänt steg: ${stage || '(inget)'}`)
   console.error(`Välj: ${Object.keys(stages).join(', ')}, alla`)
