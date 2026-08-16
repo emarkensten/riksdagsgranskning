@@ -75,6 +75,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     // "partier om om riksdagen skulle".
     beskrivning: `Hur de åtta partierna röstade, vad ett ja innebar och vad ett nej innebar. ${r.beteckning} i riksmötet ${r.rm}, förklarad på vanlig svenska.`,
     sokvag: `/voteringar/${id}`,
+    // Sakfrågan ritas i en egen delningsbild av opengraph-image.tsx bredvid.
+    egenBild: true,
   })
 }
 
