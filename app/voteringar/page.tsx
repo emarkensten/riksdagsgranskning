@@ -56,17 +56,34 @@ async function hamta({ amne, q, rm, sida }: Sok) {
   const valtAmne = amne && AMNEN.includes(amne) ? amne : undefined
   const valtRm = rm && riksmoten.some((r) => r.rm === rm) ? rm : undefined
   const sok = q?.trim() || undefined
+  /**
+   * Söksträngen som ett citerat ilike-mönster.
+   *
+   * PostgREST läser kommatecken och parenteser i or() som syntax. En sökning på
+   * "el, gas och värme" hade annars delats i tre villkor mot kolumner som inte
+   * finns, och gett ett fel i stället för träffar. Citattecken runt värdet
+   * stänger av tolkningen; de citattecken som står i söksträngen escapas.
+   */
+  const somMonster = (s: string) => `"%${s.replace(/[\\"]/g, (c) => `\\${c}`)}%"`
   // Golvas, inte bara klampas nedåt. Ett decimaltal skulle ge ett radfönster
   // som inte börjar på en sidgräns, och föras vidare in i sidlänkarna som
   // sida=3.7 → sida=4.7 — rader hoppas då över mellan sidor.
   const nr = Math.max(1, Math.floor(Number(sida)) || 1)
 
   /** Samma filter på både räkningen och sidhämtningen. */
-  const filtrera = <T extends { eq: any; ilike: any }>(f: T): T => {
+  const filtrera = <T extends { eq: any; or: any }>(f: T): T => {
     let x: any = f
     if (valtAmne) x = x.eq('amne', valtAmne)
     if (valtRm) x = x.eq('rm', valtRm)
-    if (sok) x = x.ilike('sakfraga', `%${sok}%`)
+    // Sökfältet lovar sakfråga, beteckning och utskott. Frågan sökte bara i
+    // sakfraga, så "FiU12" gav tyst noll träffar trots att fältet stod där.
+    // Betänkandets titel tas med på köpet: den som söker på ett ärendenamn
+    // menar rimligen det, och kolumnen finns redan i vyn.
+    if (sok) {
+      const v = somMonster(sok)
+      x = x.or(['sakfraga', 'beteckning', 'betankande', 'organ']
+        .map((kolumn) => `${kolumn}.ilike.${v}`).join(','))
+    }
     return x
   }
 

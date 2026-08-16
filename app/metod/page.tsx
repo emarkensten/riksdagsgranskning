@@ -409,10 +409,16 @@ export default async function Metod() {
             regel="En votering avgjord med tre rösters marginal eller mindre."
           >
             <p>
-              <em>Frånvaron avgjorde</em> betyder att utfallet hade blivit det
-              motsatta om varje frånvarande ledamot röstat med sitt parti.
-              Räkningen lägger alltså tillbaka de frånvarande på partiets linje
-              och ser efter om segraren byts.
+              <em>Frånvaron avgjorde</em> betyder att voteringen hade slutat
+              annorlunda om varje frånvarande ledamot röstat med sitt parti.
+              Räkningen lägger tillbaka de frånvarande på partiets linje och ser
+              efter om segraren byts.
+            </p>
+            <p>
+              Byts den till oavgjort räknas fallet med, men skiljs ut på
+              frånvarosidan. Lika röstetal avgörs genom lottning, så där hade
+              utfallet <em>kunnat</em> bli ett annat snarare än blivit det — en
+              skillnad som är liten i aritmetiken och stor i påståendet.
             </p>
             <p>
               Det är aritmetik, inte en anklagelse. Riksdagen kvittar frånvaro,

@@ -24,6 +24,8 @@ type PartiRad = { parti: string; rm: string; roster: number; franvarande: number
 type LedamotRad = { intressent_id: string; parti: string; voteringar: number; franvarande: number; andel: number }
 type Jamn = {
   votering_id: string; ja: number; nej: number; marginal: number; franvarande: number
+  /** Ja minus nej om alla frånvarande röstat med sitt parti. Noll = lika röstetal. */
+  marginal_fullsatt: number
 }
 
 /**
@@ -59,7 +61,8 @@ async function hamta() {
       klient.from('jamn_votering')
         // franvaron_avgjorde selectas inte: frågan filtrerar redan på den, så
         // varje rad har samma värde.
-        .select('votering_id, ja, nej, marginal, franvarande')
+        // marginal_fullsatt skiljer ett byte av segrare från ett lika röstetal.
+        .select('votering_id, ja, nej, marginal, franvarande, marginal_fullsatt')
         .lte('marginal', 3).eq('franvaron_avgjorde', true).order('marginal')),
     // Räknas i databasen, inte som listans längd: en punkt som saknar klarspråk
     // faller bort i joinen nedan och skulle annars sänka talet tyst.
@@ -93,9 +96,11 @@ async function hamta() {
         .in('intressent_id', ledamoter.map((l) => l.intressent_id)).range(0, 4999)))
       .map((l) => [l.intressent_id, l]))
 
-  // Ledamöter som bara suttit en kort period får orimliga andelar. Kravet är
-  // att de deltagit i minst hälften av riksmötets voteringar — utan det hamnar
-  // en ersättare som tjänstgjort en vecka överst i listan.
+  // Ledamöter som bara suttit en kort period får orimliga andelar. Kravet mäter
+  // tjänstgöringstid, inte närvaro: ledamot_franvaro.voteringar är count(*) över
+  // röstlängden och räknar frånvaron med. Det är avsiktligt — annars skulle
+  // urvalet sålla bort just de frånvarande listan handlar om. Utan kravet hamnar
+  // en ersättare som tjänstgjort en vecka överst.
   const flest = Math.max(...ledamoter.map((l) => Number(l.voteringar)), 0)
   const relevanta = ledamoter
     .filter((l) => Number(l.voteringar) >= flest * HALVTID)
@@ -108,6 +113,13 @@ async function hamta() {
   const jamnaMedText = jamna
     .map((j) => ({ ...j, punkt: perVotering.get(j.votering_id?.toUpperCase()) }))
     .filter((j) => j.punkt)
+
+  // franvaron_avgjorde är sann när tecknet på marginalen byts av de frånvarande,
+  // och noll har inget tecken. En fullsatt marginal på noll betyder därför inte
+  // att den andra sidan vunnit utan att röstetalen blivit lika — och lika
+  // röstetal avgörs genom lottning. Utfallet hade kunnat bli ett annat, inte
+  // blivit det. Ett fall av tolv, och det ska inte räknas som ett byte.
+  const lottning = jamna.filter((j) => Number(j.marginal_fullsatt) === 0).length
 
   const summa = (rows: { roster: number; franvarande: number }[]) => {
     const roster = rows.reduce((n, r) => n + Number(r.roster), 0)
@@ -128,6 +140,8 @@ async function hamta() {
     flest,
     jamnaMedText,
     avgjordeAntal,
+    lottning,
+    byten: avgjordeAntal - lottning,
   }
 }
 
@@ -228,11 +242,13 @@ export default async function Franvaro() {
       <section className="regel py-16">
         <h2 className="rubrik text-[clamp(1.8rem,4.4vw,44px)]">Störst frånvaro i {d.senaste}</h2>
         <p className="mt-5 max-w-[64ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
-          Listan gäller de {heltal(d.relevanta.length)} ledamöter som deltagit i
-          minst hälften av riksmötets voteringar, alltså{' '}
-          {heltal(Math.ceil(d.flest * HALVTID))} av {heltal(d.flest)}. Utan den
-          regeln hamnar ersättare som tjänstgjort någon vecka överst med andelar
-          som inte går att jämföra.
+          Listan gäller de {heltal(d.relevanta.length)} ledamöter som stått i
+          röstlängden för minst hälften av riksmötets voteringar, alltså{' '}
+          {heltal(Math.ceil(d.flest * HALVTID))} av {heltal(d.flest)}. Kravet
+          gäller tjänstgöringstid och inte närvaro — hade det gällt hur många
+          voteringar de faktiskt deltog i skulle urvalet sålla bort just de
+          frånvarande listan handlar om. Utan regeln hamnar ersättare som
+          tjänstgjort någon vecka överst med andelar som inte går att jämföra.
         </p>
 
         <div className="mt-8">
@@ -281,8 +297,17 @@ export default async function Franvaro() {
           {/* "fall" böjs inte i plural på svenska — den ternär som stod här
               gav tom sträng i båda grenarna. */}
           I {d.avgjordeAntal === 0 ? 'inget' : heltal(d.avgjordeAntal)} fall hade
-          utfallet blivit ett annat om varje frånvarande ledamot hade röstat med
-          sitt parti.
+          voteringen slutat annorlunda om varje frånvarande ledamot hade röstat
+          med sitt parti.
+          {d.lottning > 0 && (
+            <>
+              {' '}I {heltal(d.byten)} av dem hade den andra sidan vunnit. I{' '}
+              {d.lottning === 1 ? 'det återstående' : `de återstående ${heltal(d.lottning)}`}{' '}
+              hade röstetalen blivit lika, och lika röstetal avgörs genom
+              lottning — utfallet hade alltså kunnat bli ett annat, inte
+              nödvändigtvis blivit det.
+            </>
+          )}
         </p>
 
         <Forbehall rubrik="Aritmetik, inte anklagelse." className="mt-7">
