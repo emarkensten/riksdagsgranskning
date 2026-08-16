@@ -43,7 +43,11 @@ async function hamta() {
     // fram nedan och skrivs ut bredvid totalen.
     rader<{ rm: string; roster: number; franvarande: number }>(
       klient.from('riksmote_summering').select('rm, roster, franvarande')),
-    rader<any>(klient.from('amne_oversikt').select('*').order('avvikande_delta').limit(1)),
+    // Storleken, inte tecknet. Sorterat på avvikande_delta vann alltid det par
+    // som röstar mer olikt än vanligt, och ett par som röstar ovanligt lika
+    // kunde aldrig nå citatet — hur stort utslaget än var.
+    rader<any>(klient.from('amne_oversikt').select('*')
+      .order('avvikande_storlek', { ascending: false }).limit(1)),
     regeringsspann(),
     rakna(antal(klient, 'jamn_votering').lte('marginal', 3), 'jämna voteringar'),
     // Samma marginalvillkor som raden ovan: siffran presenteras som en delmängd
@@ -94,7 +98,12 @@ async function hamta() {
     jamna,
     avgjorde,
     voteringar,
-    amne: a && { ...a, avvikande_har: Number(a.avvikande_har), avvikande_normalt: Number(a.avvikande_normalt) },
+    amne: a && {
+      ...a,
+      avvikande_har: Number(a.avvikande_har),
+      avvikande_normalt: Number(a.avvikande_normalt),
+      avvikande_storlek: Number(a.avvikande_storlek),
+    },
   }
 }
 
@@ -120,6 +129,10 @@ export default async function Start() {
   const utpekade = d.amne
     ? REGERINGSPARTIERNA.filter((p) => p === d.amne.avvikande_1 || p === d.amne.avvikande_2)
     : []
+  // Citatet kan lika gärna handla om ett par som röstar ovanligt lika som om
+  // ett som röstar ovanligt olikt. Talen bär inte riktningen på egen hand:
+  // 61 mot 36 ser ut som en spricka tills det står att 36 är det normala.
+  const amnetIsar = d.amne ? Number(d.amne.avvikande_delta) < 0 : false
 
   return (
     <main>
@@ -255,9 +268,12 @@ export default async function Start() {
             av voteringarna — mot {tal(d.amne.avvikande_normalt)} % i alla frågor.
           </p>
           <p className="mt-6 max-w-[56ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
-            Ingen annan ämnesskillnad i riksdagen är större. Alla 28 partipar är
-            mätta likadant i alla {AMNEN.length} ämnen, utan att något par valts
-            ut i förväg.
+            {tal(d.amne.avvikande_storlek)} procentenheter{' '}
+            {amnetIsar ? 'under' : 'över'} parets egen normalnivå — riksdagens
+            största ämnesutslag. Inget annat partipar ligger så långt från sin
+            vanliga nivå i något ämne, åt något håll. Alla 28 partipar är mätta
+            likadant i alla {AMNEN.length} ämnen, utan att något par valts ut i
+            förväg.
             {utbytbara(d.amne) && (
               <>
                 {/* filter och inte find: står två av de tre i citatet ska båda
