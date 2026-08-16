@@ -98,9 +98,17 @@ export async function Sidfot() {
               Varje votering i riksdagen 2022–2026, förklarad på vanlig svenska.
               Räknat ur öppna data, inte ur åsikter.
             </p>
-            {/* Bläckram, inte fylld signal. Se kommentaren överst. */}
+            {/*
+              Bläckram, inte fylld signal. Se kommentaren överst.
+
+              `prefetch={false}` är inte kosmetik: /underlag är ingen sida utan
+              en route handler som skriver ut hela underlaget, 22 786 rader. Med
+              förladdning hade varje läsare som scrollar till botten av vilken
+              sida som helst hämtat hela CSV:n i bakgrunden utan att be om den.
+            */}
             <Link
               href="/underlag"
+              prefetch={false}
               className="mt-1 inline-flex items-center gap-2.5 rounded-full px-5 py-[11px] text-[15px] font-semibold transition-opacity duration-150 hover:opacity-70"
               style={{ border: '1px solid var(--black)', color: 'var(--black)' }}
             >
@@ -185,9 +193,11 @@ export async function Sidfot() {
           <p className="max-w-[66ch] text-[14.5px] leading-[1.6]"
              style={{ color: 'var(--black-svag)' }}>
             {SAJT} är en privat sajt av {AVSANDARE}, utan koppling till Sveriges
-            riksdag och utan finansiering, partiuppdrag eller annonser. Datan
-            uppdateras inte automatiskt — den är hämtad vid tidpunkten ovan och
-            sedan dess oförändrad.
+            riksdag och utan finansiering, partiuppdrag eller annonser.
+            {/* Meningen hänger på stämpelraden ovanför och skrivs därför bara
+                ut när den finns. Utan villkoret pekar "tidpunkten ovan" på
+                ingenting den gång databasfrågan inte gick igenom. */}
+            {tal && ' Datan uppdateras inte automatiskt — den är hämtad vid tidpunkten ovan och sedan dess oförändrad.'}
           </p>
         </div>
       </footer>
