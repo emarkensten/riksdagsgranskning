@@ -137,8 +137,10 @@ ETL-skript ligger i `scripts/etl/`. Det finns ingen separat ETL-dokumentation �
 `run.mjs` är kommenterad och `aggregat_vyer()` i databasen styr vilka
 materialiserade vyer som uppdateras och i vilken ordning.
 
-`docs/DEVELOPMENT.md` är en checklista från projektets första vecka och
-beskriver ett upplägg som inte längre gäller.
+Det finns ingen `app/api`-katalog. Sidorna läser databasen direkt i server
+components, och enda route handlern är `/underlag`. Dokument som beskriver
+endpoints under `/api/admin/` är borttagna — de beskrev ett upplägg som aldrig
+byggdes.
 
 ---
 
