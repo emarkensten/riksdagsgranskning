@@ -233,6 +233,44 @@ a { color: inherit; }
   border-radius: 2px;
 }
 
+/*
+  Hoppa till innehållet — sidans första tabbstopp, osynligt tills det får fokus.
+
+  Utan den ligger åtta navlänkar före innehållet på varje sida. Skärmläsare tar
+  sig förbi dem via <main>, men en tangentbordsanvändare utan skärmläsare har
+  ingen sådan genväg, och det är den gruppen länken finns för.
+
+  Göms med clip-path och inte med display:none eller visibility:hidden — de två
+  tar elementet ur tabbordningen, och en hoppa-länk som inte går att tabba till
+  är inte en genväg utan en rad död kod.
+*/
+.hoppa {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* :focus och inte :focus-visible: länken ska fram varje gång den når fokus. */
+.hoppa:focus {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 50;
+  width: auto;
+  height: auto;
+  clip-path: none;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: var(--black);
+  color: var(--papper);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
 ::selection { background: var(--accent); color: #ffffff; }
 
 /* Sist, så att en utility alltid vinner över klasserna ovan. Se kommentaren överst. */
