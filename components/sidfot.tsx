@@ -176,8 +176,9 @@ export async function Sidfot() {
           </dl>
         )}
 
-        <div className="mt-9 flex flex-col gap-3 pt-7"
+        <div className="mt-9 flex flex-wrap justify-between gap-x-10 gap-y-6 pt-7"
              style={{ borderTop: '1px solid var(--linje)' }}>
+          <div className="flex max-w-[66ch] flex-col gap-3">
           <p className="max-w-[66ch] text-[14.5px] leading-[1.6]"
              style={{ color: 'var(--black-svag)' }}>
             {SAJT} redovisar hur riksdagen röstat. Sajten är partipolitiskt
@@ -199,6 +200,26 @@ export async function Sidfot() {
                 ingenting den gång databasfrågan inte gick igenom. */}
             {tal && ' Datan uppdateras inte automatiskt — den är hämtad vid tidpunkten ovan och sedan dess oförändrad.'}
           </p>
+          </div>
+
+          {/*
+            Två licenser, inte en, och de namnger vad de täcker. Designen hade
+            en rad som bara sa "Licens CC BY 4.0" — den hade varit osann om
+            koden, som ligger under MIT, och missvisande om källdatan, som är
+            riksdagens och inte min att licensiera. Se LICENSE-DATA.
+          */}
+          <div className="flex shrink-0 flex-col gap-2.5 text-[14.5px]"
+               style={{ color: 'var(--black-svag)' }}>
+            {[
+              { href: `${REPO}/blob/master/LICENSE`, text: 'Koden: MIT' },
+              { href: `${REPO}/blob/master/LICENSE-DATA`, text: 'Texter och tal: CC BY 4.0' },
+            ].map((l) => (
+              <a key={l.href} href={l.href} target="_blank" rel="noreferrer"
+                 className="transition-opacity duration-150 hover:opacity-70">
+                {l.text}
+              </a>
+            ))}
+          </div>
         </div>
       </footer>
     </div>
