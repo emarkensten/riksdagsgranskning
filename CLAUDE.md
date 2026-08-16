@@ -167,10 +167,14 @@ components, och enda route handlern är `/underlag`. Dokument som beskriver
 endpoints under `/api/admin/` är borttagna — de beskrev ett upplägg som aldrig
 byggdes.
 
-`docs/DATABASE.md` är borttagen av samma skäl (2026-08-16). Den beskrev
-tabellerna `voteringar`, `motioner`, `fragor` och `interpellationer` med 1,3
-miljoner rader från 2010 — inte ett enda av namnen finns i schemat. Schemat
-står i migrationerna; de är källan.
+Schemat står i migrationerna under `supabase/`. De är källan — inte något
+dokument. `docs/DATABASE.md` beskrev tabeller som aldrig funnits i schemat och
+är borttagen av samma skäl (2026-08-16).
+
+**Dokumentation som beskriver något som aldrig byggdes, eller som en senare
+mätning motsagt, tas bort i stället för att stå kvar med förbehåll.** Ett
+dokument ingen länkar till är ett dokument ingen märker när det blir osant.
+`docs/README.md` listar vad som gått den vägen och varför.
 
 ---
 
@@ -179,6 +183,9 @@ står i migrationerna; de är källan.
 `docs/LAGE_2026-08.md` beskriver vad sajten är i dag och vad som återstår.
 Börja där. `docs/PLAN_EFTER_GRANSKNING.md` är genomförd och står kvar som
 underlag för varför sidorna ser ut som de gör.
+
+`docs/README.md` är vägvisaren till de sex dokumenten och säger vilka som är
+aktuella och vilka som står kvar som historik.
 
 ---
 

@@ -6,7 +6,6 @@
 > sidorna ser ut som de gör.
 
 **Datum:** 2026-08-15
-**Ersätter:** `PLAN_OMVINKLING.md`, som nu är byggd
 
 Omvinklingen till mönster-först är levererad i PR #5–#7. Den här planen bygger
 på en extern granskning av innehåll och utförande, kontrollerad mot databasen
