@@ -82,6 +82,11 @@ Kategorin är tillagd. Övriga ämnen fördelade sig rimligt över de 30 exemple
 
 ## Frågan
 
+Lager 3 var bygget som skulle pröva **idé 1** — den ursprungliga idén om sagt
+mot röstat, som [`BESLUT_2026-08.md`](BESLUT_2026-08.md) avskriver på
+individnivå. Namnen syftar alltså på samma fråga: idé 1 är hypotesen, lager 3
+är körningen som prövade den.
+
 Idén var att hitta ledamöter som argumenterar för en sak och röstar för en annan.
 På individnivå är den död: **0,14 %** av rösterna avviker från det egna partiet.
 Frågan lager 3 ställde var om mönstret finns på **partinivå** — talar partiets
@@ -218,8 +223,8 @@ som innehöll mer än talaren efterfrågat, där partiet kan ha avvisat helheten
 
 ## Slutsats
 
-**Lager 3 ger inga publicerbara fynd.** Slutsatsen vilar på tre oberoende ben i
-stället för en gissning:
+**Lager 3 ger inga publicerbara fynd, och idé 1 är därmed avskriven även på
+partinivå.** Slutsatsen vilar på tre oberoende ben i stället för en gissning:
 
 1. Individnivån är utesluten av partidisciplinen (0,14 % avvikelse)
 2. Partinivåns träffar varierar 0,3–12,7 % beroende enbart på promptformulering

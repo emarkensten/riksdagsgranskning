@@ -184,8 +184,8 @@ dokument ingen länkar till är ett dokument ingen märker när det blir osant.
 Börja där. `docs/PLAN_EFTER_GRANSKNING.md` är genomförd och står kvar som
 underlag för varför sidorna ser ut som de gör.
 
-`docs/README.md` är vägvisaren till de sex dokumenten och säger vilka som är
-aktuella och vilka som står kvar som historik.
+`docs/README.md` är vägvisaren till dokumenten och säger vilka som är aktuella
+och vilka som står kvar som historik.
 
 ---
 

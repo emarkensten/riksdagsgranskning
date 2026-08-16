@@ -168,9 +168,9 @@ i vilken ordning.
 
 ## Hur repot är byggt
 
-Koden är i allt väsentligt skriven med Claude Code. Det syns i historiken — 72
-av 114 commits är samsignerade — och står här för att repot är lättare att läsa
-när man vet det.
+Koden är i allt väsentligt skriven med Claude Code. Det syns i historiken —
+merparten av commitarna är samsignerade — och står här för att repot är lättare
+att läsa när man vet det.
 
 Arbetsreglerna ligger i [CLAUDE.md](CLAUDE.md) och läses vid varje session.
 Flera av dem är formulerade i efterhand, efter att något gått fel:
@@ -194,9 +194,10 @@ att `/metod` redovisar ett negativt huvudfynd i stället för en snyggare histor
 | Dokument | Vad |
 |---|---|
 | [CLAUDE.md](CLAUDE.md) | Arbetsregler, verifierade API-begränsningar och mätta grundfakta |
-| [docs/](docs/) | Sex dokument om varför sajten ser ut som den gör — [`docs/README.md`](docs/README.md) är vägvisaren |
+| [docs/README.md](docs/README.md) | Vägvisare till dokumenten, med vad som är aktuellt och vad som är historik |
 | [docs/LAGE_2026-08.md](docs/LAGE_2026-08.md) | Vad sajten är i dag och vad som återstår |
 | [docs/BESLUT_2026-08.md](docs/BESLUT_2026-08.md) | Varför hyckleriidén lades ned |
+| [docs/DESIGN_GUIDELINES.md](docs/DESIGN_GUIDELINES.md) | Formspråk och copy-regler — styr all frontend |
 | [docs/VALIDERING.md](docs/VALIDERING.md) | Vad de två LLM-valideringarna visade före batch |
 
 Dokumentation som beskrev något som aldrig byggdes, eller som senare mätningar
