@@ -46,6 +46,8 @@ const INNEHALL = [
 
 type Utfall = { parti: string; voteringar: number; med_vinnaren: number; andel: number }
 type Riksmote = { rm: string; roster: number; franvarande: number; franvaroandel: number }
+/** Tre uteslutande fall som summerar till listade. Se migrationen. */
+type Uppropstyp = { listade: number; sakfragan: number; motivfragan: number; utan_upprop: number }
 
 async function hamta() {
   const klient = db()
@@ -65,7 +67,7 @@ async function hamta() {
     anforanden,
     forluster,
     retorik,
-    listade,
+    uppropstyp,
   ] = await Promise.all([
     rader<Utfall>(klient.from('parti_utfall').select('*').order('andel', { ascending: false })),
     rader<{ avlagda: number; avvikande: number }>(
@@ -87,12 +89,19 @@ async function hamta() {
     rakna(antal(klient, 'utskottet_forlorade'), 'utskottsförluster'),
     rader<{ overensstammelse: string; antal: number }>(
       klient.from('retorik_summering').select('overensstammelse, antal')),
-    // Voteringssidans eget tal, läst ur voteringssidans egen vy. Att räkna om
-    // punkt_klartext här i stället vore att bygga in precis den glidning
+    // Voteringssidans tal och vad uppropen gällde, ur samma rad.
+    //
+    // Vyn räknar över votering_lista, alltså voteringssidans egen vy. Att räkna
+    // om punkt_klartext i stället vore att bygga in precis den glidning
     // avsnittet #olika-tal finns för att förklara: votering_lista joinar mot
     // betankande, klartext_summering gör det inte, och en punkt vars betänkande
     // saknas faller ur den ena men inte ur den andra.
-    rakna(antal(klient, 'votering_lista'), 'listade beslut'),
+    //
+    // Tre uteslutande fall, inte en subtraktion. Sidan påstår om punkterna utan
+    // sakfrågeupprop att uppropet gällde motivfrågan, och det påståendet ska
+    // vara räknat. Se migrationen 20260816094517.
+    rader<Uppropstyp>(
+      klient.from('punkt_uppropstyp').select('listade, sakfragan, motivfragan, utan_upprop').limit(1)),
   ])
 
   // PostgREST lämnar numeric som sträng. Talen måste därför gå genom Number()
@@ -153,7 +162,13 @@ async function hamta() {
     forluster,
     retorik: retorikRader,
     retorikTotalt: retorikRader.reduce((n, [, v]) => n + v, 0),
-    listade,
+    // PostgREST lämnar count() som sträng. Number() innan de når sidan: heltal()
+    // formaterar bara tal, och en sträng passerar rakt igenom som "2587" i
+    // stället för "2 587".
+    listade: Number(uppropstyp[0]?.listade ?? 0),
+    motivupprop: Number(uppropstyp[0]?.motivfragan ?? 0),
+    utanUpprop: Number(uppropstyp[0]?.utan_upprop ?? 0),
+    sakfrageupprop: Number(uppropstyp[0]?.sakfragan ?? 0),
   }
 }
 
@@ -171,10 +186,12 @@ export default async function Metod() {
   // Skillnaden mellan förklarade punkter och voteringar är punkter som fick en
   // klarspråksförklaring men aldrig ett namnupprop om sakfrågan.
   const utanRostdata = d.forklarade - d.voteringar
-  // Samma skillnad, men räknad mellan de två tal sidorna faktiskt visar —
-  // voteringssidans lista och startsidans mönster. Det är den differensen
-  // #olika-tal ska förklara, och den ska härledas ur samma vyer som talen.
-  const motivupprop = d.listade - d.voteringar
+  // Avsnittet #olika-tal finns när voteringssidan listar fler beslut än
+  // startsidan räknar mönster på — oavsett vilket av de två skälen som gör det.
+  // Att bara fråga efter motivfrågorna hade dolt avsnittet, och därmed
+  // varningen, precis den gång punkter saknar röstdata utan att någon
+  // motivfråga finns kvar att hänga förklaringen på.
+  const olikaTal = d.motivupprop > 0 || d.utanUpprop > 0
 
   return (
     <main>
@@ -195,7 +212,7 @@ export default async function Metod() {
           lika. Ett navpiller som lovar en förklaring till en skillnad som inte
           finns är värre än inget piller alls. */}
       <nav aria-label="Frågor på sidan" className="regel flex flex-wrap gap-2 py-7">
-        {INNEHALL.filter(([id]) => id !== 'olika-tal' || motivupprop > 0).map(([id, text]) => (
+        {INNEHALL.filter(([id]) => id !== 'olika-tal' || olikaTal).map(([id, text]) => (
           <a
             key={id}
             href={`#${id}`}
@@ -498,7 +515,7 @@ export default async function Metod() {
         </Forbehall>
       </section>
 
-      {motivupprop > 0 && (
+      {olikaTal && (
         <section id="olika-tal" className="regel scroll-mt-6 py-16">
           <h2 className="rubrik max-w-[24ch] text-[clamp(1.8rem,4.4vw,44px)]">
             Varför säger startsidan och voteringssidan olika många?
@@ -509,23 +526,48 @@ export default async function Metod() {
               Därför att de räknar två olika saker. Voteringssidan listar{' '}
               <strong style={{ color: 'var(--black)' }}>{heltal(d.listade)}</strong>{' '}
               förslagspunkter med klarspråksförklaring.{' '}
-              <strong style={{ color: 'var(--black)' }}>{heltal(d.voteringar)}</strong>{' '}
+              {/* Sakfrågetalet ur samma rad som listade och motivupprop, inte ur
+                  parti_utfall. De är lika i dag — kontrollerat 2026-08-16, 2 569
+                  i båda — men bara den här vyn garanterar att de tre talen i
+                  stycket faktiskt delar upp varandra. */}
+              <strong style={{ color: 'var(--black)' }}>{heltal(d.sakfrageupprop)}</strong>{' '}
               av dem avgjordes med namnupprop om sakfrågan, och det är de som bär
               varje mönster på startsidan.
             </p>
-            <p>
-              De {heltal(motivupprop)} övriga fick också namnupprop, och rösterna
-              är hämtade — varje ledamot har sin rad, precis som i de andra. Men
-              uppropet gällde motivfrågan: hur beslutet skulle motiveras, inte
-              vad som beslutades. Rösterna säger alltså inget om partiernas
-              hållning i sakfrågan, och räknas därför inte in i någon partilinje,
-              samstämmighet eller frånvarosiffra.
-            </p>
+            {/* Vart och ett av de två skälen skrivs ut bara när det finns.
+                Stycket nedan har hela avsnittets historia bakom sig — 18 av 18
+                punkter i dag — men det är det andra stycket som är poängen med
+                att räkna tre uteslutande fall i stället för att subtrahera: en
+                ny orsak dyker upp som en egen mening i stället för att tyst
+                räknas in bland motivfrågorna. */}
+            {d.motivupprop > 0 && (
+              <p>
+                De {heltal(d.motivupprop)} övriga fick också namnupprop, och
+                rösterna är hämtade — varje ledamot har sin rad, precis som i de
+                andra. Men uppropet gällde motivfrågan: hur beslutet skulle
+                motiveras, inte vad som beslutades. Rösterna säger alltså inget
+                om partiernas hållning i sakfrågan, och räknas därför inte in i
+                någon partilinje, samstämmighet eller frånvarosiffra.
+              </p>
+            )}
+            {d.utanUpprop > 0 && (
+              <p>
+                {heltal(d.utanUpprop)} punkter har varken sakfråge- eller
+                motivfrågeröster i materialet. Det är inte en tredje sorts
+                beslut utan ett tecken på att något saknas i hämtningen, och de
+                ska inte läsas som något annat.
+              </p>
+            )}
+            {/* Sista meningen gäller motivfrågepunkterna och bara dem. En punkt
+                utan röstdata alls HAR saknade röster, och att då skriva att
+                uttrycket vore fel vore att ta tillbaka varningen ovan. */}
             <p>
               Punkterna är inte borttagna för det. De ligger kvar i
               voteringslistan, med sin klarspråksförklaring och utan partiernas
-              linjer. Att kalla dem <em>saknade röster</em> vore fel — det är
-              röster om en annan fråga.
+              linjer.{d.motivupprop > 0 && (
+                <> Att kalla motivfrågepunkterna <em>saknade röster</em> vore
+                fel — det är röster om en annan fråga.</>
+              )}
             </p>
           </div>
           <Textlank href="/voteringar" className="mt-8">
