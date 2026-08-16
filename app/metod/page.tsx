@@ -162,8 +162,9 @@ async function hamta() {
     forluster,
     retorik: retorikRader,
     retorikTotalt: retorikRader.reduce((n, [, v]) => n + v, 0),
-    // PostgREST lämnar count() som sträng. Number() innan de når sidan, annars
-    // blir jämförelsen mot d.voteringar en strängjämförelse.
+    // PostgREST lämnar count() som sträng. Number() innan de når sidan: heltal()
+    // formaterar bara tal, och en sträng passerar rakt igenom som "2587" i
+    // stället för "2 587".
     listade: Number(uppropstyp[0]?.listade ?? 0),
     motivupprop: Number(uppropstyp[0]?.motivfragan ?? 0),
     utanUpprop: Number(uppropstyp[0]?.utan_upprop ?? 0),
@@ -185,6 +186,12 @@ export default async function Metod() {
   // Skillnaden mellan förklarade punkter och voteringar är punkter som fick en
   // klarspråksförklaring men aldrig ett namnupprop om sakfrågan.
   const utanRostdata = d.forklarade - d.voteringar
+  // Avsnittet #olika-tal finns när voteringssidan listar fler beslut än
+  // startsidan räknar mönster på — oavsett vilket av de två skälen som gör det.
+  // Att bara fråga efter motivfrågorna hade dolt avsnittet, och därmed
+  // varningen, precis den gång punkter saknar röstdata utan att någon
+  // motivfråga finns kvar att hänga förklaringen på.
+  const olikaTal = d.motivupprop > 0 || d.utanUpprop > 0
 
   return (
     <main>
@@ -205,7 +212,7 @@ export default async function Metod() {
           lika. Ett navpiller som lovar en förklaring till en skillnad som inte
           finns är värre än inget piller alls. */}
       <nav aria-label="Frågor på sidan" className="regel flex flex-wrap gap-2 py-7">
-        {INNEHALL.filter(([id]) => id !== 'olika-tal' || d.motivupprop > 0).map(([id, text]) => (
+        {INNEHALL.filter(([id]) => id !== 'olika-tal' || olikaTal).map(([id, text]) => (
           <a
             key={id}
             href={`#${id}`}
@@ -508,7 +515,7 @@ export default async function Metod() {
         </Forbehall>
       </section>
 
-      {d.motivupprop > 0 && (
+      {olikaTal && (
         <section id="olika-tal" className="regel scroll-mt-6 py-16">
           <h2 className="rubrik max-w-[24ch] text-[clamp(1.8rem,4.4vw,44px)]">
             Varför säger startsidan och voteringssidan olika många?
@@ -527,32 +534,40 @@ export default async function Metod() {
               av dem avgjordes med namnupprop om sakfrågan, och det är de som bär
               varje mönster på startsidan.
             </p>
-            <p>
-              De {heltal(d.motivupprop)} övriga fick också namnupprop, och
-              rösterna är hämtade — varje ledamot har sin rad, precis som i de
-              andra. Men uppropet gällde motivfrågan: hur beslutet skulle
-              motiveras, inte vad som beslutades. Rösterna säger alltså inget om
-              partiernas hållning i sakfrågan, och räknas därför inte in i någon
-              partilinje, samstämmighet eller frånvarosiffra.
-            </p>
-            {/* Tredje fallet är noll i dag. Meningen skrivs bara ut när det inte
-                är det — annars vore den en förklaring till en punkt som inte
-                finns. Att den ändå står här är poängen med att räkna tre
-                uteslutande fall: en ny orsak dyker upp som en egen mening i
-                stället för att tyst räknas in bland motivfrågorna ovan. */}
-            {d.utanUpprop > 0 && (
+            {/* Vart och ett av de två skälen skrivs ut bara när det finns.
+                Stycket nedan har hela avsnittets historia bakom sig — 18 av 18
+                punkter i dag — men det är det andra stycket som är poängen med
+                att räkna tre uteslutande fall i stället för att subtrahera: en
+                ny orsak dyker upp som en egen mening i stället för att tyst
+                räknas in bland motivfrågorna. */}
+            {d.motivupprop > 0 && (
               <p>
-                Ytterligare {heltal(d.utanUpprop)} punkter har varken
-                sakfråge- eller motivfrågeröster i materialet. Det är inte en
-                tredje sorts beslut utan ett tecken på att något saknas i
-                hämtningen, och de ska inte läsas som något annat.
+                De {heltal(d.motivupprop)} övriga fick också namnupprop, och
+                rösterna är hämtade — varje ledamot har sin rad, precis som i de
+                andra. Men uppropet gällde motivfrågan: hur beslutet skulle
+                motiveras, inte vad som beslutades. Rösterna säger alltså inget
+                om partiernas hållning i sakfrågan, och räknas därför inte in i
+                någon partilinje, samstämmighet eller frånvarosiffra.
               </p>
             )}
+            {d.utanUpprop > 0 && (
+              <p>
+                {heltal(d.utanUpprop)} punkter har varken sakfråge- eller
+                motivfrågeröster i materialet. Det är inte en tredje sorts
+                beslut utan ett tecken på att något saknas i hämtningen, och de
+                ska inte läsas som något annat.
+              </p>
+            )}
+            {/* Sista meningen gäller motivfrågepunkterna och bara dem. En punkt
+                utan röstdata alls HAR saknade röster, och att då skriva att
+                uttrycket vore fel vore att ta tillbaka varningen ovan. */}
             <p>
               Punkterna är inte borttagna för det. De ligger kvar i
               voteringslistan, med sin klarspråksförklaring och utan partiernas
-              linjer. Att kalla dem <em>saknade röster</em> vore fel — det är
-              röster om en annan fråga.
+              linjer.{d.motivupprop > 0 && (
+                <> Att kalla motivfrågepunkterna <em>saknade röster</em> vore
+                fel — det är röster om en annan fråga.</>
+              )}
             </p>
           </div>
           <Textlank href="/voteringar" className="mt-8">
