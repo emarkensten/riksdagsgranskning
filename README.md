@@ -96,7 +96,8 @@ kammaren är därför systematiskt underrepresenterad.
 Sidorna läser databasen direkt i server components. Det finns ingen API-yta att
 bygga mot — enda route handlern är `/underlag`, som lämnar ut röstdatan som CSV.
 Inget komponentbibliotek och inget diagrambibliotek: `components/system.tsx` bär
-byggstenarna och `components/ikoner.tsx` de åtta ikonerna.
+byggstenarna, `components/ikoner.tsx` de nio ikonerna och `components/diagram.tsx`
+de tre diagrammen, ritade som SVG för hand.
 
 ### Räkna om talen
 
@@ -107,7 +108,9 @@ definitionerna på `/metod#definitioner`. Det är avsiktligt: metodsidan påstå
 att varje tal går att räkna om, och utan rådata vore det ett påstående läsaren
 fick ta på förtroende.
 
-Sajten är inte publicerad ännu.
+Sajten ligger på
+[riksdagsgranskning.vercel.app](https://riksdagsgranskning.vercel.app) och
+byggs om vid varje push till `master`.
 
 ### Kör lokalt
 
@@ -133,10 +136,10 @@ i vilken ordning.
 | [docs/BESLUT_2026-08.md](docs/BESLUT_2026-08.md) | Varför hyckleriidén lades ned |
 | [docs/PITCH.md](docs/PITCH.md) | Sajten i pitchform, med demo-rutt |
 
-Dokumenten under `docs/` som beskriver ett åtta veckors MVP-upplägg —
-`SETUP.md`, `QUICKSTART.md`, `API.md` och `DEVELOPMENT.md` — är från projektets
-första vecka och beskriver en produkt som inte längre finns. Läs dem som
-historik.
+Fyra dokument från projektets första vecka — `SETUP.md`, `QUICKSTART.md`,
+`API.md` och `DEVELOPMENT.md` — beskrev ett åtta veckors MVP-upplägg som aldrig
+byggdes, med endpoints under `/api/admin/` som inte finns. De är borttagna.
+Git-historiken bär dem om någon behöver se vad som var tänkt.
 
 ## Källa
 

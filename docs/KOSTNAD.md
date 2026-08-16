@@ -10,11 +10,16 @@
 | Skäl | |
 |---|---|
 | Pris | 5–15× billigare än Anthropic för volymjobbet (se jämförelse nedan) |
-| Befintlig kod | `lib/openai-batch.ts` fungerar redan — sparar en dags arbete |
+| Befintlig kod | `lib/openai-batch.ts` fungerar redan — sparar en dags arbete¹ |
 | Batch API | 50 % rabatt, och vi har ingen brådska som kräver synkrona anrop |
 
 **Nyckel som behövs:** `OPENAI_API_KEY` i `.env.local`.
 (Just nu finns bara Supabase-nycklarna där.)
+
+> ¹ **Efterskrift 2026-08-16.** `lib/openai-batch.ts` är borttagen. Den
+> användes aldrig — lager 2 och 3 anropade OpenAI direkt ur `scripts/lager*/`,
+> och batchjobbet den skrevs för avbröts. Kalkylen nedan står kvar som den
+> räknades.
 
 ---
 
