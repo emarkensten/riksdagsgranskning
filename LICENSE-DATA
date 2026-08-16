@@ -1,0 +1,61 @@
+# Licens för innehåll och härledda data
+
+Tre olika saker ligger i det här repot, och de lyder under olika villkor.
+Den här filen skiljer dem åt, eftersom bara två av dem är mina att licensiera.
+
+---
+
+## 1. Sajtens texter och härledda data — CC BY 4.0
+
+Copyright (c) 2025–2026 Erik Markensten
+
+Det här verket är licensierat under Creative Commons Erkännande 4.0
+Internationell (CC BY 4.0). En kopia av licensen finns på
+<https://creativecommons.org/licenses/by/4.0/deed.sv>.
+
+This work is licensed under a Creative Commons Attribution 4.0 International
+License. To view a copy of this license, visit
+<https://creativecommons.org/licenses/by/4.0/>.
+
+Det omfattar:
+
+- sajtens redaktionella texter — rubriker, ingresser, förbehåll, metodsidan
+  och dokumentationen under `docs/`
+- klarspråksförklaringarna av voteringarna, som är framställda med
+  språkmodell ur utskottens egna förslagstexter
+- de härledda talen: aggregaten, andelarna och de materialiserade vyerna, samt
+  CSV-exporten på `/underlag`
+
+Erkännande sker genom att namnge **Erik Markensten, Namnupprop** och länka till
+<https://github.com/emarkensten/riksdagsgranskning>.
+
+## 2. Källdatan — Sveriges riksdags, inte min
+
+Betänkanden, förslagspunkter, reservationer, voteringar, anföranden och
+ledamotsuppgifter kommer från <https://data.riksdagen.se>.
+
+Riksdagen anger själva att öppna data får användas fritt utan avgifter eller
+licenser, men att Sveriges riksdag alltid ska anges som källa. Det villkoret
+följer med datan vidare: **den som återanvänder talen härifrån ska namnge
+Sveriges riksdag som källa, oavsett vad som står ovan.** CC BY 4.0 i punkt 1
+gäller mitt eget bidrag — urvalet, bearbetningen och formuleringarna — och
+lägger inga nya begränsningar på riksdagens material.
+
+Villkoren i sin helhet:
+<https://www.riksdagen.se/sv/dokument-och-lagar/riksdagens-oppna-data/anvandarstod/anvandningsvillkor/>
+
+## 3. Koden — MIT
+
+Applikationen, ETL-skripten och databasmigrationerna ligger under MIT.
+Se `LICENSE`.
+
+Creative Commons avråder från CC-licenser på programvara, och därför är det
+två licenser och inte en.
+
+---
+
+## Om du hittar ett fel
+
+Talen är räknade ur öppna data och går att räkna om. Stämmer något inte,
+[öppna ett ärende](https://github.com/emarkensten/riksdagsgranskning/issues/new).
+Rättelser är hela poängen med att materialet ligger öppet.

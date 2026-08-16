@@ -146,4 +146,18 @@ ett fel,
 
 ## Licens
 
-MIT
+Två licenser, eftersom repot innehåller tre olika saker.
+
+| Vad | Licens | Fil |
+|---|---|---|
+| Koden — appen, ETL-skripten, migrationerna | MIT | [`LICENSE`](LICENSE) |
+| Sajtens texter, klarspråket och de härledda talen | CC BY 4.0 | [`LICENSE-DATA`](LICENSE-DATA) |
+| Källdatan från riksdagen | Riksdagens egna villkor | — |
+
+Creative Commons avråder från CC-licenser på programvara, och därför är det två
+och inte en.
+
+Källdatan är inte min att licensiera. Riksdagen anger att öppna data får
+användas fritt utan avgifter eller licenser, men att Sveriges riksdag alltid ska
+anges som källa — och det villkoret följer med talen vidare till den som
+återanvänder dem härifrån.
