@@ -40,11 +40,11 @@ opålitlig för verifiering).
 - Projekt-ref: `chwvalgrgbebfhgfpnfb`
 - Nycklar i `.env.local` (`SUPABASE_SECRET_KEY`, `SUPABASE_PUBLISHABLE_KEY`)
 
-### Åtkomst — kontrollerad 2026-08-15 mot REST-API:et med anon-nyckeln
+### Åtkomst — kontrollerad 2026-08-16
 
-RLS är **på** för alla åtta tabeller, med exakt en policy var: `SELECT` för
+RLS är **på** för alla nio tabeller, med exakt en policy var: `SELECT` för
 `anon` och `authenticated`. Skrivning är stängd — ett `INSERT` med anon-nyckeln
-svarar 401.
+svarar 401 (prövat 2026-08-15).
 
 Kvarstående risk att känna till: Supabase delar ut `grant all` till `anon` som
 standard, och det är bara RLS som stoppar skrivningarna. **En ny tabell i
@@ -109,6 +109,18 @@ det är den vanligaste felkällan i det här projektet.
   14,0 / 14,9 / 14,7 / 10,6 %. Blanda inte ihop dem.
 - **56 177** anföranden totalt, varav **23 740** i ärendedebatt.
 - Medellängd anförandetext: **2 953 tecken**.
+- **11 316** reservationer och **1 141** särskilda yttranden.
+
+### Reservation och särskilt yttrande är två olika saker
+
+En **reservation** är ett motförslag som ställs mot utskottets och röstas om.
+Ett **särskilt yttrande** markerar avvikande uppfattning utan att opponera mot
+beslutet, och röstas aldrig om. Bara det förstnämnda syns i röstdata.
+
+Yttrandena finns **inte** i `dokmotforslag` — fältet har en `typ`-kolumn, men
+den står på `reservation` i varje post. De går bara att nå genom betänkandets
+HTML, via `<p class="Srskiltyttranderubrik">`. `scripts/etl/reservationer.mjs`
+plockar båda i samma pass.
 
 ### Två fallgropar som redan kostat fel siffror
 
