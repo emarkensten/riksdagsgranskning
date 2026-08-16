@@ -104,9 +104,13 @@ export function sidmetadata({
   egenBild?: boolean
 }): Metadata {
   const helTitel = `${titel} — ${SAJT}`
+  // Nyckeln utelämnas helt när sidan har en egen bild, i stället för att sättas
+  // till undefined. Next läser `images: undefined` som ett uttryckligt "ingen
+  // bild" och tar då bort filkonventionens — mätt på den publicerade sajten:
+  // voteringssidorna tappade sin egen delningsbild av precis det.
   const bild = egenBild
-    ? undefined
-    : [{ url: DELNINGSBILD, width: 1200, height: 630, alt: `${SAJT} — ${UNDERTITEL}` }]
+    ? {}
+    : { images: [{ url: DELNINGSBILD, width: 1200, height: 630, alt: `${SAJT} — ${UNDERTITEL}` }] }
   return {
     title: helTitel,
     description: beskrivning,
@@ -118,7 +122,7 @@ export function sidmetadata({
       title: helTitel,
       description: beskrivning,
       url: sokvag,
-      images: bild,
+      ...bild,
     },
     // Egen bild även här: `twitter` ärver inte `openGraph.images`, och en sida
     // som saknar twitter:image faller tillbaka på og:image hos vissa läsare
@@ -127,7 +131,7 @@ export function sidmetadata({
       card: 'summary_large_image',
       title: helTitel,
       description: beskrivning,
-      images: bild,
+      ...bild,
     },
   }
 }
