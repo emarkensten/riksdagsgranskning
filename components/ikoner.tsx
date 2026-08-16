@@ -105,3 +105,12 @@ export function Kalender(p: IkonProps) {
     </Svg>
   )
 }
+
+/** Nedladdning: pil ned mot en linje. Sitter i sidfotens knapp till CSV:n. */
+export function Nedladdning(p: IkonProps) {
+  return (
+    <Svg {...p}>
+      <path d="M10 2.5v9M6 8l4 4 4-4M3 16.5h14" />
+    </Svg>
+  )
+}

@@ -198,8 +198,13 @@ pixlar — ett piller är 7×14 px i navet och 15×26 px som knapp.
 | `Linjeetikett` | fyllning = röst, understrykning = parti |
 
 Ikonerna är geometriska, 20×20, streck 1,6 (1,8 för bock och kryss), alltid
-`currentColor`. Åtta stycken: `PilHoger`, `PilVanster`, `Info`,
-`Forstoringsglas`, `Stapeldiagram`, `Bock`, `Kryss`, `Kalender`.
+`currentColor`. Nio stycken: `PilHoger`, `PilVanster`, `Info`,
+`Forstoringsglas`, `Stapeldiagram`, `Bock`, `Kryss`, `Kalender`, `Nedladdning`.
+
+`components/sidfot.tsx` bär sidfoten, som ligger i rotlayouten och alltså
+renderas på varje sida. Ingen signalfärg och ingen fylld knapp där: foten ska
+inte konkurrera med sidans innehåll. Dess tal — hämtdatum, antal voteringar,
+antal ledamöter — kommer ur vyn `sajtens_omfattning`, i en enda fråga.
 
 Inget ikonbibliotek är installerat, och `lucide-react` togs bort ur
 `package.json` när shadcn-resterna städades. Dess streck är 2 px och hade synts

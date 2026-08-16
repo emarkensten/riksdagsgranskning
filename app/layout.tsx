@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import { Schibsted_Grotesk, IBM_Plex_Mono } from 'next/font/google'
 import Link from 'next/link'
 import { Navigation } from '@/components/navigation'
-import { Hamtat } from '@/components/hamtat'
-import { AVSANDARE, REPO, SAJT, SAJT_URL, UNDERTITEL } from '@/lib/sajt'
+import { Sidfot } from '@/components/sidfot'
+import { SAJT, SAJT_URL, UNDERTITEL } from '@/lib/sajt'
 import './globals.css'
 
 /**
@@ -53,14 +53,6 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image', title: TITEL, description: BESKRIVNING },
 }
 
-const FOTLANKAR = [
-  { href: '/om', text: 'Om sajten' },
-  { href: '/metod', text: 'Metod' },
-  { href: '/metod#begransningar', text: 'Begränsningar' },
-  { href: REPO, text: 'Källkod' },
-  { href: 'https://data.riksdagen.se', text: 'Riksdagens öppna data' },
-]
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="sv" className={`${brod.variable} ${mono.variable}`}>
@@ -85,39 +77,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <div className="mx-auto max-w-5xl px-5 sm:px-8">{children}</div>
 
-        <div className="mt-24" style={{ borderTop: '1px solid var(--linje)' }}>
-          <footer className="mx-auto flex max-w-5xl flex-col justify-between gap-6 px-5 py-10 sm:flex-row sm:gap-10 sm:px-8">
-            {/* Avsändaren står i sidfoten och inte bara på /om: frågan "vem
-                ligger bakom det här?" ställs på den sida läsaren råkar stå på,
-                och ska ha ett svar där. */}
-            <div className="max-w-[60ch] text-[13.5px] leading-relaxed">
-              <p style={{ color: 'var(--black-svag)' }}>
-                Källa: Sveriges riksdags öppna data. Voteringarnas innebörd är
-                sammanfattad automatiskt från utskottens förslag och reservationer —
-                varje sammanfattning kan granskas mot originaltexten.
-                <Hamtat />
-              </p>
-              {/* Ingen länk i meningen: länkraden intill bär redan "Om sajten",
-                  och två likadana mål i samma sidfot är brus. */}
-              <p className="mt-3" style={{ color: 'var(--black-svag)' }}>
-                {SAJT} är en privat sajt av {AVSANDARE}, utan koppling till
-                Sveriges riksdag och utan finansiering, partiuppdrag eller
-                annonser.
-              </p>
-            </div>
-            <nav className="flex shrink-0 flex-wrap gap-5 text-[13.5px] font-medium">
-              {FOTLANKAR.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className="transition-opacity duration-150 hover:opacity-70"
-                >
-                  {l.text}
-                </Link>
-              ))}
-            </nav>
-          </footer>
-        </div>
+        <Sidfot />
       </body>
     </html>
   )
