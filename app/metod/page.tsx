@@ -432,8 +432,10 @@ export default async function Metod() {
             </p>
             <p>
               Jämförelsen mot <em>normalt</em> är samma partipars samstämmighet i
-              alla frågor. Skillnaden mellan de två talen är det ämnessidan
-              rangordnar på.
+              alla frågor. Ämnessidan rangordnar på <em>avståndet</em> mellan de
+              två talen, inte på skillnaden med tecken: ett par som röstar
+              ovanligt lika i ett ämne är ett lika stort utslag som ett par som
+              röstar ovanligt olikt. Riktningen står utskriven bredvid siffran.
             </p>
           </Definition>
         </div>

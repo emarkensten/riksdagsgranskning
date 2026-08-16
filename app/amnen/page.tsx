@@ -34,7 +34,9 @@ type Amne = {
   avvikande_2: string
   avvikande_har: number
   avvikande_normalt: number
+  /** Tecknet bär riktningen: negativt = paret röstar mer olikt än det brukar. */
   avvikande_delta: number
+  avvikande_storlek: number
   lagsta_1: string
   lagsta_2: string
   lagsta: number
@@ -73,7 +75,8 @@ async function hamta() {
   ])
 
   const talfalt = [
-    'kammarens_enighet', 'avvikande_har', 'avvikande_normalt', 'avvikande_delta', 'lagsta',
+    'kammarens_enighet', 'avvikande_har', 'avvikande_normalt', 'avvikande_delta',
+    'avvikande_storlek', 'lagsta',
   ] as const
   const rows: Amne[] = amnen.map((a) => ({
     ...a,
@@ -95,10 +98,20 @@ export default async function Amnen() {
   // de 16 talen adderar till hela underlaget.
   const voteringar = rows.reduce((n, r) => n + r.voteringar, 0)
 
-  // Avvikelsen mäts som avstånd från parets egen normalnivå, så tecknet är
-  // alltid negativt. Storleken är det som betyder något.
-  const starka = rows.filter((r) => Math.abs(r.avvikande_delta) >= SVAG)
-  const svaga = rows.filter((r) => Math.abs(r.avvikande_delta) < SVAG)
+  // Avvikelsen är ett avstånd från parets egen normalnivå, och ett avstånd har
+  // ingen riktning. Storleken avgör om ämnet bär ett avsnitt; tecknet avgör
+  // bara hur meningen formuleras.
+  const starka = rows.filter((r) => r.avvikande_storlek >= SVAG)
+  const svaga = rows.filter((r) => r.avvikande_storlek < SVAG)
+  // Att ett ämne saknar avvikelse säger bara att inget par lämnat sin egen
+  // normalnivå — ingenting om ämnets absoluta enighet. De två råkade följas åt
+  // när urvalet bara mätte åt ena hållet, och meningen nedan skrevs som om det
+  // vore en regel. Den prövas i stället mot datat innan den skrivs ut.
+  // Sant bara om de svaga ämnena ligger överst i enighetsrangordningen: det
+  // minst eniga av dem är ändå enigare än det enigaste av de övriga.
+  const svagaArEnigast = svaga.length > 0
+    && Math.min(...svaga.map((r) => r.kammarens_enighet))
+       >= Math.max(...starka.map((r) => r.kammarens_enighet), 0)
 
   return (
     <main>
@@ -156,10 +169,11 @@ export default async function Amnen() {
           <span style={{ color: 'var(--accent)' }}>{mestOeniga?.amne}</span>.
         </p>
         <p className="mt-6 max-w-[56ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
-          Nedan bryts varje ämne ned till den skillnad som är störst i just det
-          ämnet: paret som röstar mest olikt jämfört med hur de brukar rösta i
-          alla frågor. Underlaget är {heltal(voteringar)} voteringar, och varje
-          votering hör till exakt ett ämne.
+          Nedan bryts varje ämne ned till det största utslaget i just det ämnet:
+          paret som röstar mest annorlunda än det brukar göra i alla frågor —
+          åt endera hållet, mer olikt eller mer lika. Underlaget är{' '}
+          {heltal(voteringar)} voteringar, och varje votering hör till exakt ett
+          ämne.
         </p>
       </section>
 
@@ -181,7 +195,7 @@ export default async function Amnen() {
             Här ligger det mest avvikande paret mindre än {SVAG} procentenheter
             från sin egen normalnivå. Det är för lite för att kalla ett mönster,
             och de får därför inga egna avsnitt — en jättesiffra på{' '}
-            {tal(Math.min(...svaga.map((r) => Math.abs(r.avvikande_delta))))} vore
+            {tal(Math.min(...svaga.map((r) => r.avvikande_storlek)))} vore
             motsatsen till trovärdighet.
           </p>
           <div className="mt-8 max-w-2xl">
@@ -197,7 +211,7 @@ export default async function Amnen() {
                   {heltal(r.voteringar)} voteringar
                 </span>
                 <span className="tabular col-span-2 text-[16px] font-bold sm:col-span-1 sm:text-right">
-                  {tal(Math.abs(r.avvikande_delta))} p.e.
+                  {tal(r.avvikande_storlek)} p.e.
                 </span>
               </div>
             ))}
@@ -205,11 +219,20 @@ export default async function Amnen() {
           <p className="mt-5 max-w-[62ch] text-[13.5px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
             {/* Meningen får inte räkna med att de svaga alltid är exakt två.
                 Enighetstalen listas i samma ordning som tabellen ovan. */}
-            Procentenheter under parets normalnivå. Att avvikelsen är liten
+            Procentenheter från parets normalnivå. Att avvikelsen är liten
             betyder inte att kammaren är enig i sak —{' '}
-            {svaga.length === 1 ? 'ämnet har' : 'ämnena har'} tvärtom riksdagens{' '}
-            <em>högsta</em> enighetstal:{' '}
-            {lista(svaga.map((r) => `${tal(r.kammarens_enighet)} %`))}.
+            {svagaArEnigast ? (
+              <>
+                {svaga.length === 1 ? 'ämnet har' : 'ämnena har'} tvärtom
+                riksdagens <em>högsta</em> enighetstal
+              </>
+            ) : (
+              <>
+                måttet säger bara att inget partipar lämnat sin vanliga nivå
+                här. {svaga.length === 1 ? 'Ämnets enighetstal' : 'Ämnenas enighetstal'}
+              </>
+            )}
+            : {lista(svaga.map((r) => `${tal(r.kammarens_enighet)} %`))}.
           </p>
         </section>
       )}
@@ -277,6 +300,9 @@ function Spann({ lagsta, medel }: { lagsta: number; medel: number }) {
 
 function Amnesavsnitt({ rad, exempel, oppen }: { rad: Amne; exempel: Exempel[]; oppen: boolean }) {
   const { avvikande_1: a, avvikande_2: b } = rad
+  // Ett par kan avvika åt två håll. Röstar de mer olikt än vanligt är fyndet
+  // en spricka; röstar de mer lika är det ett möte. Samma siffra, motsatt sak.
+  const isar = rad.avvikande_delta < 0
 
   return (
     <section id={ankare(rad.amne)} className="regel scroll-mt-6 py-14">
@@ -293,9 +319,11 @@ function Amnesavsnitt({ rad, exempel, oppen }: { rad: Amne; exempel: Exempel[]; 
               bär riktningen i stället. */}
           <div className="siffra text-[clamp(3.4rem,10vw,92px)]"
                style={{ color: 'var(--accent-display)' }}>
-            {tal(Math.abs(rad.avvikande_delta))}
+            {tal(rad.avvikande_storlek)}
           </div>
-          <Etikett className="mt-4 max-w-[16ch]">procentenheter lägre än normalt</Etikett>
+          <Etikett className="mt-4 max-w-[16ch]">
+            procentenheter {isar ? 'lägre' : 'högre'} än normalt
+          </Etikett>
         </div>
         <p className="mb-1 max-w-[28ch] flex-1 text-[clamp(1.2rem,2.8vw,26px)] font-extrabold leading-[1.15] tracking-[-0.03em]">
           {namn(a)} och {namn(b)} röstade lika i {tal(rad.avvikande_har)} % av
@@ -312,9 +340,11 @@ function Amnesavsnitt({ rad, exempel, oppen }: { rad: Amne; exempel: Exempel[]; 
       {exempel.length > 0 ? (
         <details className="mt-7" open={oppen}>
           <summary className="cursor-pointer text-[14.5px] font-semibold transition-opacity duration-150 hover:opacity-70">
+            {/* Exemplen illustrerar riktningen: isärgåendet när paret röstar
+                mer olikt än vanligt, sammanfallet när de röstar mer lika. */}
             {exempel.length === 1
-              ? 'Voteringen där de gick isär'
-              : `De ${raknord(exempel.length)} senaste voteringarna där de gick isär`}
+              ? `Voteringen där de ${isar ? 'gick isär' : 'röstade lika'}`
+              : `De ${raknord(exempel.length)} senaste voteringarna där de ${isar ? 'gick isär' : 'röstade lika'}`}
           </summary>
           <ol className="mt-4">
             {exempel.map((e) => (
