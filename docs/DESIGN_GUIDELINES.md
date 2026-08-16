@@ -173,6 +173,13 @@ Rörelse: `.stig` på heron i tre steg (0/80/160 ms). Hovring tonar till
 `opacity: .7` på 150 ms; navpillret får `--papper-djup`; knappar mörknar 6 %.
 Fokus är 2 px `--accent` med 2 px offset, satt en gång i `globals.css`.
 
+Sidans första tabbstopp är `.hoppa` — "Hoppa till innehållet" — osynlig tills
+den får fokus, då den lägger sig som en mörk kapsel i övre vänstra hörnet. Den
+göms med `clip-path`, aldrig med `display: none` eller `visibility: hidden`:
+båda tar elementet ur tabbordningen, och en hoppa-länk som inte går att tabba
+till är död kod. Måldiven i `app/layout.tsx` bär `tabIndex={-1}`, annars
+scrollar ankaret bara medan fokus står kvar i navet.
+
 Under 900 px staplas alla tvåkolumnsrutnät, navet lindar till en egen rad och
 ordmärket behåller `shrink-0`.
 

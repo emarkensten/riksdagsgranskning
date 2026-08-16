@@ -57,6 +57,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="sv" className={`${brod.variable} ${mono.variable}`}>
       <body>
+        {/* Först i DOM, alltså första tabbstoppet. Se .hoppa i globals.css för
+            varför den göms med clip-path och inte med display:none. */}
+        <a href="#innehall" className="hoppa">Hoppa till innehållet</a>
+
         {/* Hårlinjerna kring sidhuvud och sidfot går kant i kant med fönstret,
             precis som det mörka fältet. Ett halvt utbrott — till kolumnens
             ytterkant — hade bara sett ut som en felräkning. */}
@@ -75,7 +79,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </header>
         </div>
 
-        <div className="mx-auto max-w-5xl px-5 sm:px-8">{children}</div>
+        {/* tabIndex={-1} är inte kosmetik. Ett ankarmål som inte är fokuserbart
+            scrollar bara — tangentbordsfokus står kvar där det var, och nästa
+            Tab landar på navlänk nummer två igen. Det är så en hoppa-länk ser
+            ut att fungera medan den inte gör det. */}
+        <div id="innehall" tabIndex={-1} className="mx-auto max-w-5xl px-5 sm:px-8">
+          {children}
+        </div>
 
         <Sidfot />
       </body>
