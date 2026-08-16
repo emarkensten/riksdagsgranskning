@@ -3,6 +3,7 @@ import {
   db, datum, heltal, lista, namn, rader, tal, utskott,
   PARTIER, REGERINGSPARTIERNA,
 } from '@/lib/db'
+import { allaRader } from '@/lib/block'
 import { Gnista, Lutning, Tidslinje, manadsnummer } from '@/components/diagram'
 import { Etikett, Forbehall, Knapp, Partiprick } from '@/components/system'
 import { sidmetadata } from '@/lib/sajt'
@@ -51,10 +52,21 @@ type Stickprovsrad = {
  * att gå till riksdagens publicerade betänkande och räkna där. Det är gjort en
  * gång, för hand, på det här betänkandet — och därför står betäckningen som en
  * konstant och inte som en fråga: den är ett protokoll över en kontroll, inte
- * ett urval ur datan. Talet under den hämtas däremot ur databasen, så att
- * kortet börjar avvika i samma stund som kontrollen slutar gälla.
+ * ett urval ur datan.
+ *
+ * `antal` är vad kontrollen såg i riksdagens publicerade betänkande. Det talet
+ * jämförs med databasens, och går de isär säger kortet det. Utan den
+ * jämförelsen hade sidan påstått att riksdagen listar samma antal som
+ * databasen råkar ha efter nästa ETL-körning — ett påstående om källan som
+ * ingen har kontrollerat, på just det kort som ska visa att den stämmer.
  */
-const STICKPROV = { rm: '2025/26', beteckning: 'KU4', parti: 'SD', kontrollerat: '2026-08-16' }
+const STICKPROV = {
+  rm: '2025/26',
+  beteckning: 'KU4',
+  parti: 'SD',
+  antal: 2,
+  kontrollerat: '2026-08-16',
+}
 
 /** Två riksmöten i tidslinjen: året före brottet och året det inträffade. */
 const FONSTER = 24
@@ -73,16 +85,29 @@ async function hamta() {
     rader<Reservationsrad>(
       klient.from('parti_reservation_rm')
         .select('parti, rm, reservationer, gemensamma, andel_gemensamma')),
-    rader<Manadsrad>(
-      klient.from('parti_manad').select('parti, manad, reservationer, anforanden').order('manad')),
+    // De två breda vyerna läses i block. parti_manad är åtta partier gånger
+    // varje månad kammaren arbetat, utskott_linje sexton utskott gånger åtta
+    // partier gånger varje riksmöte — 352 och 504 rader i dag, alltså halvvägs
+    // till PostgREST:s takgräns, som kapar tyst. Ett riksmöte till och de
+    // närmar sig den utan att något går sönder.
+    allaRader<Manadsrad>((fran, till) =>
+      klient.from('parti_manad')
+        .select('parti, manad, reservationer, anforanden')
+        .order('manad')
+        .range(fran, till)),
     rader<Volymrad>(klient.from('riksmote_volym').select('*').order('rm')),
-    rader<Utskottsrad>(klient.from('utskott_linje').select('organ, rm, parti, voteringar, andel')),
+    allaRader<Utskottsrad>((fran, till) =>
+      klient.from('utskott_linje')
+        .select('organ, rm, parti, voteringar, andel')
+        .order('organ')
+        .order('rm')
+        .order('parti')
+        .range(fran, till)),
     rader<Stickprovsrad>(
       klient.from('reservation')
         .select('bet_dok_id, beteckning, nummer, rubrik, partier')
         .eq('rm', STICKPROV.rm)
-        .eq('beteckning', STICKPROV.beteckning)
-        .order('nummer')),
+        .eq('beteckning', STICKPROV.beteckning)),
   ])
 
   // PostgREST skickar numeric som sträng och bigint som tal. Att blanda dem i
@@ -114,7 +139,11 @@ async function hamta() {
       andel: Number(u.andel),
       voteringar: Number(u.voteringar),
     })),
-    stickprov: stickprov.filter((s) => s.partier?.includes(STICKPROV.parti)),
+    // Sorteras i JS: `nummer` är text i databasen, och PostgREST sorterar den
+    // som text. Reservation 10 hade hamnat före reservation 2.
+    stickprov: stickprov
+      .filter((s) => s.partier?.includes(STICKPROV.parti))
+      .sort((a, b) => Number(a.nummer) - Number(b.nummer)),
   }
 }
 
@@ -209,6 +238,11 @@ export default async function Blocken() {
     return varden[varden.length - 1] === Math.max(...varden)
   })
   const allaUtskottUpp = utskotten.length > 0 && utskotten.every((u) => u.nu > u.forr)
+
+  // Nämnaren skrivs bara ut som gemensam om den faktiskt är det. Att läsa den
+  // ur ett partis rad och påstå den om de sju andra är ett påstående, inte ett
+  // tal — och just den sortens mening blir tyst osann vid nästa körning.
+  const namnare = [...new Set(PARTIER.map((p) => linje(p, senaste)?.voteringar ?? 0))]
 
   const senasteVolym = d.volym.find((v) => v.rm === senaste)
   const tidigare = d.volym.filter((v) => v.rm !== senaste)
@@ -422,9 +456,9 @@ export default async function Blocken() {
 
         <p className="mt-12 text-[14px]" style={{ color: 'var(--black-svag)' }}>
           Andel voteringar med utskottets förslag, per parti och riksmöte.
-          Nämnaren är densamma för alla partier:{' '}
-          {heltal(linje(PARTIER[0], senaste)?.voteringar ?? 0)} voteringar{' '}
-          {senaste}.
+          {namnare.length === 1
+            ? ` Nämnaren är densamma för alla åtta partier: ${heltal(namnare[0])} voteringar ${senaste}.`
+            : ` Nämnaren ${senaste} varierar mellan partierna, från ${heltal(Math.min(...namnare))} till ${heltal(Math.max(...namnare))} voteringar.`}
         </p>
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[600px] text-[15px]">
@@ -676,11 +710,13 @@ export default async function Blocken() {
                style={{ color: 'var(--black-mjuk)' }}>
               Att räkna om ett tal ur den här databasen visar bara att
               aritmetiken stämmer. Ett stickprov är därför taget mot källan:
-              betänkande {STICKPROV.rm}:{STICKPROV.beteckning}. Databasen har{' '}
-              {heltal(d.stickprov.length)} reservationer från{' '}
-              {namn(STICKPROV.parti)} i det betänkandet, och riksdagens
-              publicerade version listar samma. Kontrollerat för hand{' '}
-              {datum(STICKPROV.kontrollerat)}.
+              betänkande {STICKPROV.rm}:{STICKPROV.beteckning}. Kontrollen{' '}
+              {datum(STICKPROV.kontrollerat)} läste{' '}
+              {heltal(STICKPROV.antal)} reservationer från{' '}
+              {namn(STICKPROV.parti)} i riksdagens publicerade betänkande.{' '}
+              {d.stickprov.length === STICKPROV.antal
+                ? 'Databasen har exakt de reservationerna, och inga fler.'
+                : `Databasen har nu ${heltal(d.stickprov.length)}. Talen går isär, och kontrollen behöver göras om innan kortet säger något.`}
             </p>
             <ul className="mt-6 flex flex-col gap-3">
               {d.stickprov.map((s) => (
