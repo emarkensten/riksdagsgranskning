@@ -88,8 +88,8 @@ underhållas för hand.
 | …varav avgjorda med namnupprop om sakfrågan | 2 569 |
 | Förslagspunkter totalt 2022–2026 | 8 977 |
 | Betänkanden | 1 442 |
-| Reservationer | 11 316 |
-| Särskilda yttranden | 1 141 |
+| Reservationer | 11 274 |
+| Särskilda yttranden | 1 013 |
 | Anföranden (hämtade, inte sammanfattade) | 56 177 |
 | Voteringar där nej-sidan vann | 2 |
 
