@@ -36,6 +36,7 @@ type Volymrad = {
   anforanden: number
 }
 type Utskottsrad = { organ: string; rm: string; parti: string; voteringar: number; andel: number }
+type Yttranderad = { parti: string; rm: string; yttranden: number }
 type Stickprovsrad = {
   bet_dok_id: string
   beteckning: string
@@ -114,8 +115,9 @@ const UTSKOTTSGRANS = 20
 async function hamta() {
   const klient = db()
 
-  const [linjer, reservationer, manader, volym, utskottsrader, stickprov, sjalvforklaringar]
-    = await Promise.all([
+  const [
+    linjer, reservationer, manader, volym, utskottsrader, stickprov, sjalvforklaringar, yttranden,
+  ] = await Promise.all([
     rader<Linjerad>(klient.from('parti_linje').select('parti, rm, voteringar, andel')),
     rader<Reservationsrad>(
       klient.from('parti_reservation_rm')
@@ -150,6 +152,9 @@ async function hamta() {
       klient.from('anforande')
         .select('anforande_id, talare, parti, datum, avsnittsrubrik, rel_dok_id')
         .in('anforande_id', SJALVFORKLARINGAR.ids)),
+    // Det svagare instrumentet, för invändningskortet. 32 rader: åtta partier
+    // gånger fyra riksmöten, nollrader bevarade.
+    rader<Yttranderad>(klient.from('parti_yttrande_rm').select('parti, rm, yttranden')),
   ])
 
   // PostgREST skickar numeric som sträng och bigint som tal. Att blanda dem i
@@ -188,6 +193,7 @@ async function hamta() {
       .sort((a, b) => Number(a.nummer) - Number(b.nummer)),
     // Kronologiskt, inte i den ordning id:na råkar stå i konstanten.
     sjalvforklaringar: [...sjalvforklaringar].sort((a, b) => a.datum.localeCompare(b.datum)),
+    yttranden: yttranden.map((y) => ({ ...y, yttranden: Number(y.yttranden) })),
   }
 }
 
@@ -225,6 +231,34 @@ export default async function Blocken() {
   if (!brottet || !senaste || !foregaende) {
     throw new Error('Underlaget saknar de riksmöten sidan jämför')
   }
+
+  /**
+   * Bytte partiet bara instrument?
+   *
+   * Ett särskilt yttrande markerar avvikande uppfattning utan att opponera mot
+   * beslutet. Ett regeringsunderlag som fortfarande har invändningar men inte
+   * vill fälla sin egen regering skulle rimligen ta det steget, och då vore
+   * reservationsfallet ett byte av kanal och inte en tystnad.
+   *
+   * Det går att pröva, och slutsatsen räknas fram här i stället för att skrivas
+   * in: `bytteKanal` är sant bara om partiets yttranden faktiskt ökade. Vänder
+   * datan vänder kortet.
+   */
+  const ytt = (parti: string, rm: string) =>
+    d.yttranden.find((y) => y.parti === parti && y.rm === rm)?.yttranden ?? 0
+
+  const yttrandeTabell = PARTIER
+    .map((parti) => ({ parti, forr: ytt(parti, foregaende), nu: ytt(parti, senaste) }))
+    .sort((a, b) => b.nu - a.nu)
+
+  const bytteKanal = ytt(brottet.parti, senaste) > ytt(brottet.parti, foregaende)
+
+  // Höll instrumentet ställningen hos de andra? Utan den jämförelsen säger
+  // partiets eget fall ingenting — yttranden kunde ha gått ur bruk i kammaren.
+  const andraSomOkade = yttrandeTabell
+    .filter((p) => p.parti !== brottet.parti && p.forr >= 20 && p.nu >= p.forr)
+
+  const andraMedVolym = yttrandeTabell.filter((p) => p.parti !== brottet.parti && p.forr >= 20)
 
   // Tidslinjen: partiets månader, beskurna till de två sista riksmötena.
   const serie = d.manader.filter((m) => m.parti === brottet.parti)
@@ -668,26 +702,95 @@ export default async function Blocken() {
               </p>
               <p>
                 <strong style={{ color: 'var(--black)' }}>
-                  Sidan kan inte avgöra saken.
+                  Halva invändningen går att pröva.
                 </strong>{' '}
-                Reservationerna finns i öppna data. Vad som står i regeringens
-                propositioner, och vilka krav som kom dit på vägen, gör det
-                inte. Att skilja de två läsningarna åt kräver ett underlag som
-                inte ligger här, och sidan påstår därför ingen orsak — bara att
-                de tre måtten rör sig samtidigt.
+                Ett parti som fortfarande har invändningar men inte vill fälla
+                sin egen regering har ett svagare instrument till hands: det
+                särskilda yttrandet, som markerar avvikande uppfattning utan
+                att opponera mot beslutet. Hade {namn(brottet.parti)} bytt kanal
+                skulle yttrandena ha ökat när reservationerna föll.{' '}
+                {bytteKanal
+                  ? `De ökade också, från ${heltal(ytt(brottet.parti, foregaende))} till ${heltal(ytt(brottet.parti, senaste))}, och kanalbytet är därmed den bättre förklaringen.`
+                  : `Det gjorde de inte. De föll med, från ${heltal(ytt(brottet.parti, foregaende))} till ${heltal(ytt(brottet.parti, senaste))} — samtidigt som instrumentet var i fullt bruk hos ${lista(andraSomOkade.map((p) => namn(p.parti)))}, som alla skrev minst lika många ${senaste} som ${foregaende}. Båda kanalerna tystnade alltså samtidigt.`}
               </p>
-              {d.sjalvforklaringar.length > 0 && (
-                <p>
-                  Vad som däremot går att belägga är att invändningen kommer
-                  från partiet självt. I {d.sjalvforklaringar.length} debatter
-                  under {senaste} förklarar {namn(brottet.parti)}s företrädare i
-                  talarstolen varför partiet saknar reservationer i just det
-                  betänkandet — att förslagen de talar om ligger i regeringens
-                  proposition, eller att frågorna samordnas inom
-                  regeringsunderlaget.
-                </p>
-              )}
+              <p>
+                <strong style={{ color: 'var(--black)' }}>
+                  Den andra halvan går inte.
+                </strong>{' '}
+                Att kraven i stället fick sitt svar redan i regeringens
+                proposition är fullt förenligt med tystnad i båda kanalerna —
+                den som får sin vilja igenom i förväg behöver varken reservera
+                sig eller yttra sig särskilt. Vad som står i propositionerna,
+                och vilka krav som kom dit på vägen, finns inte i öppna data.
+                Sidan påstår därför ingen orsak.
+              </p>
             </div>
+
+            {andraMedVolym.length > 0 && (
+              <>
+                <p className="mt-8 text-[14px]" style={{ color: 'var(--black-svag)' }}>
+                  Särskilda yttranden per parti. Partier som skrev färre än
+                  tjugo {foregaende} är utelämnade — under den volymen betyder
+                  en förändring ingenting.
+                </p>
+                <div className="mt-4 overflow-x-auto">
+                  <table className="w-full min-w-[380px] max-w-[480px] text-[15px]">
+                    <caption className="sr-only">
+                      Antal särskilda yttranden per parti, {foregaende} mot {senaste}.
+                    </caption>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--linje-stark)' }}>
+                        <th scope="col" className="etikett py-2 text-left">Parti</th>
+                        <th scope="col" className="etikett py-2 text-right">{foregaende}</th>
+                        <th scope="col" className="etikett py-2 text-right">{senaste}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...andraMedVolym, yttrandeTabell.find((p) => p.parti === brottet.parti)!]
+                        .filter(Boolean)
+                        .sort((a, b) => b.forr - a.forr)
+                        .map((p) => {
+                          const ifraga = p.parti === brottet.parti
+                          return (
+                            <tr key={p.parti} style={{ borderBottom: '1px solid var(--linje)' }}>
+                              <th scope="row" className="py-2.5 text-left font-medium">
+                                <span className="inline-flex items-center gap-2.5">
+                                  <Partiprick parti={p.parti} storlek={10} />
+                                  {namn(p.parti)}
+                                </span>
+                              </th>
+                              <td className="tabular py-2.5 text-right"
+                                  style={{ color: 'var(--black-mjuk)' }}>
+                                {heltal(p.forr)}
+                              </td>
+                              <td className={`tabular py-2.5 text-right ${ifraga ? 'font-semibold' : ''}`}
+                                  style={{ color: ifraga ? 'var(--black)' : 'var(--black-mjuk)' }}>
+                                {heltal(p.nu)}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {/* Anförandena står sist och tillsammans med sin egen mening.
+                Tabellen ovan är mätningen; de här är vittnesmålen, och de två
+                sorterna underlag ska inte flätas in i varandra. */}
+            {d.sjalvforklaringar.length > 0 && (
+              <p className="mt-9 max-w-[74ch] text-[16px] leading-[1.6]"
+                 style={{ color: 'var(--black-mjuk)' }}>
+                Att invändningen är värd att pröva syns också i att den kommer
+                från partiet självt. I {d.sjalvforklaringar.length} debatter
+                under {senaste} förklarar {namn(brottet.parti)}s företrädare i
+                talarstolen varför partiet saknar reservationer i just det
+                betänkandet — att förslagen de talar om ligger i regeringens
+                proposition, eller att frågorna samordnas inom
+                regeringsunderlaget.
+              </p>
+            )}
 
             {d.sjalvforklaringar.length > 0 && (
               <ul className="mt-6 flex flex-col gap-3">
