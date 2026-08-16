@@ -19,12 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-Den här licensen gäller KODEN i det här repot: applikationen, ETL-skripten och
-databasmigrationerna.
-
-Sajtens texter och de härledda talen ligger under CC BY 4.0 — se LICENSE-DATA.
-Källdatan är Sveriges riksdags och är varken min att licensiera eller
-licensierad av mig; se samma fil.

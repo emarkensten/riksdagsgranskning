@@ -47,7 +47,10 @@ Villkoren i sin helhet:
 ## 3. Koden — MIT
 
 Applikationen, ETL-skripten och databasmigrationerna ligger under MIT.
-Se `LICENSE`.
+Se `LICENSE`, som bara innehåller licenstexten och ingenting annat — GitHubs
+licensdetektering jämför hela filen mot originalet, och tillagd text gör att
+repot visas som "Other" i stället för "MIT license". Gränsdragningen mellan de
+tre delarna står därför här och i README, aldrig i LICENSE.
 
 Creative Commons avråder från CC-licenser på programvara, och därför är det
 två licenser och inte en.
