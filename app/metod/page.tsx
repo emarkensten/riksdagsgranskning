@@ -192,6 +192,17 @@ export default async function Metod() {
   // varningen, precis den gång punkter saknar röstdata utan att någon
   // motivfråga finns kvar att hänga förklaringen på.
   const olikaTal = d.motivupprop > 0 || d.utanUpprop > 0
+  /**
+   * Hur många av bedömningarna som landade på "motsäger".
+   *
+   * Behövs för att kunna knyta ihop tabellen längst ned med steg 3 ovanför
+   * den. Kontrollerat 2026-08-16: raderna är exakt de nio som den
+   * adversariella granskningen underkände — samma id, 8, 149, 601, 607, 617,
+   * 621, 625, 633, 657, i både retorik_rost och
+   * docs/underlag/lager3-verifiering-verdikt.json. Meningen skrivs bara ut när
+   * talen fortfarande stämmer överens, så den inte kan bli osann i tysthet.
+   */
+  const motsager = d.retorik.find(([k]) => k === 'motsäger')?.[1] ?? 0
 
   return (
     <main>
@@ -853,7 +864,18 @@ export default async function Metod() {
             <p className="mt-5 max-w-[64ch] text-[13.5px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
               Siffrorna blandar två promptformuleringar och ska inte läsas som
               ett mått på riksdagen. De redovisas för att visa hur känsligt måttet
-              är.
+              är.{' '}
+              {/* Utan den här meningen läser tabellraden "motsäger 9" som nio
+                  funna motsägelser, tre skärmhöjder under steget som säger att
+                  inget av dem höll. Villkoret gör att meningen försvinner i
+                  stället för att bli osann om tabellen någon gång växer. */}
+              {motsager === 9 && (
+                <>
+                  Raderna under <em>motsäger</em> är dessutom rå klassificering,
+                  inte ett facit: det är exakt de nio fall som granskningen i
+                  steg tre underkände. Ingen av dem står kvar som en motsägelse.
+                </>
+              )}
             </p>
           </div>
         )}
