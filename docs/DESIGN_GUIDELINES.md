@@ -92,7 +92,8 @@ sig självt, och en komponent behöver aldrig veta att den ligger där. Inuti f�
 är `--accent` lime.
 
 **Ett fält per sida, aldrig fler.** I dag: startsidans fynd 04–05,
-frånvarosidans hero, metodsidans negativa resultat.
+frånvarosidans hero, metodsidans negativa resultat, blocksidans antal
+reservationer.
 
 Fältet går kant i kant med fönstret via `.helbredd`, tillsammans med hårlinjerna
 kring sidhuvud och sidfot. Ett halvt utbrott — till innehållskolumnens ytterkant

@@ -69,7 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             precis som det mörka fältet. Ett halvt utbrott — till kolumnens
             ytterkant — hade bara sett ut som en felräkning. */}
         <div style={{ borderBottom: '1px solid var(--linje)' }}>
-          {/* Ordmärket krymper aldrig: sex navobjekt bredvid det tvingar annars
+          {/* Ordmärket krymper aldrig: sju navobjekt bredvid det tvingar annars
               fram en radbrytning mitt i namnet. Under 640 px lindar navet till
               en egen rad i stället. */}
           <header className="mx-auto flex max-w-5xl flex-col items-start gap-4 px-5 py-[22px] sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:px-8">
