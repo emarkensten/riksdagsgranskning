@@ -90,6 +90,37 @@ export function namn(forkortning?: string) {
   return (forkortning && PARTINAMN[forkortning]) || forkortning || '—'
 }
 
+/**
+ * Utskottens koder, som de står i `betankande.organ`.
+ *
+ * Riksdagens data bär bara koden. "SkU" säger ingenting för den som inte
+ * arbetar i huset, och sajten skrivs för alla andra — samma skäl som gör att
+ * partierna skrivs ut med fulla namn.
+ */
+const UTSKOTTSNAMN: Record<string, string> = {
+  AU: 'Arbetsmarknadsutskottet',
+  CU: 'Civilutskottet',
+  FiU: 'Finansutskottet',
+  FöU: 'Försvarsutskottet',
+  JuU: 'Justitieutskottet',
+  KrU: 'Kulturutskottet',
+  KU: 'Konstitutionsutskottet',
+  MJU: 'Miljö- och jordbruksutskottet',
+  NU: 'Näringsutskottet',
+  SfU: 'Socialförsäkringsutskottet',
+  SkU: 'Skatteutskottet',
+  SoU: 'Socialutskottet',
+  TU: 'Trafikutskottet',
+  UbU: 'Utbildningsutskottet',
+  UFöU: 'Sammansatta utrikes- och försvarsutskottet',
+  UU: 'Utrikesutskottet',
+}
+
+/** Utskottets namn, eller koden själv om den är ny sedan den här listan skrevs. */
+export function utskott(organ?: string) {
+  return (organ && UTSKOTTSNAMN[organ]) || organ || '—'
+}
+
 /** Svensk uppräkning: "A", "A och B", "A, B och C". */
 export function lista(delar: string[]) {
   if (delar.length <= 1) return delar[0] ?? ''

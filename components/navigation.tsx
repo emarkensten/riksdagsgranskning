@@ -8,6 +8,7 @@ const SIDOR = [
   { href: '/partier', text: 'Partier' },
   { href: '/amnen', text: 'Ämnen' },
   { href: '/samstammighet', text: 'Vem röstar med vem' },
+  { href: '/blocken', text: 'Blocken' },
   { href: '/voteringar', text: 'Voteringar' },
   { href: '/franvaro', text: 'Frånvaro' },
   { href: '/metod', text: 'Metod' },

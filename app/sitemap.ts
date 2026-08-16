@@ -17,6 +17,7 @@ const STATISKA = [
   ['/voteringar', 0.9],
   ['/partier', 0.8],
   ['/samstammighet', 0.8],
+  ['/blocken', 0.8],
   ['/amnen', 0.8],
   ['/franvaro', 0.8],
   ['/metod', 0.7],
