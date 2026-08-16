@@ -17,6 +17,14 @@ export const SAJT = 'Namnupprop'
 export const UNDERTITEL = 'Varje votering i riksdagen, på vanlig svenska.'
 
 /**
+ * Rotens delningsbild, som `app/opengraph-image.tsx` ritar.
+ *
+ * Relativ med flit: `metadataBase` i `app/layout.tsx` gör den absolut, och den
+ * dagen sajten byter adress följer bilden med utan att någon rör den här raden.
+ */
+export const DELNINGSBILD = '/opengraph-image'
+
+/**
  * Sajtens adress, för metadataBase, sitemap och robots.
  *
  * Absoluta URL:er krävs av både Open Graph och sitemap-protokollet — en relativ
@@ -63,19 +71,42 @@ export function korta(text: string, tak: number) {
  * sätter det, i stället för att slå ihop det med rotens. Varje sida hade
  * alltså behövt upprepa `type`, `locale` och `siteName` — och den sida som
  * glömde en av dem hade tappat den tyst, eftersom ingenting går sönder när ett
- * metataggsfält saknas. Bilden ärvs däremot från närmaste
- * `opengraph-image`-fil och ska inte anges här.
+ * metataggsfält saknas.
+ *
+ * Bilden stod tidigare inte här, i tron att den ärvdes från
+ * `app/opengraph-image.tsx`. Den gör inte det. Mätt på den publicerade sajten
+ * hade startsidan en `og:image` medan /franvaro, /samstammighet, /metod och
+ * /blocken hade noll — filkonventionens bild gäller det segment den ligger i,
+ * inte segmenten under. Voteringssidorna hade sin, eftersom filen ligger i
+ * deras eget segment. Varje delad undersida blev alltså en länk utan bild, och
+ * ingenting sa ifrån: en uteblivande metatagg går inte sönder.
+ *
+ * `/opengraph-image` utan hashen i frågesträngen svarar med samma bild —
+ * hashen är Next sätt att spräcka cachen när bilden ändras, inte en del av
+ * adressen. Undersidorna delar rotens bild med flit: den bär sajtens namn och
+ * inte sidans, och en delad länk ska se ut att komma från Namnupprop.
+ * Voteringssidorna har en egen `opengraph-image.tsx` och sätter sin egen.
  */
 export function sidmetadata({
   titel,
   beskrivning,
   sokvag,
+  egenBild = false,
 }: {
   titel: string
   beskrivning: string
   sokvag: string
+  /**
+   * Sätts av sidor som har en egen `opengraph-image.tsx` i sitt eget
+   * segment — i dag bara voteringssidorna, som ritar sakfrågan i bilden.
+   * Då anges ingen bild här, och filkonventionen får sätta sin.
+   */
+  egenBild?: boolean
 }): Metadata {
   const helTitel = `${titel} — ${SAJT}`
+  const bild = egenBild
+    ? undefined
+    : [{ url: DELNINGSBILD, width: 1200, height: 630, alt: `${SAJT} — ${UNDERTITEL}` }]
   return {
     title: helTitel,
     description: beskrivning,
@@ -87,8 +118,17 @@ export function sidmetadata({
       title: helTitel,
       description: beskrivning,
       url: sokvag,
+      images: bild,
     },
-    twitter: { card: 'summary_large_image', title: helTitel, description: beskrivning },
+    // Egen bild även här: `twitter` ärver inte `openGraph.images`, och en sida
+    // som saknar twitter:image faller tillbaka på og:image hos vissa läsare
+    // men inte hos alla.
+    twitter: {
+      card: 'summary_large_image',
+      title: helTitel,
+      description: beskrivning,
+      images: bild,
+    },
   }
 }
 
