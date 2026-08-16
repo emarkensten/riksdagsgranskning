@@ -17,15 +17,30 @@ export const SAJT = 'Namnupprop'
 export const UNDERTITEL = 'Varje votering i riksdagen, på vanlig svenska.'
 
 /**
- * Sajtens adress, för metadataBase och sitemap.
+ * Sajtens adress, för metadataBase, sitemap och robots.
  *
  * Absoluta URL:er krävs av både Open Graph och sitemap-protokollet — en relativ
  * sökväg i og:image gör att förhandsvisningen tyst uteblir hos alla som läser
- * den. Någon publik adress finns inte ännu, så localhost är fallback: bilderna
- * går då att kontrollera i utveckling, och den dagen sajten publiceras är det en
- * miljövariabel som ändras och ingen kod.
+ * den.
+ *
+ * Fallbacken var localhost, och det var ett fel som inte syntes någonstans i
+ * bygget: den publicerade sajten skrev ut
+ * `og:image: http://localhost:3000/opengraph-image` och
+ * `og:url: http://localhost:3000`. Ingen crawler kan hämta den adressen, så en
+ * delad länk i iMessage eller Slack blev naken text utan rubrik och utan bild.
+ * Sitemapen pekade på samma icke-existerande värd.
+ *
+ * `VERCEL_PROJECT_PRODUCTION_URL` är produktionsdomänen och sätts av Vercel
+ * själv, även i förhandsdeployer — därför pekar delningsbilderna på den
+ * riktiga sajten också från en förhandsversion, i stället för på en URL som
+ * försvinner. `NEXT_PUBLIC_SITE_URL` går före och är den som ska sättas när
+ * sajten får ett eget domännamn.
  */
-export const SAJT_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+const vercelDoman = process.env.VERCEL_PROJECT_PRODUCTION_URL
+
+export const SAJT_URL =
+  process.env.NEXT_PUBLIC_SITE_URL
+  ?? (vercelDoman ? `https://${vercelDoman}` : 'http://localhost:3000')
 
 /**
  * Kapar vid ordgräns och sätter ut att det är kapat.
