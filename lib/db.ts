@@ -189,6 +189,25 @@ export function datum(iso?: string) {
   })
 }
 
+/**
+ * "15 augusti 2026, 09.56" — datum och klockslag, i svensk notation.
+ *
+ * Punkt mellan timme och minut, inte kolon. Zonen sätts uttryckligen till
+ * Europe/Stockholm: tidsstämpeln kommer ur databasen i UTC, och renderas den i
+ * serverns zon blir hämtningstiden en annan beroende på var sajten står.
+ */
+export function datumtid(iso?: string) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  const dag = d.toLocaleDateString('sv-SE', {
+    day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Stockholm',
+  })
+  const klockan = d.toLocaleTimeString('sv-SE', {
+    hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm',
+  })
+  return `${dag}, ${klockan.replace(':', '.')}`
+}
+
 export type PartiRost = {
   parti: string
   ja: number
