@@ -58,11 +58,27 @@ Ovanpå översättningen ligger fyra mått, alla räknade ur samma röstdata:
 
 Varje tal står bredvid sitt förbehåll, och varje definition finns på `/metod`.
 
+Utöver de fyra ligger en sammanhållen analys, **Blocken**. Den följer tre mått
+som mäter olika saker och inte påverkar varandra — hur ofta ett parti reserverar
+sig mot utskottets förslag, hur ofta det ändå röstar med förslaget, och hur ofta
+det skriver reservationer tillsammans med andra — och visar att de vänder
+samtidigt under mandatperiodens sista riksmöte. Vilket parti sidan handlar om
+räknas fram ur datan och står inte i koden; i dag är det Sverigedemokraterna,
+vars reservationer gick från 577 till 20 mellan de två sista riksmötena.
+
+Sidan prövar fyra invändningar mot sin egen läsning, och skriver ut svaret på
+var och en — även när svaret är att materialet inte räcker. Den svåraste är att
+färre reservationer för ett regeringsunderlag är *inflytande* och inte tystnad.
+Halva den invändningen går att pröva och är prövad: partiet bytte inte till det
+svagare instrumentet, för de särskilda yttrandena föll också, från 60 till 17,
+medan S, V och MP alla skrev fler än året före. Den andra halvan går inte —
+vad som står i regeringens propositioner finns inte i öppna data.
+
 ---
 
 ## Siffrorna i materialet
 
-Kontrollerade mot databasen 2026-08-15. Sajten räknar fram dem live vid varje
+Kontrollerade mot databasen 2026-08-16. Sajten räknar fram dem live vid varje
 rendering — tabellen nedan är en ögonblicksbild, inte en sanning som ska
 underhållas för hand.
 
@@ -72,13 +88,23 @@ underhållas för hand.
 | …varav avgjorda med namnupprop om sakfrågan | 2 569 |
 | Förslagspunkter totalt 2022–2026 | 8 977 |
 | Betänkanden | 1 442 |
+| Reservationer | 11 316 |
+| Särskilda yttranden | 1 141 |
 | Anföranden (hämtade, inte sammanfattade) | 56 177 |
 | Voteringar där nej-sidan vann | 2 |
 
-Skillnaden mellan 2 587 och 2 569 är punkter där namnuppropet gällde
+Skillnaden mellan 2 587 och 2 569 är 18 punkter där namnuppropet gällde
 motivfrågan, alltså hur beslutet skulle motiveras — inte vad som beslutades. De
 rösterna säger inget om partiernas hållning i sakfrågan och räknas därför inte in
-i något mått.
+i något mått. De 18 räknas fram ur `rost.avser` och är inte en differens mellan
+två vyer — sajten påstår att uppropet gällde motivfrågan, och då ska det vara
+kontrollerat.
+
+**Reservation och särskilt yttrande är två olika saker.** En reservation är ett
+motförslag som ställs mot utskottets och röstas om. Ett särskilt yttrande
+markerar avvikande uppfattning utan att opponera mot beslutet, och röstas aldrig
+om — bara det förstnämnda syns alltså i röstdata. Yttrandena finns inte i
+riksdagens metadata utan bara i betänkandenas HTML, och hämtas därifrån.
 
 **De flesta beslut syns inte alls här.** 6 390 av 8 977 förslagspunkter
 avgjordes genom acklamation, alltså utan att någon begärde namnupprop. Enighet i
@@ -122,10 +148,17 @@ npm run dev
 
 `npm run kontrollera` är repots enda test. Partilinjen — det alternativ flest
 av ett partis närvarande ledamöter valde — är skriven två gånger, som
-SQL-funktion och i `lib/db.ts`, och kan inte dela implementation. Testet prövar
-dem mot varandra på varje kombination av (ja, nej, avstår) som förekommer i
-datan. Går de isär visar startsidan och voteringssidan olika linje för samma
-votering utan att något felar.
+SQL-funktion och i `lib/db.ts`, och kan inte dela implementation. Går de isär
+visar startsidan och voteringssidan olika linje för samma votering utan att
+något felar.
+
+Testet prövar dem mot varandra på alla 433 kombinationer av (ja, nej, avstår)
+som förekommer i datan, plus ett tiotal konstruerade — mest lika röstetal, som
+bryts av en `>=`-kedja i SQL och av en stabil sortering i TypeScript. Två skilda
+mekanismer som råkar ge samma svar är precis den sortens likhet som tystnar.
+SQL-svaret hämtas med `rpc()`, alltså ur den installerade funktionen och inte ur
+en migration någon kan ha glömt köra. En omkastad tie-break i TypeScript ger 9
+avvikelser över 416 rader — testet är sett fälla.
 
 ETL-skripten ligger i `scripts/etl/`. `run.mjs` är kommenterad, och funktionen
 `aggregat_vyer()` i databasen styr vilka materialiserade vyer som uppdateras och
