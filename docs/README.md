@@ -9,6 +9,7 @@ Börja med `LAGE_2026-08.md` om du vill veta vad sajten är. Börja med
 
 | Dokument | Vad det är | Fortfarande aktuellt |
 |---|---|---|
+| [`PLAN_VALET_2026.md`](PLAN_VALET_2026.md) | Vändningen till verktyg inför valet: frågesidor, innehållspipeline, designbrief | ja — pågående arbete |
 | [`LAGE_2026-08.md`](LAGE_2026-08.md) | Vad sajten är i dag, vad databasen innehåller, vad som återstår | ja — ingången |
 | [`BESLUT_2026-08.md`](BESLUT_2026-08.md) | Omstarten mot voteringsdata. Mätningarna som dödade hyckleriidén, metodfällan med ja/nej, och de tre lagren | ja — bär motiveringarna |
 | [`DESIGN_GUIDELINES.md`](DESIGN_GUIDELINES.md) | Formspråk, färg, typografi, copy-regler | ja — styr all frontend |
