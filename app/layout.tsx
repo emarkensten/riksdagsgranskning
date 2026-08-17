@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Analytics } from '@vercel/analytics/next'
 import { Schibsted_Grotesk, IBM_Plex_Mono } from 'next/font/google'
 import Link from 'next/link'
 import { Navigation } from '@/components/navigation'
@@ -88,6 +89,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         <Sidfot />
+
+        {/* Sajten mätte ingenting alls fram till namnbytet, och två premisser
+            om varifrån trafiken skulle komma diskuterades en hel dag utan att
+            någon kunde avgöras. Ligger sist i body: skriptet laddas efter
+            innehållet och är inte i vägen för första renderingen.
+
+            Vercels egen mätning och inte en tredje part. Den sätter ingen
+            cookie och följer ingen besökare mellan sajter, vilket är hela
+            skälet till att det inte står någon samtyckesruta här. En sajt som
+            ber läsaren om förtroende i fråga om partiskhet ska inte samtidigt
+            lämna ut hens surfande. */}
+        <Analytics />
       </body>
     </html>
   )
