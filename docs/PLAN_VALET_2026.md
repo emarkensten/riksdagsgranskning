@@ -1,175 +1,206 @@
-# Plan: från magasin till verktyg inför valet 2026
+# Plan: sajten inför valet 2026
 
-**Datum:** 2026-08-17. **Valet:** 13 september — 27 dagar bort.
-Valkompasserna publiceras ungefär två–tre veckor före valdagen. Sajten ska vara
-omgjord och namngiven **innan** de landar, för hela poängen är "gör kompassen,
-kolla facit". Riktmärke: klart inom två veckor.
+**Datum:** 2026-08-17, omskriven samma dag efter motläsning.
+**Valet:** 13 september — 27 dagar.
 
-Planen är grov med avsikt. Den som bygger avgör detaljerna, men riktningen och
-gränserna nedan ligger fast.
+Planens första version motiverade allt med att sajten skulle komplettera
+valkompasser. Den motiveringen höll inte och är utbytt. Vad som ändrades och
+varför står under *Premissen som föll*, eftersom arbetspaketen i allt väsentligt
+står kvar och det annars ser ut som om ingenting hänt.
 
 ---
 
-## Beslutet planen bygger på
+## Vad sajten är, och vad framgång betyder
 
-**Målgrupp:** väljaren som redan letar belägg — den som gör valkompassen, ser
-debatterna och vill pröva ett påstående mot protokollet. Journalisten är samma
-användare med högre insatser, och distributionskanalen.
+Sajten gör Sveriges riksdags 2 587 beslut från mandatperioden 2022–2026
+läsbara: vad frågan gällde, vad ett ja innebar, vad ett nej innebar, och varje
+partis linje.
 
-**Behovet:** kompasserna mäter vad partierna *säger* framåt. Ingen visar vad de
-*gjorde*. Sajtens unika tillgång — 2 587 beslut i klarspråk med reservationens
-innehåll utskrivet — svarar exakt på det, men arkitekturen döljer den:
-ingången är i dag aggregatstatistik som inbjuder till övertolkning (prövat på
-en verklig förstaläsare, som läste "ensam mot alla" som att C är radikala),
-medan verktyget ligger som sekundär knapp.
+**Det är ett referensverk, inte en produkt med återvändande användare.** Ingen
+har ett återkommande behov av att veta hur riksdagen röstade, och datan är
+dessutom i praktiken färdig — mandatperioden är slut och det kommer inga nya
+voteringar före valet. Att optimera för återbesök vore att bygga fel sak.
 
-**Tesen som ramar sajten**, ren aritmetik ur egen databas: 0,139 % av rösterna
-avviker från partilinjen — i Sverige röstar man på en linje, inte en person,
-och linjens fyra års facit finns här. M, KD och L röstade lika i 99,9–100 %:
-tre partier, ett röstfacit.
+Framgång är i stället att bli **använd som källa**: en journalist som länkar en
+voteringssida i en valartikel, en lärare i samhällskunskap, en tråd som avgörs
+med en länk. En enda redaktionell användning är värd mer än tiotusen
+ströbesök — och `/metod`, som redovisar sju begränsningar och ett mätförsök som
+inte höll, är byggd för precis den läsaren.
+
+Konsekvensen: sajtens enhet är **den enskilda sidan som landningssida via delad
+länk**, inte startsidan.
+
+---
+
+## Premissen som föll
+
+Valkompassen spelade tre roller i den första planen. De faller inte ihop, och
+det är skälet till att arbetspaketen står kvar:
+
+| Roll | Status |
+|---|---|
+| **Trafikväg** — "gör kompassen, kolla facit" | **Död.** Ingen lämnar SVT:s resultatsida för att söka upp en okänd sajt. |
+| **Urvalskälla** för frågesidornas ämnen | **Lever**, och blir starkare utan trafikpremissen. Argumentet var aldrig marknadsföring utan metodskydd: urvalet är någon annans, inte vårt. Det är oberoende av var besökaren kommer ifrån. |
+| **Förklaringsreferens** i copy | **Lever, men som aktivt beslut.** Alla vet vad en valkompass är, så kontrasten förklarar sajten på en rad utan att förutsätta trafik. Behålls med öppna ögon, inte som kvarleva. |
+
+**Frågesidornas riktiga motivering** stod redan i
+[`BESLUT_2026-08.md`](BESLUT_2026-08.md): *ingen kan svara på "hur röstade mitt
+parti om X?"* — datan finns öppet men är praktiskt oåtkomlig, eftersom man måste
+veta vilket betänkande frågan låg i, vilken punkt, och hur utskottets förslag
+tolkas mot reservationen. Det är ett faktaåtkomstproblem, inte ett
+omdömesproblem. Utan kompasstrafik blir frågesidorna **viktigare**, inte
+mindre: de är den enda ingången för besökaren som inte kommer med en färdig
+fråga, och sajtens enda tänkbara sökmotoryta.
+
+Deadlinelogiken föll med trafikpremissen. Kvar står valet självt. Det ändrar
+inget i praktiken — bygg ändå nu — men "klart innan kompasserna landar" var fel
+skäl.
 
 ---
 
 ## Arbetspaket
 
-Små avgränsade PR:ar enligt arbetsreglerna. Ordningen nedan är beroendeordning.
+### AP0 — Namn och domän. Blockerar mest, ligger först
 
-### 1. Vändningen — sökningen blir startsidan
+Låg sist i första versionen. Det var fel ordning: **varje länk som delas till
+`riksdagsgranskning.vercel.app` pekar fel den dag domänen byts.** Sociala kort
+cachas, omdirigeringar tappar delningsstatistik, och citerbarheten — sajtens
+hela framgångsmodell — bygger på en adress som håller.
 
-`/voteringar`-sidans innehåll blir roten `/`. Överst en mening som säger vad
-man får (i stil med *"Valkompassen frågar vad partierna lovar. Här ser du hur
-de röstade."*), därunder sökfält, ämneschips och listan med partilinjer per
-rad — allt detta finns redan byggt och behöver flyttas, inte uppfinnas.
+Kräver ett personligt beslut av ägaren och har därför längst ledtid av allt.
+Namnet ska stå på egna ben utan koppling till valkompasser.
 
-Nuvarande startsida flyttar till `/fynd` i sin helhet. Fynden är fortsatt det
-som delas i flöden, men de ska vara något man hittar, inte det första man
-möter. Tesen (0,139 % / M-KD-L) skrivs in på nya startsidan och på `/metod`.
+När namnet är satt byter allt i ett svep: ordmärket i `app/layout.tsx`,
+`lib/sajt.ts`, delningsbilderna och de kanoniska URL:erna. Kontrollera mot
+produktionssajten, inte lokalt.
 
-Observera: roten blir då dynamisk (searchParams), som `/voteringar` redan är.
-`votering_lista`-frågorna är snabba; tresekundersregeln gäller som vanligt.
+### AP1 — Vändningen ✅ GENOMFÖRD (PR #69)
 
-### 2. Frågesidorna — det saknade mellanlagret
+Sökningen är startsida, fynden ligger på `/fynd`, navigeringen gick från sju
+objekt till fyra. Taggen `magasinet` pekar på tillståndet före.
 
-Ny sidtyp `/fragor/[slug]`: en sida per valfråga ("Kärnkraften",
-"Beteskravet", "Skolpengen" …), 15–25 stycken. Varje sida är i grunden en
-kuraterad delmängd av arkivet:
+Motläsningen bekräftade att flytten var rätt, och skälet är värt att skriva ned:
+kollegan felläste "556 gånger ensam mot alla" **trots att förbehållet stod på
+sidan**. Ett förbehåll som inte hinner ikapp siffran hos en välvillig
+förstaläsare hinner aldrig ikapp den. Aggregat som första möte ramar in sajten
+som en partiranking, och ur den ramen går det inte att skriva sig. Det var
+alltså ett arkitekturproblem, inte ett presentationsproblem.
 
-- rubrik = frågan som väljaren bär den
-- kort syntes av vad riksdagen beslutat i frågan (se innehållspipelinen)
-- de relevanta voteringarna med `Rostrad` och klarspråk — samma listrad som
-  arkivet använder
-- länk till fritextsökningen för den som vill se allt
+Kvarstående brist: chipsen på roten är 16 byråkratiska ämneskategorier, inte
+frågor som väljare bär dem. Startsidan är en halv entrédörr tills AP2 finns.
 
-**Urvalsregeln görs transparent och lånas utifrån:** frågorna hämtas ur
-SVT:s och/eller DN:s valkompass när de publicerats, med källan länkad — då är
-urvalet någon annans, inte sajtens. Tills kompasserna är ute byggs
-infrastrukturen och pilotfrågorna på uppenbara kandidater (energi, migration,
-skola, vård, försvar, jordbruk/djurskydd).
+### AP2 — Frågesidorna
 
-Urvalet lagras som versionerad JSON i repot (`lib/valfragor/…`): slug, rubrik,
-källa, lista av `forslagspunkt_id`, syntestext. Ingen ny ETL, inget nytt i
-databasen — innehållet är granskningsbart i git och kostar inget av de
-återstående databas-megabytena.
+Ny sidtyp `/fragor/[slug]`: rubrik som frågan bärs av en väljare, kort syntes,
+de relevanta voteringarna med `Rostrad` och klarspråk, länk till sökningen.
 
-**Hederlighetsregler för sidtypen:**
+Urvalet lånas från SVT:s valkompass (35 frågor, publicerad 10 juni 2026) och
+lagras som versionerad JSON i `lib/valfragor/` — slug, rubrik, källa, lista av
+`forslagspunkt_id`, syntestext. Ingen ny ETL, inget nytt i databasen. **Skriv
+inte av SVT:s frågetexter** — vi lånar urvalet, inte formuleringarna, och
+länkar källan.
 
-- Finns ingen votering i kompassfrågan skrivs det ut: *"Riksdagen har inte
-  röstat om exakt detta 2022–2026."* Det är också ett svar, och det skiljer
-  sajten från varje partisk sammanställning.
-- Asymmetrin skrivs ut där den spelar roll: regeringspartier vinner via
-  propositioner, så voteringarna visar vad som hände — inte allt partierna
-  önskade.
-- `sakerhet`-flaggan ("osäker tolkning") följer med raden precis som i arkivet.
-- Frågesidorna behöver delningsbilder som voteringssidorna redan har.
+**Mät antalet innan 25 sidor byggs.** 8 977 förslagspunkter finns; bara 2 587
+har klarspråk och röstdata. Många kompassfrågor kommer att mappa mot noll eller
+två voteringar, och om hälften av sidorna säger "riksdagen har inte röstat om
+exakt detta" är sidtypen svagare än tänkt. Arbetsregel 8 gäller även *antalet*,
+inte bara kvaliteten: mät först, bestäm omfattningen sedan.
 
-### 3. Innehållspipeline — så används LLM, och så inte
+**Hederlighetsregler:**
 
-Syntesen och kandidaturvalet är legitima LLM-uppgifter därför att de arbetar
-på sajtens *egna redan validerade klarspråkstexter*, inte på rådata eller
-intentioner. Körs med **Sonnet-subagenter, aldrig betalt API** (se minnet och
-arbetsregel 7–8).
+- Saknas votering skrivs det ut. Det är också ett svar.
+- **Propositionsasymmetrin ska stå på sidan, före listan** — inte bara på
+  metodsidan. Regeringens gärning ligger till stor del i propositioner utan
+  namnupprop medan oppositionens syns som reservationer, så en frågesida
+  riskerar att systematiskt visa mer av oppositionens aktivitet. Inte genom
+  partiskhet utan genom datans form. Det är här en statsvetare angriper, och
+  samma läxa som förbehållsplaceringen i AP1: efter listan är för sent.
+- `sakerhet`-flaggan följer med raden som i arkivet.
+- Frågesidorna behöver delningsbilder.
 
-**Steg A — kandidatmatchning.** Agenter läser `sakfraga` + klarspråk för alla
-2 587 punkter och föreslår kandidater per valfråga. Det är en sökuppgift
-(recall), som LLM är bra på. Utfallet är ett *förslag*; människan fastställer
-listan som hamnar i JSON.
+### AP3 — Innehållspipeline
 
-**Steg B — syntes per fråga.** En agent skriver 5–10 meningar om vad riksdagen
-beslutat i frågan, med enbart de fastställda voteringarnas klarspråk som
-underlag. Regler:
+Sonnet-subagenter, aldrig betalt API. Arbetar på sajtens egna redan validerade
+klarspråkstexter, inte på rådata.
 
-- Varje påstående ska vara spårbart till en votering som listas på samma sida.
-  Syntesen refererar, den tillför inte.
-- Ingen karaktäristik av partier ("X har konsekvent motarbetat…") — partiernas
-  positioner visas av voteringsraderna själva. Syntesen beskriver besluten.
-- Syntes på **valfrågenivå** (10–40 voteringar), inte ämnesnivå — en syntes
-  över 400 voteringar i "utrikes" blir mos.
+**A. Kandidatmatchning** — agenter föreslår voteringar per fråga. Människan
+fastställer listan.
 
-**Steg C — adversariell granskning.** En andra agent får syntesen och
-voteringslistan med uppdraget att fälla varje påstående som inte täcks av
-underlaget. Det som inte överlever stryks.
+**B. Syntes** — 5–10 meningar per fråga, enbart de fastställda voteringarnas
+klarspråk som underlag. Varje påstående spårbart till en votering som listas på
+samma sida. Ingen partikaraktäristik — voteringsraderna visar positionerna
+själva. Syntes på valfrågenivå, inte ämnesnivå.
 
-**Valideringsgrind, samma logik som arbetsregel 8:** bygg de tre första
-frågesidorna genom hela pipelinen, granska manuellt, och skala först därefter
-till resten. Prompterna sparas i repot så att omkörningar är reproducerbara.
+**C. Adversariell granskning** — en andra agent fäller allt underlaget inte
+täcker.
 
-**Förbjudet, med stöd i projektets historia:** ingen återupplivning av
-"sagt mot röstat" i någon form (körd i botten, se `LAGE_2026-08.md`), ingen
-intentionsklassificering, ingen syntes som publiceras utan voteringslistan
-som kvitto bredvid sig.
+Valideringsgrind: tre sidor genom hela kedjan, manuell granskning, sedan skala.
+Prompterna sparas i repot.
 
-### 4. Demotering och navigation
+**Förbjudet:** ingen återupplivning av "sagt mot röstat" i någon form, ingen
+intentionsklassificering, ingen syntes utan voteringslistan som kvitto bredvid.
 
-`/samstammighet`, `/blocken`, `/amnen` (avvikelsestatistiken) och `/franvaro`
-samlas under fynden i navigationen — inget raderas, men magasinet slutar vara
-fasaden. `/metod` behåller sin framskjutna plats; den är trovärdighetsbäraren,
-särskilt om Antrop blir avsändare. Redirects för alla flyttade sökvägar
-(mönstret med 308 finns redan för `/spanningar`).
+### AP4 — Distribution
 
-### 5. Namn, domän, delning
+**Saknades helt i första versionen.** Fem arbetspaket, noll rader om hur någon
+ska få veta att sajten finns — för ett referensverk vars värdefönster är fyra
+veckor. Arbetssättet förstärkte luckan: "merga och fortsätt" optimerar för
+levererade PR:ar, och PR:ar är alltid kod.
 
-Erik köper domän nu — det är hans beslut och ligger utanför repot, men allt
-sidmetadata-arbete (`lib/sajt.ts`, delningsbilder, kanoniska URL:ar) ska byta
-när namnet är satt. Arbetsnamn: **"Så röstade de"**. "Namnupprop" säger
-utomstående ingenting; namn som lovar fullständighet ("Full transparens")
-skriver checkar metodsidan uttryckligen inte täcker. Kontrollera delning mot
-produktionssajten, inte lokalt (två av tre delningsbuggar var osynliga i dev).
+Detta är sannolikt det som ger mest per nedlagd timme av allt som återstår, och
+det kräver inte ombyggnad — det kräver mejl. Innehåll: tio färdigverifierade
+fynd paketerade med metodunderlag, och kontakt med samhällsredaktioner,
+statsvetare och lärare. Förutsätter AP0.
+
+### AP5 — Instrumentering
+
+**Sajten har ingen webbanalys alls.** Vercel Web Analytics är inte påslaget.
+Både planens ursprungliga trafikpremiss och invändningen mot den var oprövade
+åsikter, och ingendera gick att avgöra eftersom ingenting mäts. Ungefär en
+timmes arbete, och det förvandlar nästa strategidiskussion från gissning mot
+gissning till data. Gör det innan valrörelsen tar fart.
+
+### AP6 — Demotering och navigation
+
+`/samstammighet`, `/blocken`, `/amnen` och `/franvaro` nås från "Hela
+genomgången" på `/fynd`. Genomförd i AP1. Inget raderat.
 
 ---
 
-## Designbrief
+## Öppen fråga med lång ledtid: avsändarskapet
 
-**Det estetiska språket ligger fast** — display-typografin, stora siffror,
-hårlinjerna, lime-accenten, mono-etiketterna. Det är inte det som är fel.
-Felet är hierarki: verktyget är sekundärt och magasinet är hero. Bygget görs
-med `/frontend-design` och/eller `/impeccable` enligt arbetsreglerna, med
-detta som uppdrag:
+Behandlades som en fotnot och är den största enskilda risken. En designbyrå som
+sätter sitt namn på en politisk datasajt fyra veckor före ett val fattar ett
+beslut med kund-, varumärkes- och pressdimensioner — "vem ligger bakom sajten?"
+är den första fråga en journalist ställer. Sidfoten säger i dag partipolitiskt
+obunden, privat initiativ; att byta avsändare mitt i valrörelsen är i sig en
+story.
 
-- **Nya startsidan:** ett sökfält som känns som en hero, inte som ett
-  formulär. Display-rubriken och stig-animationerna får gärna bäras över från
-  nuvarande startsida; tesen står som en rad under sökfältet, inte som ett
-  eget statistikblock. Frågesidorna exponeras som ingångar direkt på roten
-  (chips eller kortrad) så att en förstabesökare ser dem utan att söka.
-- **Frågesidan (ny mall):** rubriken är frågan, syntesen är bröd, listan är
-  samma rad som arkivet. Ingen ny komponentflora — `Rostrad`, `Chip`,
-  `Etikett`, `Forbehall` räcker långt.
-- **Fynden på `/fynd`:** behåller sin nuvarande design orörd.
-- Lärdomen från förstaläsaren gäller layouten: förbehåll som står *efter*
-  siffran hinner aldrig ikapp den. Där ett aggregat visas ska ramen stå före
-  eller bredvid, inte under.
+Beslutet behöver fattas med arbetsgivaren nu, eller skjutas till efter valet.
+Det får inte hänga löst.
 
 ---
 
 ## Utanför scope
 
-- Ledamotssidor (0,139 % — ingen population att jämföra)
+- Ledamotssidor (0,139 % avvikelse — ingen population att jämföra)
 - Innehållsanalys av anföranden (cirkulär, se `LAGE_2026-08.md`)
 - Ny ETL eller nya databastabeller
 - Redesign av det visuella språket
+- Berättelsesajt / scrollytelling kring ett enskilt fynd. Det är
+  trafikmaximering, och valet mellan trafik och trovärdighet är fattat till
+  trovärdighetens fördel — särskilt medan avsändarfrågan är öppen. Ett oprövat
+  verktyg som pekar ut partier dagarna före ett val är en trovärdighetsrisk, och
+  kollegans felläsning är en förhandsvisning av vad en masspublik gör med ett
+  fynd.
 
 ## Fallgropar
 
 `CLAUDE.md` gäller: M/KD/L-förbehållet överallt där ett av dem namnges,
 frånvarons två nivåer blandas inte, `nej > ja`-aritmetiken och inte
-`vinnare`-fältet, Supabase MCP för all verifiering, `npm run kontrollera`
-efter varje ändring som rör partilinjen.
+`vinnare`-fältet, Supabase MCP för all verifiering, `npm run kontrollera` efter
+varje ändring som rör partilinjen.
+
+**Och en till, dyrköpt:** premisser antas i stället för mätas. Trafikvägen från
+valkompass antogs utan prövning — men motbilden är också en oprövad åsikt som
+nu behandlas som fakta. Mät i stället, se AP5.
