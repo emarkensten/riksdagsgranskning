@@ -1,16 +1,21 @@
 import Link from 'next/link'
 import { datum, heltal } from '@/lib/db'
-import { FRAGOR, hamtaAllaFragor, utfall } from '@/lib/fragor'
+import { FRAGOR, hamtaAllaFragor, rakneord, utfall } from '@/lib/fragor'
 import { Rostrad, Rostnyckel } from '@/components/rostrad'
 import { Etikett, Forbehall, Textlank } from '@/components/system'
 import { sidmetadata } from '@/lib/sajt'
 
 export const revalidate = 3600
 
+// Antalet härleds även här. Titeln och beskrivningen är det som syns i ett
+// sökresultat, alltså det sista stället någon skulle märka att talet blivit
+// osant.
 export const metadata = sidmetadata({
-  titel: 'Nio valfrågor, och hur riksdagen faktiskt röstade',
+  titel: `${storBokstav(rakneord(FRAGOR.length))} valfrågor, och hur riksdagen faktiskt röstade`,
   beskrivning:
-    'Nio av valets frågor där en votering i riksdagen ordagrant matchar frågan. Vad ett ja innebar, vad ett nej innebar och hur de åtta partierna röstade. Urvalet följer SVT:s valkompass 2026, formuleringarna är våra egna.',
+    `${storBokstav(rakneord(FRAGOR.length))} av valets frågor där en votering i riksdagen ordagrant matchar frågan. ` +
+    'Vad ett ja innebar, vad ett nej innebar och hur de åtta partierna röstade. ' +
+    'Urvalet följer SVT:s valkompass 2026, formuleringarna är våra egna.',
   sokvag: '/fragor',
   egenBild: true,
 })
@@ -40,16 +45,16 @@ export default async function Fragor() {
           className="stig mt-7 max-w-[56ch] text-[clamp(17px,2.2vw,21px)] leading-[1.45]"
           style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}
         >
-          Valkompasserna frågar vad partierna vill göra. Här är nio av samma
-          frågor, med riksdagens egen omröstning bredvid — vad frågan gällde,
+          Valkompasserna frågar vad partierna vill göra. Här är {rakneord(FRAGOR.length)} av
+          samma frågor, med riksdagens egen omröstning bredvid — vad frågan gällde,
           vad ett ja innebar, vad ett nej innebar och hur varje parti röstade.
         </p>
       </section>
 
       {/* Den ärliga raden. Att sajten stannar vid nio är dess starkaste
           egenskap och ska stå före listan, inte gömmas efter den. */}
-      <Forbehall rubrik="Nio frågor, inte trettiofem.">
-        De nio nedan är de frågor där en enskild votering matchar frågan
+      <Forbehall rubrik={`${storBokstav(rakneord(FRAGOR.length))} frågor, inte trettiofem.`}>
+        De {rakneord(FRAGOR.length)} nedan är de frågor där en enskild votering matchar frågan
         ordagrant och har en entydig riktning. För de övriga har vi inte kunnat
         fastställa någon sådan votering — riksdagen kan mycket väl ha behandlat
         dem ändå, i propositioner utan namnupprop eller i punkter som buntar
@@ -57,7 +62,7 @@ export default async function Fragor() {
         fråga saknas här betyder alltså att den är oavgjord, inte att riksdagen
         aldrig tagit ställning.</strong> Ett första urval gav 24 frågor. Ett
         pass med uppgift att motbevisa det urvalet fällde 15 av de 19
-        påståenden som hann prövas, och nio blev kvar.
+        påståenden som hann prövas, och {rakneord(FRAGOR.length)} blev kvar.
       </Forbehall>
 
       <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2 pb-3 pt-14">
@@ -144,4 +149,9 @@ export default async function Fragor() {
       </section>
     </main>
   )
+}
+
+/** "nio" → "Nio". Rubriken i förbehållet börjar en mening. */
+function storBokstav(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }

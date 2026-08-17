@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { REGERINGSPARTIERNA, datum, heltal, lista, namn, partilinje, utskott } from '@/lib/db'
-import { FRAGOR, fraga, hamtaFraga, utfall } from '@/lib/fragor'
+import { PARTIER, REGERINGSPARTIERNA, datum, heltal, lista, namn, partilinje, utskott } from '@/lib/db'
+import { FRAGOR, fraga, hamtaFraga, rakneord, utfall } from '@/lib/fragor'
 import { regeringsspann } from '@/lib/partier'
 import { Rostrad, Rostnyckel } from '@/components/rostrad'
 import { Etikett, Forbehall, Textlank, Tillbaka } from '@/components/system'
@@ -66,15 +66,28 @@ export default async function Fragesida({ params }: { params: Promise<{ slug: st
   // reservationen, medan sidan påstår hur kammaren röstade. De två skiljer sig
   // åt — på tandvårdspunkten stod tre partier bakom motförslaget och exakt de
   // tre röstade nej, men det är inte en regel som håller överallt.
+  //
+  // Två fällor, båda utlösta:
+  //
+  // `parti_rost` innehåller gruppen `-`, de partilösa, som PARTIER inte
+  // innehåller. Utan filtret läste DCA-sidan "På nej-sidan stod - och
+  // Vänsterpartiet" — en av de partilösa röstade nej. Rösten finns kvar i
+  // talen ovanför, där den hör hemma: det är kammarens röstetal och inte
+  // partiernas.
+  //
+  // Linjen kommer ur partilinje() och inte ur en jämförelse skriven här.
+  // Regeln finns redan två gånger, i SQL och i TypeScript, och `npm run
+  // kontrollera` prövar dem mot varandra just därför att en tredje kopia
+  // driver isär utan att något felar.
   const nejsidan = d.roster
-    .filter((r) => Number(r.nej) > Number(r.ja) && Number(r.nej) > Number(r.avstar))
+    .filter((r) => (PARTIER as readonly string[]).includes(r.parti) && partilinje(r) === 'Nej')
     .map((r) => namn(r.parti))
     .sort((a, b) => a.localeCompare(b, 'sv'))
 
   return (
     <main>
       <div className="pt-10">
-        <Tillbaka href="/fragor">Alla nio frågor</Tillbaka>
+        <Tillbaka href="/fragor">Alla {rakneord(FRAGOR.length)} frågor</Tillbaka>
       </div>
 
       <section className="pb-9 pt-7">

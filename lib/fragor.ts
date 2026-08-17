@@ -139,6 +139,28 @@ export function fraga(slug: string) {
   return FRAGOR.find((f) => f.slug === slug)
 }
 
+const RAKNEORD = [
+  'noll', 'en', 'två', 'tre', 'fyra', 'fem', 'sex',
+  'sju', 'åtta', 'nio', 'tio', 'elva', 'tolv',
+]
+
+/**
+ * Små tal som ord: 9 → "nio".
+ *
+ * Finns därför att sidorna säger "nio frågor" i löpande text, och ordet skulle
+ * annars stå skrivet för hand på fyra ställen. Faller en fråga vid en
+ * granskning ska sidan sluta lova nio av sig själv — en hårdkodad mening blir
+ * tyst osann, och just den här är sajtens känsligaste: hela dess trovärdighet
+ * ligger i att den stannar vid det den kan belägga.
+ *
+ * Över tolv faller den tillbaka på siffran. Svenska räkneord blir
+ * sammansättningar däröver, och en lista som växer förbi tolv är en annan
+ * produkt än den här.
+ */
+export function rakneord(n: number) {
+  return RAKNEORD[n] ?? String(n)
+}
+
 export type FragaData = {
   sakfraga: string
   ja_innebar: string
