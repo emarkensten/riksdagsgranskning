@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache'
 import { notFound } from 'next/navigation'
 import { antal, db, datum, heltal, rader, rakna, tal } from '@/lib/db'
 import AMNEN from '@/lib/amnen.json'
+import { FRAGOR } from '@/lib/fragor'
 import { Rostrad, Rostnyckel, type PartiRad } from '@/components/rostrad'
 import { Chip, Etikett, Nyckeltal, Textlank } from '@/components/system'
 import { Forstoringsglas } from '@/components/ikoner'
@@ -12,6 +13,24 @@ import { regeringsspann } from '@/lib/partier'
 // dynamiskt. En deklaration här hade sett ut som en cache som inte finns.
 
 const PER_SIDA = 40
+
+/**
+ * Chipsremsan: en vågrät rad som blöder ut till skärmkanten, i alla bredder.
+ *
+ * Lindade tidigare över 640 px. Det lät sidan visa alla filter samtidigt, men
+ * ämnena tog fyra rader och 177 px på 1280 px bredd, och när valfrågorna kom
+ * till sköts första träffen till y=848 på en 720 px hög skärm. En söksida som
+ * inte visar ett enda resultat ser ut som en startsida med ett sökfält på —
+ * samma fel som redan rättats en gång, då på 375 px.
+ *
+ * Remsan är alltså inte en mobilanpassning som råkade lämnas kvar: den negativa
+ * marginalen plus samma padding gör att chipsen skärs av vid fönsterkanten i
+ * stället för att sluta snyggt, och det är avskärningen som visar att raden
+ * fortsätter. Med den ligger första träffen på y≈660 — högre än före
+ * valfrågorna.
+ */
+const REMSA =
+  '-mx-5 flex items-stretch gap-2 overflow-x-auto px-5 pb-1 sm:-mx-8 sm:px-8'
 
 type Sok = { amne?: string; q?: string; rm?: string; sida?: string }
 type Valt = { amne?: string; rm?: string; q?: string }
@@ -263,13 +282,35 @@ export default async function Start({ searchParams }: { searchParams: Promise<So
           </button>
         </label>
 
-        {/* En vågrät remsa under 640 px, ett lindande fält däröver.
-            De 21 chipsen staplades till 547 px på 375 px bredd, vilket sköt
-            första beslutet till y=1183 — halvannan skärm att scrolla innan
-            sajten visade något av det den handlar om. Remsan gör dem till en
-            rad. Negativ marginal plus samma padding låter den blöda ut till
-            skärmkanten, vilket är det som visar att den fortsätter. */}
-        <div className="-mx-5 flex items-stretch gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-x-visible sm:px-0 sm:pb-0">
+        {/* Valfrågorna tar ämnenas plats som första remsa, och ämnena flyttar
+            ned ett steg.
+
+            Det är ett byte och inte ett tillägg: platsen närmast sökfältet är
+            sidans mest lästa, och den var vikt åt sexton etiketter av typen
+            "konstitution och demokrati" — riksdagens vokabulär, inte
+            väljarens. Nio konkreta frågor säger på en rad vad sajten kan svara
+            på. Alla sexton ämnena finns kvar, en remsa längre ned.
+
+            Remsorna leder olika håll, och det syns: de här nio lämnar
+            startsidan, medan ämnena och riksmötena filtrerar listan nedanför.
+            Därför står de i var sin remsa och aldrig blandade. */}
+        {/* Etiketten är inte dekor. Utan den ser de två remsorna likadana ut
+            — samma chips, samma storlek — fast den ena lämnar sidan och den
+            andra filtrerar listan nedanför. Ämnesremsan behöver ingen egen:
+            dess första chip heter "Alla ämnen" och säger vad den gör. */}
+        <Etikett className="pt-1">Valets frågor</Etikett>
+        <div className={REMSA} aria-label="Valets frågor">
+          {FRAGOR.map((f) => (
+            <Chip key={f.slug} href={`/fragor/${f.slug}`} aktiv={false}>
+              {f.kort}
+            </Chip>
+          ))}
+          <Chip href="/fragor" aktiv={false}>Alla nio frågor →</Chip>
+        </div>
+
+        <Etikett className="pt-2">Filtrera besluten</Etikett>
+
+        <div className={REMSA} aria-label="Filtrera besluten">
           <Chip href={lank(d.valt, { amne: undefined })} aktiv={!d.valt.amne}>Alla ämnen</Chip>
           {amnen.map((a) => (
             <Chip

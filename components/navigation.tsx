@@ -14,6 +14,10 @@ import { usePathname } from 'next/navigation'
  */
 const SIDOR = [
   { href: '/', text: 'Besluten' },
+  // Näst efter sökningen, inte sist. Frågesidorna är sajtens enda yta som
+  // möter läsaren i hens egna ord i stället för i kammarens, och de är det
+  // enda som är byggt för valet snarare än för mandatperioden.
+  { href: '/fragor', text: 'Valfrågor' },
   { href: '/fynd', text: 'Fynd' },
   { href: '/partier', text: 'Partier' },
   { href: '/metod', text: 'Metod' },

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { db, slug, PARTIER } from '@/lib/db'
 import { allaRader } from '@/lib/block'
+import { FRAGOR } from '@/lib/fragor'
 import { SAJT_URL } from '@/lib/sajt'
 
 /**
@@ -16,6 +17,10 @@ export const revalidate = 3600
 // och en sitemap ska peka på sidor som svarar 200. Roten är sökningen numera.
 const STATISKA = [
   ['', 1],
+  // Näst högst efter roten. Frågesidorna är sajtens enda sökmotoryta som möter
+  // en valfråga i väljarens egna ord, och indexering tar dagar — varje dags
+  // fördröjning är förlorad räckvidd i september.
+  ['/fragor', 0.9],
   ['/fynd', 0.9],
   ['/partier', 0.8],
   ['/samstammighet', 0.8],
@@ -54,6 +59,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: senast ? new Date(senast) : undefined,
       changeFrequency: 'monthly' as const,
       priority,
+    })),
+    ...FRAGOR.map((f) => ({
+      url: `${SAJT_URL}/fragor/${f.slug}`,
+      lastModified: senast ? new Date(senast) : undefined,
+      changeFrequency: 'monthly' as const,
+      // Samma vikt som partisidorna, inte som voteringarna. En frågesida är en
+      // redigerad ingång och inte en av 2 587 likvärdiga poster.
+      priority: 0.9,
     })),
     ...PARTIER.map((p) => ({
       url: `${SAJT_URL}/partier/${slug(p)}`,
