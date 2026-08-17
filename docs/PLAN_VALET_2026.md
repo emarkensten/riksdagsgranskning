@@ -100,11 +100,36 @@ lagras som versionerad JSON i `lib/valfragor/` — slug, rubrik, källa, lista a
 inte av SVT:s frågetexter** — vi lånar urvalet, inte formuleringarna, och
 länkar källan.
 
-**Mät antalet innan 25 sidor byggs.** 8 977 förslagspunkter finns; bara 2 587
-har klarspråk och röstdata. Många kompassfrågor kommer att mappa mot noll eller
-två voteringar, och om hälften av sidorna säger "riksdagen har inte röstat om
-exakt detta" är sidtypen svagare än tänkt. Arbetsregel 8 gäller även *antalet*,
-inte bara kvaliteten: mät först, bestäm omfattningen sedan.
+**Mätt 2026-08-17.** 24 av 35 frågor har minst en votering som handlar om samma
+sak, 28 med generösare linje, 7 har noll. Men **bara en enda fråga har fem eller
+fler** — de flesta har en till fyra, ofta exakt en. Fem påstådda exakta träffar
+är stickprovade mot databasen och höll ordagrant: marknadshyror (7874), statligt
+sjukvårdsansvar (3107), DCA-avtalet (4674), reserverade föräldrapenningdagar
+(5463), permanent uppehållstillstånd (3557).
+
+Planens antagande om 15–25 sidor med flera voteringar var är därmed falsifierat.
+**Sidan bär på en enda votering** — om den slutar tänkas som en magasinssida. En
+ordagrann träff slår fem ungefärliga när målet är citerbarhet, och den journalist
+som söker "hur röstade partierna om marknadshyror" vill ha det ena exakta
+beslutet.
+
+Två villkor följer:
+
+- **Padda inte.** Frestelsen på en-voteringssidor är att fylla ut med
+  närliggande voteringar. Det flyttar bara hårfinhetsproblemet till urvalet.
+  Hellre en träff plus "detta är den enda gång riksdagen tagit ställning till
+  exakt detta" — det stycket är i sig ett fynd.
+- **Behåll nollsidorna.** För de sju frågorna är svaret plus förklaringen varför
+  (regeringens gärning ligger i propositioner utan namnupprop) hela sidan.
+
+**Grind före omfattningen låses: adversariellt motbevisningspass.** Mätningen
+verifierade toppen, inte marginalen — och inte *riktningen*. Att ett ja i
+voteringen motsvarar ett instämmande i kompassfrågan är oprövat, och
+utskottsförslag-mot-reservation gör riktningen tvetydig oftare än ämnet.
+Lager 3 hade exakt samma form: bländande exempelfall som föll 9 av 9 när någon
+fick i uppdrag att motbevisa dem. Kör motbevisningen på de svagaste träffarna
+och på riktningsmappningen innan sidantalet bestäms. Talet 24 kan visa sig vara
+10.
 
 **Hederlighetsregler:**
 
@@ -193,6 +218,45 @@ Det får inte hänga löst.
   verktyg som pekar ut partier dagarna före ett val är en trovärdighetsrisk, och
   kollegans felläsning är en förhandsvisning av vad en masspublik gör med ett
   fynd.
+
+### Löfte mot handling med 2022 års valkompass — prövat och avvisat 2026-08-17
+
+Idén var att använda frågorna från valet 2022 i stället för 2026 års, eftersom
+det var dem partierna gick till val på inför den mandatperiod vi har röstdata
+för. Löfte 2022 → handling 2022–2026, en sluten cirkel. SVT:s kompass från 2022
+ligger kvar med partiernas fullständiga svar och fritextmotiveringar, så det är
+tekniskt möjligt. Det ska ändå inte byggas.
+
+**Fällan sitter i påståendet, inte i datat.** En sida med 2026 års fråga och de
+voteringar som finns gör ett faktaåtkomstpåstående. En sida som ställer partiets
+2022-svar *bredvid* dess röster gör ett hyckleripåstående genom själva
+sammanställningen, även utan uträknad etikett. Läsaren drar slutsatsen åt oss,
+och ibland fel — reservationsfällan syns inte i en `Rostrad`. Facit finns redan:
+kollegan felläste "556 gånger ensam mot alla" trots förbehåll på sidan.
+
+**Ett A–D-svar renar sagt-sidan men inte votering-sidan.** Flera av
+avfärdningsgrunderna i [`VALIDERING.md`](VALIDERING.md) — reservationen innehöll
+mer än som begärdes, frågan hanterades i annan ordning, voteringsordningen vid
+flera reservationer — ligger på voteringssidan av bron. Den hårfina bedömningen
+flyttas från klassificering till mappning, den försvinner inte.
+
+**Koalitionsinvändningen.** Ett parti som svarade A och sedan förhandlade
+Tidöavtalet har inte ljugit, det har regerat. Och eftersom M, KD och L röstar
+lika i 99,9–100 % skulle spåret hitta tre partier som bryter identiska löften
+identiskt — ett fynd, Tidöavtalet, omförpackat som trefaldigt hyckleri.
+
+**Rättigheterna.** Partisvaren och motiveringarna är insamlade och sammanställda
+av SVT, hämtade ur interna dataendpoints och skulle versioneras i ett publikt
+repo. "Vi trodde det var fritt" finns inte som position. Sajtens enda valuta är
+att kunna citeras av journalister, alltså exakt den publik som bryr sig om
+varifrån materialet kommer. Spåret och ett Antrop-avsändarskap utesluter
+varandra.
+
+**Vad som överlever:** instinkten är rätt, tidpunkten fel. Dokumentera 2026 års
+frågeurval nu och bygg löftesuppföljningen under *nästa* mandatperiod, med tid
+för rättighetsklarering, en koalitionsmodell och en metod som tål granskning.
+Ska en löftessida ändå byggas är rätt källa partiernas egna valmanifest — deras
+ord, publicerade för spridning — inte SVT:s sammanställning.
 
 ## Fallgropar
 
