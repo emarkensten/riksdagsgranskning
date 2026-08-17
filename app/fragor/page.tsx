@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { PARTIER, datum, heltal, lista, namn } from '@/lib/db'
-import { FRAGOR, hamtaAllaFragor, rakneord, utfall } from '@/lib/fragor'
+import { FRAGOR, KOMPASS, hamtaAllaFragor, rakneord, utfall } from '@/lib/fragor'
 import { Rostrad, Rostnyckel } from '@/components/rostrad'
-import { Etikett, Forbehall, Textlank } from '@/components/system'
+import { Kompasslank } from '@/components/kompasslank'
+import { Etikett, Textlank } from '@/components/system'
 import { sidmetadata } from '@/lib/sajt'
 
 export const revalidate = 3600
@@ -15,7 +16,7 @@ export const metadata = sidmetadata({
   beskrivning:
     `${storBokstav(rakneord(FRAGOR.length))} av valets frågor där en votering i riksdagen svarar mot frågan. ` +
     'Vad ett ja innebar, vad ett nej innebar och hur de åtta partierna röstade. ' +
-    'Urvalet följer SVT:s valkompass 2026, formuleringarna är våra egna.',
+    `Urvalet följer ${KOMPASS.namn}, formuleringarna är våra egna.`,
   sokvag: '/fragor',
   egenBild: true,
 })
@@ -27,6 +28,11 @@ export const metadata = sidmetadata({
  * tyngsta tal, och det tal som skulle bära ett fält här — nio av trettiofem —
  * är ett tal om sajtens begränsning och inte om riksdagen. Ett förbehåll satt
  * i 148 px hade läst som skryt.
+ *
+ * Av samma skäl har sidan inget `Forbehall` heller. Det stod över listan och
+ * bar begränsningen i grå ruta med orange kantlinje, alltså i den tyngsta
+ * form sidan har näst efter panelen. Se ingressen för vad som blev kvar och
+ * "Om urvalet" för resten.
  */
 export default async function Fragor() {
   const karta = await hamtaAllaFragor()
@@ -58,6 +64,21 @@ export default async function Fragor() {
         >
           Vad gjorde de i frågan?
         </h1>
+        {/* Nämnaren står i ingressen, inte i ett förbehåll under den.
+
+            Den stod i en grå ruta med orange kantlinje och ikon fram till nu —
+            fem rader förbehåll mellan rubriken och listan, alltså mer visuell
+            tyngd än de nio frågorna rutan handlar om. Ett förbehåll som tar
+            fokus från det som förbehålls är inte längre ärlighet utan ett
+            hinder, och läsaren möttes av sajtens begränsning innan hen fått se
+            vad den kan.
+
+            Kvar ovanför listan står det som faktiskt måste läsas före den: att
+            nio inte är allt, varifrån trettiofem kommer, och att en fråga som
+            saknas är oavgjord snarare än obehandlad. Hur urvalet gick till —
+            de 24, motbevisningspasset, de nio som blev kvar — hör hemma i "Om
+            urvalet" under listan. Det är svaret på en fråga läsaren ställer
+            efter att ha sett listan, inte före. */}
         <p
           className="stig mt-7 max-w-[56ch] text-[clamp(17px,2.2vw,21px)] leading-[1.45]"
           style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}
@@ -66,21 +87,20 @@ export default async function Fragor() {
           samma frågor, med riksdagens egen omröstning bredvid — vad frågan gällde,
           vad ett ja innebar, vad ett nej innebar och hur varje parti röstade.
         </p>
+        <p
+          className="stig mt-5 max-w-[62ch] text-[14.5px] leading-[1.6]"
+          style={{ color: 'var(--black-svag)', animationDelay: '240ms' }}
+        >
+          {storBokstav(rakneord(FRAGOR.length))} av de {KOMPASS.ord} frågorna
+          i <Kompasslank />: de där en enskild votering svarar mot frågan och
+          har en entydig riktning. Att en fråga saknas betyder att den är
+          oavgjord, inte att riksdagen aldrig tagit ställning —{' '}
+          <a href="#om-urvalet" className="underline hover:opacity-70">
+            så gjordes urvalet
+          </a>
+          .
+        </p>
       </section>
-
-      {/* Den ärliga raden. Att sajten stannar vid nio är dess starkaste
-          egenskap och ska stå före listan, inte gömmas efter den. */}
-      <Forbehall rubrik={`${storBokstav(rakneord(FRAGOR.length))} frågor, inte trettiofem.`}>
-        De {rakneord(FRAGOR.length)} nedan är de frågor där en enskild votering svarar mot
-        frågan och har en entydig riktning. För de övriga har vi inte kunnat
-        fastställa någon sådan votering — riksdagen kan mycket väl ha behandlat
-        dem ändå, i propositioner utan namnupprop eller i punkter som buntar
-        ihop flera frågor. <strong style={{ color: 'var(--black)' }}>Att en
-        fråga saknas här betyder alltså att den är oavgjord, inte att riksdagen
-        aldrig tagit ställning.</strong> Ett första urval gav 24 frågor. Ett
-        pass med uppgift att motbevisa det urvalet fällde 15 av de 19
-        påståenden som hann prövas, och {rakneord(FRAGOR.length)} blev kvar.
-      </Forbehall>
 
       <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2 pb-3 pt-14">
         <h2 className="text-[26px] font-extrabold tracking-[-0.025em]">
@@ -127,23 +147,39 @@ export default async function Fragor() {
         })}
       </ol>
 
-      <section className="regel py-14">
+      <section id="om-urvalet" className="regel scroll-mt-6 py-14">
         <h2 className="text-[26px] font-extrabold tracking-[-0.025em]">Om urvalet</h2>
         <div className="mt-5 grid max-w-[64ch] gap-4 text-[16px] leading-[1.6]"
              style={{ color: 'var(--black-mjuk)' }}>
           <p>
-            Vilka frågor som står här följer{' '}
-            <a
-              href="https://valkompass.svt.se"
-              target="_blank"
-              rel="noreferrer"
-              className="underline hover:opacity-70"
-              style={{ color: 'var(--black)' }}
-            >
-              SVT:s valkompass 2026
-            </a>
-            . Formuleringarna är våra egna — vi lånar vilka frågor som ligger på
-            bordet inför valet, aldrig hur de är ställda.
+            Vilka frågor som står här följer <Kompasslank />, som ställer{' '}
+            {KOMPASS.ord} frågor. Formuleringarna är våra egna — vi lånar vilka
+            frågor som ligger på bordet inför valet, aldrig hur de är ställda.
+          </p>
+          {/* Kriteriet och oavgjord-satsen står i ingressen och upprepas inte
+              här. Ankarlänken därifrån landar läsaren på det här stycket
+              sekunder efter att hen läst dem — en ordagrann upprepning så nära
+              läses inte som en sammanfattning utan som att texten tappat
+              tråden, och två kopior är dessutom två meningar att hålla i takt.
+              Det här stycket svarar bara på vad som hände med de övriga. */}
+          <p>
+            För de övriga har vi inte kunnat fastställa någon sådan votering.
+            Riksdagen kan mycket väl ha behandlat dem ändå — i propositioner
+            utan namnupprop, eller i punkter som buntar ihop flera frågor — men
+            då finns inget namnupprop att visa, och sidan påstår ingenting om
+            dem.
+          </p>
+          {/* De tre talen står i samma mening därför att de kommer ur samma
+              granskning och inte betyder något var för sig. Att 24 blev nio är
+              sajtens enda belägg för att urvalet faktiskt prövats, och det är
+              det första en granskare frågar efter. */}
+          <p>
+            Ett första urval gav 24 av frågorna. Ett pass med uppgift att
+            motbevisa det urvalet fällde 15 av de 19 påståenden som hann
+            prövas, och {rakneord(FRAGOR.length)} blev kvar. Grunderna var att
+            en utvärdering av något inte är samma sak som saken själv, och
+            framför allt riktningen: en votering som rör rätt ämne men inte går
+            att läsa som ett ja eller ett nej i frågan duger inte.
           </p>
           <p>
             Sidorna översätter ingen votering till kompassens svarsskala. En
@@ -181,7 +217,7 @@ export default async function Fragor() {
   )
 }
 
-/** "nio" → "Nio". Rubriken i förbehållet börjar en mening. */
+/** "nio" → "Nio". Sidtiteln och raden under ingressen börjar båda med talet. */
 function storBokstav(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }

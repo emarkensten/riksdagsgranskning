@@ -145,6 +145,30 @@ export function fraga(slug: string) {
   return FRAGOR.find((f) => f.slug === slug)
 }
 
+/**
+ * Kompassen urvalet lånar sina frågor av.
+ *
+ * `ord` är den enda uppgiften på sajten som inte går att härleda ur databasen
+ * — den är SVT:s, inte riksdagens, och kan bara kontrolleras mot källan. Just
+ * därför står den här och inte inskriven i en mening: "nio av de trettiofem"
+ * är sajtens känsligaste påstående om sig själv, och ett tal som bara finns i
+ * löptext blir tyst osant den dagen kompassen ändras.
+ *
+ * Ordet och inte siffran, eftersom sidorna aldrig skriver den som siffra och
+ * `rakneord()` stannar med flit vid tolv. Ett `antal: 35` bredvid hade varit
+ * en andra stavning av samma faktum som ingen renderar — alltså exakt den
+ * glidning konstanten finns för att stoppa.
+ *
+ * Talen från urvalsgranskningen (24 → 15 av 19 fällda → nio) står kvar i sin
+ * mening i "Om urvalet". De hör ihop och betyder ingenting var för sig; att
+ * lyfta ut ett av dem hit hade gett sken av en källa de tre inte delar.
+ */
+export const KOMPASS = {
+  namn: 'SVT:s valkompass 2026',
+  url: 'https://valkompass.svt.se',
+  ord: 'trettiofem',
+} as const
+
 const RAKNEORD = [
   'noll', 'en', 'två', 'tre', 'fyra', 'fem', 'sex',
   'sju', 'åtta', 'nio', 'tio', 'elva', 'tolv',

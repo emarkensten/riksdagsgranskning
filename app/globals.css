@@ -213,6 +213,56 @@ body {
 
 .regel { border-top: 1px solid var(--linje); }
 
+/*
+  Chipsremsan — filtren och valfrågorna.
+
+  På pekskärm en vågrät remsa som blöder ut till fönsterkanten. Avskärningen
+  vid kanten är det enda som visar att raden fortsätter, och därför ligger den
+  negativa marginalen och paddingen på samma tal: chipsen ska skäras av vid
+  kanten, inte sluta snyggt innanför den. Ett svep kostar ingenting.
+
+  Med mus finns inget svep. Kvar blir ett hjul som ingen vet är vågrätt och en
+  scrollbar som syns först när man rör vid remsan — så på pekdon som pekar
+  exakt lindar den i stället och håller sig innanför kolumnen.
+
+  Priset är mätt och inte uppskattat. På startsidan vid 1280×720: valfrågorna
+  går från en rad till två (89 px), filtren från en till fyra (181 px), och
+  första träffen flyttar från y≈660 till y=853 — alltså under vikningen på en
+  vanlig laptop. Det är samma tal som en tidigare mätning gav (y=848) innan
+  lindningen togs bort just av det skälet, så avvägningen är gjord med öppna
+  ögon: fyra extra rader syns, det gör inte innehållet bortom en kant man inte
+  kan svepa.
+
+  Villkoret är `pointer: fine` och inte en brytpunkt. Ett smalt fönster på en
+  dator har fortfarande mus, men där skulle lindningen kosta ännu fler rader —
+  därför måste båda gälla.
+
+  Marginalen och paddingen måste vara samma tal som innehållskolumnens
+  `px-5 sm:px-8` i app/layout.tsx. Ändras gutter där slutar remsorna blöda ut
+  till fönsterkanten, tyst.
+*/
+.remsa {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  margin-inline: -1.25rem;
+  padding-inline: 1.25rem;
+  padding-bottom: 0.25rem;
+}
+
+@media (min-width: 640px) {
+  .remsa { margin-inline: -2rem; padding-inline: 2rem; }
+}
+
+@media (min-width: 640px) and (pointer: fine) {
+  .remsa {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}
+
 /* Staplad reveal vid sidladdning — en gång, i heron, inte överallt. */
 @keyframes stig {
   from { opacity: 0; transform: translateY(0.6rem); }

@@ -62,23 +62,37 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             varför den göms med clip-path och inte med display:none. */}
         <a href="#innehall" className="hoppa">Hoppa till innehållet</a>
 
-        {/* Hårlinjerna kring sidhuvud och sidfot går kant i kant med fönstret,
-            precis som det mörka fältet. Ett halvt utbrott — till kolumnens
-            ytterkant — hade bara sett ut som en felräkning. */}
-        <div style={{ borderBottom: '1px solid var(--linje)' }}>
-          {/* Ordmärket krymper aldrig: sju navobjekt bredvid det tvingar annars
-              fram en radbrytning mitt i namnet. Under 640 px lindar navet till
-              en egen rad i stället. */}
-          <header className="mx-auto flex max-w-5xl flex-col items-start gap-4 px-5 py-[22px] sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:px-8">
-            <Link
-              href="/"
-              className="shrink-0 text-[17px] font-extrabold tracking-[-0.03em] transition-opacity duration-150 hover:opacity-70"
-            >
-              Riksdags<span style={{ color: 'var(--accent)' }}>kammaren</span>
-            </Link>
-            <Navigation />
-          </header>
-        </div>
+        {/* Ingen hårlinje under sidhuvudet, och därför inget omslutande band
+            heller — hela div:en fanns bara för att bära linjen kant i kant med
+            fönstret, och <header> är blockelement med egen mx-auto.
+
+            En linje under ett navfält är ett löfte om att fältet ligger kvar
+            när sidan rullar — den finns för att skilja det som står stilla från
+            det som glider under. Det här sidhuvudet rullar med, och då avgränsar
+            linjen ingenting: den delar bara sidan i två ark. Sidfotens linje
+            står kvar, för där slutar innehållet faktiskt; asymmetrin är avsedd.
+
+            Går sidhuvudet någon gång över till sticky ska linjen — och bandet
+            den behöver — tillbaka i samma ändring, inte som en egen.
+
+            Ordmärket krymper aldrig: sju navobjekt bredvid det tvingar annars
+            fram en radbrytning mitt i namnet. Under 640 px lindar navet till en
+            egen rad i stället. */}
+        <header className="mx-auto flex max-w-5xl flex-col items-start gap-4 px-5 py-[18px] sm:flex-row sm:items-center sm:justify-between sm:gap-8 sm:px-8">
+          {/* Större än navet, inte jämnstort med det. Stod på 17 px och blev
+              då 25 px högt mot navpillrens 34 — sidhuvudets namn läste som en
+              sjunde länk. Nu bär det raden: 27 px ger ett 40 px högt block,
+              ett snäpp över pillren, och skillnaden är tillräcklig för att
+              ögat ska ta namnet först. Sidhuvudets py sänktes lika mycket som
+              märket växte, så bandet står kvar på sina 78 px. */}
+          <Link
+            href="/"
+            className="shrink-0 text-[23px] font-extrabold tracking-[-0.035em] transition-opacity duration-150 hover:opacity-70 sm:text-[27px]"
+          >
+            Riksdags<span style={{ color: 'var(--accent)' }}>kammaren</span>
+          </Link>
+          <Navigation />
+        </header>
 
         {/* tabIndex={-1} är inte kosmetik. Ett ankarmål som inte är fokuserbart
             scrollar bara — tangentbordsfokus står kvar där det var, och nästa
