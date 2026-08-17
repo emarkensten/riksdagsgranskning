@@ -112,7 +112,11 @@ export default async function Samstammighet({
       )}
 
       <section className="py-12">
-        <div className="flex flex-wrap gap-2">
+        {/* Samma remsa som startsidans filter, inte en egen lindning. Sjutton
+            chips i `flex-wrap` tog sex rader på 375 px och tryckte ned matrisen
+            under vikningen; `.remsa` ger samma lindning som förut på desktop
+            och en svepbar remsa på pekskärm. */}
+        <div className="remsa">
           <Chip href="/samstammighet" aktiv={valt === 'alla'}>Alla ämnen</Chip>
           {[...AMNEN].sort((a, b) => a.localeCompare(b, 'sv')).map((a) => (
             <Chip

@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PARTIER, REGERINGSPARTIERNA, datum, heltal, lista, namn, partilinje, utskott } from '@/lib/db'
-import { FRAGOR, fraga, hamtaFraga, rakneord, utfall } from '@/lib/fragor'
+import { FRAGOR, KOMPASS, fraga, hamtaFraga, rakneord, utfall } from '@/lib/fragor'
 import { regeringsspann } from '@/lib/partier'
 import { Rostrad, Rostnyckel } from '@/components/rostrad'
+import { Kompasslank } from '@/components/kompasslank'
 import { Etikett, Forbehall, Textlank, Tillbaka } from '@/components/system'
 import { Bock, Kryss } from '@/components/ikoner'
 import { korta, sidmetadata } from '@/lib/sajt'
@@ -122,17 +123,10 @@ export default async function Fragesida({ params }: { params: Promise<{ slug: st
             på sidan behöver veta varifrån urvalet kommer innan hen läser
             listan, inte efter. */}
         <p className="mt-5 max-w-[58ch] text-[13.5px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
-          Vilka frågor som står här följer{' '}
-          <a
-            href="https://valkompass.svt.se"
-            target="_blank"
-            rel="noreferrer"
-            className="underline hover:opacity-70"
-          >
-            SVT:s valkompass 2026
-          </a>
-          . Formuleringen ovan är vår egen — vi lånar vilka frågor som ligger på
-          bordet, inte hur de är ställda.
+          Den här frågan är en av {rakneord(FRAGOR.length)} som riksdagen
+          avgjort i en enskild votering, av de {KOMPASS.ord} som{' '}
+          <Kompasslank /> ställer. Formuleringen ovan är vår egen — vi lånar
+          vilka frågor som ligger på bordet, inte hur de är ställda.
         </p>
       </section>
 
