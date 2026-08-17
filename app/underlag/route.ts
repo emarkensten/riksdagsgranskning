@@ -118,7 +118,7 @@ export async function GET() {
   return new Response(`﻿${rader.join('\n')}`, {
     headers: {
       'content-type': 'text/csv; charset=utf-8',
-      'content-disposition': 'attachment; filename="namnupprop-partiroster.csv"',
+      'content-disposition': 'attachment; filename="riksdagskammaren-partiroster.csv"',
       'cache-control': 'public, max-age=3600',
     },
   })

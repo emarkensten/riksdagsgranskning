@@ -50,15 +50,17 @@ export default function Om() {
         </p>
       </section>
 
-      {/* Friskrivningen står högst upp och inte i en fotnot: namnet är
-          riksdagens eget ord, och den som läser det som en avsändare har läst
-          fel innan hen hunnit till någon brödtext. */}
+      {/* Friskrivningen står högst upp och inte i en fotnot: namnet är hämtat
+          ur riksdagens egen vokabulär, och den som läser det som en avsändare
+          har läst fel innan hen hunnit till någon brödtext. Efter namnbytet är
+          risken större, inte mindre — "Riksdagskammaren" låter som en adress
+          inne i huset, medan "Namnupprop" lät som ett förfarande. */}
       <Forbehall rubrik="Sajten har ingen koppling till Sveriges riksdag.">
-        <em>Namnupprop</em> är riksdagens ord för när rösterna räknas ledamot för
-        ledamot, och sajten heter så därför att det avgränsar exakt vad den
-        täcker. Men den är privat. Riksdagen har varken beställt, granskat eller
-        godkänt något av innehållet, och är inte ansvarig för det. Riksdagens
-        egna uppgifter ligger på{' '}
+        <em>Riksdagskammaren</em> är rummet där de 349 ledamöterna röstar, och
+        sajten heter så därför att det avgränsar exakt vad den täcker: besluten
+        som avgjordes där. Men den är privat. Riksdagen har varken beställt,
+        granskat eller godkänt något av innehållet, och är inte ansvarig för
+        det. Riksdagens egna uppgifter ligger på{' '}
         <a
           href="https://data.riksdagen.se"
           target="_blank"

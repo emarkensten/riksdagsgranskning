@@ -73,7 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               href="/"
               className="shrink-0 text-[17px] font-extrabold tracking-[-0.03em] transition-opacity duration-150 hover:opacity-70"
             >
-              Namn<span style={{ color: 'var(--accent)' }}>upprop</span>
+              Riksdags<span style={{ color: 'var(--accent)' }}>kammaren</span>
             </Link>
             <Navigation />
           </header>

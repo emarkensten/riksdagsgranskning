@@ -13,8 +13,16 @@ export const REPO = 'https://github.com/emarkensten/riksdagsgranskning'
 /** Kontaktvägen. Ingen e-postadress publiceras — se /om. */
 export const NYTT_ARENDE = `${REPO}/issues/new`
 
-export const SAJT = 'Namnupprop'
-export const UNDERTITEL = 'Varje votering i riksdagen, på vanlig svenska.'
+export const SAJT = 'Riksdagskammaren'
+
+/**
+ * Undertiteln säger inte "i riksdagen" längre.
+ *
+ * Namnet gör det redan, och `${SAJT} — ${UNDERTITEL}` är den sträng varje
+ * delningsbild bär som `alt`. Med den gamla lydelsen läste den
+ * "Riksdagskammaren — Varje votering i riksdagen".
+ */
+export const UNDERTITEL = 'Varje votering, förklarad på vanlig svenska.'
 
 /**
  * Rotens delningsbild, som `app/opengraph-image.tsx` ritar.
@@ -84,7 +92,7 @@ export function korta(text: string, tak: number) {
  * `/opengraph-image` utan hashen i frågesträngen svarar med samma bild —
  * hashen är Next sätt att spräcka cachen när bilden ändras, inte en del av
  * adressen. Undersidorna delar rotens bild med flit: den bär sajtens namn och
- * inte sidans, och en delad länk ska se ut att komma från Namnupprop.
+ * inte sidans, och en delad länk ska se ut att komma från sajten.
  * Voteringssidorna har en egen `opengraph-image.tsx` och sätter sin egen.
  */
 export function sidmetadata({

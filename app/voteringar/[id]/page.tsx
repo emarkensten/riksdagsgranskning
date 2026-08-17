@@ -60,7 +60,7 @@ async function hamta(id: number) {
 /**
  * 2 587 voteringar är lika många landningssidor, och var och en är den enda
  * sida på sajten som besvarar exakt sin fråga. Utan egen metadata delades de
- * alla som "Namnupprop — så röstade riksdagen".
+ * alla som "Riksdagskammaren — så röstade riksdagen".
  */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

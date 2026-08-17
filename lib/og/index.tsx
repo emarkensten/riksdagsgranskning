@@ -158,9 +158,13 @@ export function delningsbild({
               >
                 {fot}
               </div>
+              {/* Samma delning som ordmärket i app/layout.tsx: första halvan i
+                  bläck, andra i signalfärg. Bilden ritas av satori och kan inte
+                  läsa komponenten, så strängen står två gånger — ändras den ena
+                  ska den andra följa med. */}
               <div style={{ display: 'flex', fontSize: 30, fontWeight: 800, letterSpacing: '-0.03em' }}>
-                <span style={{ color: BLACK }}>Namn</span>
-                <span style={{ color: ACCENT }}>upprop</span>
+                <span style={{ color: BLACK }}>Riksdags</span>
+                <span style={{ color: ACCENT }}>kammaren</span>
               </div>
             </div>
           </div>

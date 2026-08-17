@@ -1,7 +1,10 @@
 import { delningsbild, OG_STORLEK, OG_TYP } from '@/lib/og'
-import { UNDERTITEL } from '@/lib/sajt'
+import { SAJT, UNDERTITEL } from '@/lib/sajt'
 
-export const alt = 'Namnupprop — så röstade riksdagen'
+// Härledd ur SAJT och inte skriven för hand: alt-texten är det enda stället där
+// namnet stod kvar efter namnbytet, och den syns bara för den som inte ser
+// bilden.
+export const alt = `${SAJT} — så röstade riksdagen`
 export const size = OG_STORLEK
 export const contentType = OG_TYP
 
