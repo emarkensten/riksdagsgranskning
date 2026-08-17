@@ -8,8 +8,16 @@ const nextConfig = {
   },
   // /spanningar var metodsidan innan den fanns på riktigt. Essän som låg där
   // är nu sista avsnittet på /metod.
+  //
+  // /voteringar var sökningen innan den blev startsida. Frågesträngen följer
+  // med av sig själv — Next skickar vidare den när källan saknar dynamiska
+  // segment — så en delad länk med filter, som /voteringar?amne=energi, landar
+  // rätt. Undersidorna /voteringar/[id] berörs inte: källan är exakt.
   async redirects() {
-    return [{ source: '/spanningar', destination: '/metod#hyckleri', permanent: true }]
+    return [
+      { source: '/spanningar', destination: '/metod#hyckleri', permanent: true },
+      { source: '/voteringar', destination: '/', permanent: true },
+    ]
   },
   images: {
     remotePatterns: [

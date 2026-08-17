@@ -107,7 +107,7 @@ export default async function Votering({ params }: { params: Promise<{ id: strin
   return (
     <main>
       <div className="pt-10">
-        <Tillbaka href="/voteringar">Alla voteringar</Tillbaka>
+        <Tillbaka href="/">Alla beslut</Tillbaka>
       </div>
 
       <section className="pb-10 pt-7">

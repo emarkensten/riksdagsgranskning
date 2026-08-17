@@ -12,9 +12,11 @@ import { SAJT_URL } from '@/lib/sajt'
  */
 export const revalidate = 3600
 
+// /voteringar står inte här längre: den är en 308 mot roten sedan vändningen,
+// och en sitemap ska peka på sidor som svarar 200. Roten är sökningen numera.
 const STATISKA = [
   ['', 1],
-  ['/voteringar', 0.9],
+  ['/fynd', 0.9],
   ['/partier', 0.8],
   ['/samstammighet', 0.8],
   ['/blocken', 0.8],
@@ -26,7 +28,7 @@ const STATISKA = [
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // votering_lista och inte punkt_klartext: listan är det universum
-  // /voteringar faktiskt visar, och en sitemap ska peka på sidor som finns.
+  // startsidan faktiskt visar, och en sitemap ska peka på sidor som finns.
   // Se #olika-tal på metodsidan för varför de två talen skiljer sig åt.
   //
   // Tusentals rader, alltså över PostgREST:s takgräns på 1 000 — utan blocken

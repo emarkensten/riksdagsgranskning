@@ -1,443 +1,449 @@
 import Link from 'next/link'
-import { antal, datum, db, heltal, lista, namn, rader, rakna, tal, REGERINGSPARTIERNA } from '@/lib/db'
-import { Linjeetikett } from '@/components/rostrad'
-import { Etikett, Forbehall, Knapp, Nyckeltal, Partiprick, Textlank } from '@/components/system'
-import { Stapel } from '@/components/stapel'
-import { regeringsspann } from '@/lib/partier'
+import { unstable_cache } from 'next/cache'
+import { notFound } from 'next/navigation'
+import { antal, db, datum, heltal, rader, rakna, tal } from '@/lib/db'
 import AMNEN from '@/lib/amnen.json'
+import { Rostrad, Rostnyckel, type PartiRad } from '@/components/rostrad'
+import { Chip, Etikett, Nyckeltal, Textlank } from '@/components/system'
+import { Forstoringsglas } from '@/components/ikoner'
+import { regeringsspann } from '@/lib/partier'
 
-export const revalidate = 3600
+// Ingen revalidate: sidan läser searchParams och renderas därför alltid
+// dynamiskt. En deklaration här hade sett ut som en cache som inte finns.
 
-type Ensam = { parti: string; ensam: number; av: number; andel: number }
-type Exempel = {
-  parti: string; linje: string; forslagspunkt_id: number; amne: string
-  beteckning: string; punkt: string; datum: string; sakfraga: string
-}
-type Forlust = {
-  forslagspunkt_id: number; rm: string; beteckning: string; punkt: string
-  datum: string; sakfraga: string; ja_innebar: string; nej_innebar: string
-  motforslag_partier: string[] | null; ja: number; nej: number; marginal: number
-}
+const PER_SIDA = 40
 
-async function hamta() {
-  const klient = db()
+type Sok = { amne?: string; q?: string; rm?: string; sida?: string }
+type Valt = { amne?: string; rm?: string; q?: string }
 
-  const [
-    par,
-    ensamma,
-    forluster,
-    riksmoten,
-    amnen,
-    likhetsspann,
-    jamna,
-    avgjorde,
-    voteringar,
-  ] = await Promise.all([
-    rader<any>(klient.from('partisamstammighet').select('parti_1, parti_2, gemensamma, lika, samstammighet')
-      .eq('amne', 'alla').order('samstammighet', { ascending: false }).limit(1)),
-    rader<Ensam>(klient.from('parti_ensam').select('parti, ensam, av, andel')
-      .order('ensam', { ascending: false })),
-    rader<Forlust>(klient.from('utskottet_forlorade').select('*').order('datum')),
-    // En rad per riksmöte. Frånvaron för hela perioden måste summeras ur dem;
-    // den enskilda raden är en helt annan siffra, och spannet mellan dem räknas
-    // fram nedan och skrivs ut bredvid totalen.
-    rader<{ rm: string; roster: number; franvarande: number }>(
-      klient.from('riksmote_summering').select('rm, roster, franvarande')),
-    // Storleken, inte tecknet. Sorterat på avvikande_delta vann alltid det par
-    // som röstar mer olikt än vanligt, och ett par som röstar ovanligt lika
-    // kunde aldrig nå citatet — hur stort utslaget än var.
-    // Sekundärsorteringen är inte kosmetisk: två ämnen kan dela toppvärde
-    // (jämställdhet och övrigt ligger båda på 19,9), och utan den avgör
-    // radordningen i den materialiserade vyn vilket som blir sidans citat.
-    rader<any>(klient.from('amne_oversikt').select('*')
-      .order('avvikande_storlek', { ascending: false }).order('amne').limit(1)),
-    regeringsspann(),
-    rakna(antal(klient, 'jamn_votering').lte('marginal', 3), 'jämna voteringar'),
-    // Samma marginalvillkor som raden ovan: siffran presenteras som en delmängd
-    // av de jämna voteringarna och måste räknas på samma urval.
-    rakna(antal(klient, 'jamn_votering').lte('marginal', 3).eq('franvaron_avgjorde', true),
-      'voteringar där frånvaron avgjorde'),
-    rakna(antal(klient, 'jamn_votering'), 'voteringar'),
-  ])
-
-  const rankade = ensamma.map((e) => ({ ...e, andel: Number(e.andel), ensam: Number(e.ensam) }))
-  const mestEnsam = rankade[0]
-
-  const ensamExempel = await rader<Exempel>(
-    klient.from('ensam_exempel').select('*')
-      .eq('parti', mestEnsam?.parti ?? '').order('datum', { ascending: false }))
-
-  const roster = riksmoten.reduce((n, r) => n + Number(r.roster), 0)
-  const franvarande = riksmoten.reduce((n, r) => n + Number(r.franvarande), 0)
-
-  // Spannet mellan riksmötena. Talet för hela perioden är den vanligaste
-  // förväxlingen i materialet — den som klickar vidare till frånvarosidan möts
-  // av ett annat tal, och behöver veta varför redan här.
-  //
-  // Riksmötet skrivs ut bredvid varje ytterlighet. Ett nyss påbörjat riksmöte
-  // har få voteringar och kan ge ett extremvärde; då ska läsaren se vilket det
-  // gäller i stället för att få ett spann utan angivet underlag.
-  const perRiksmote = riksmoten
-    .filter((r) => Number(r.roster) > 0)
-    .map((r) => ({
-      rm: r.rm as string,
-      andel: (100 * Number(r.franvarande)) / Number(r.roster),
-    }))
-    .sort((x, y) => x.andel - y.andel)
-
-  const a = amnen[0] as any
-
-  return {
-    topp: par[0] as any,
-    rankade,
-    mestEnsam,
-    ensamExempel,
-    forluster,
-    franvaroandel: roster > 0 ? (100 * franvarande) / roster : 0,
-    lagsta: perRiksmote[0],
-    hogsta: perRiksmote[perRiksmote.length - 1],
-    likhetsspann,
-    roster,
-    jamna,
-    avgjorde,
-    voteringar,
-    amne: a && {
-      ...a,
-      avvikande_har: Number(a.avvikande_har),
-      avvikande_normalt: Number(a.avvikande_normalt),
-      avvikande_storlek: Number(a.avvikande_storlek),
-    },
-  }
+type Rad = {
+  forslagspunkt_id: number
+  rm: string
+  beteckning: string
+  punkt: string
+  votering_id: string | null
+  datum: string
+  sakfraga: string
+  amne: string
+  sakerhet: string
 }
 
 /**
- * M, KD och L röstar lika i praktiskt taget varje votering. Namnger ett fynd ett av
- * dem gäller det i praktiken alla tre, och det måste stå bredvid siffran.
+ * De fem frågor som inte beror på sökningen.
+ *
+ * Sidan är dynamisk — den läser searchParams — så utan den här inramningen
+ * körs de vid *varje* anrop, inklusive varje unik sökning. Uppmätt i
+ * utveckling: en sökning som ingen ställt förut kostade 300–700 ms, och fyra
+ * sjundedelar av rundresorna gick till tal som är desamma för alla besökare.
+ * De ändras bara när ETL:n körts, alltså långt mer sällan än en gång i
+ * timmen — samma `revalidate` som resten av sajten använder.
+ *
+ * `unstable_cache` och inte fetch-cachen: supabase-js går visserligen genom
+ * fetch, men vilken cache den hamnar i beror på Next-version och på vad
+ * sidan råkar göra i övrigt. Det här säger ut vad som ska cachas.
  */
-function utbytbara(amne: { avvikande_1: string; avvikande_2: string }) {
-  return REGERINGSPARTIERNA.some((p) => p === amne.avvikande_1 || p === amne.avvikande_2)
+const stommen = unstable_cache(
+  async () => {
+    const klient = db()
+    const [riksmoten, totalt, medRoster, disciplin, likhetsspann] = await Promise.all([
+      rader<{ rm: string }>(
+        klient.from('riksmote_summering').select('rm').order('rm', { ascending: false })),
+      // Hela listans storlek, oberoende av filtren. Ingressen påstår hur många
+      // beslut sajten förklarar, och det talet får inte stå hårdkodat.
+      rakna(antal(klient, 'votering_lista'), 'voteringar'),
+      // votering_lista är varje förslagspunkt med klarspråk — den filtrerar inte
+      // på röstdata. jamn_votering har en rad per votering_id i parti_rost, alltså
+      // de punkter som faktiskt fick protokollförda röster. Skillnaden är liten
+      // (18 av 2 587) men den förklarar varför /fynd säger ett annat tal än den
+      // här sidan, och då ska den stå utskriven i stället för att förvirra.
+      rakna(antal(klient, 'jamn_votering'), 'voteringar med röstdata'),
+      // Åtta rader. Summeras i JS och inte i SQL därför att PostgREST inte har
+      // någon aggregatform som `rader()` kan felkontrollera på samma sätt.
+      rader<{ avlagda: number; avvikande: number }>(
+        klient.from('parti_disciplin').select('avlagda, avvikande')),
+      regeringsspann(),
+    ])
+    const avlagda = disciplin.reduce((n, r) => n + Number(r.avlagda), 0)
+    const avvikande = disciplin.reduce((n, r) => n + Number(r.avvikande), 0)
+    return {
+      riksmoten: riksmoten.map((r) => r.rm),
+      totalt,
+      medRoster,
+      avlagda,
+      // Andelen som följde, inte andelen som avvek. Tesen handlar om vad man kan
+      // lita på — 0,139 % avvikande är samma tal, men läses som en felmarginal.
+      foljde: avlagda > 0 ? (100 * (avlagda - avvikande)) / avlagda : 0,
+      likhetsspann,
+    }
+  },
+  ['startsidans-stomme'],
+  { revalidate: 3600 },
+)
+
+async function hamta({ amne, q, rm, sida }: Sok) {
+  const klient = db()
+  const stom = await stommen()
+  const { riksmoten } = stom
+
+  // Filtren valideras mot kända värden. Ett okänt ämne eller riksmöte ska ge
+  // hela listan, inte noll träffar utan förklaring.
+  const valtAmne = amne && AMNEN.includes(amne) ? amne : undefined
+  const valtRm = rm && riksmoten.includes(rm) ? rm : undefined
+  const sok = q?.trim() || undefined
+  /**
+   * Söksträngen som ett citerat ilike-mönster.
+   *
+   * PostgREST läser kommatecken och parenteser i or() som syntax. En sökning på
+   * "el, gas och värme" hade annars delats i tre villkor mot kolumner som inte
+   * finns, och gett ett fel i stället för träffar. Citattecken runt värdet
+   * stänger av tolkningen; de citattecken som står i söksträngen escapas.
+   */
+  const somMonster = (s: string) => `"%${s.replace(/[\\"]/g, (c) => `\\${c}`)}%"`
+  // Golvas, inte bara klampas nedåt. Ett decimaltal skulle ge ett radfönster
+  // som inte börjar på en sidgräns, och föras vidare in i sidlänkarna som
+  // sida=3.7 → sida=4.7 — rader hoppas då över mellan sidor.
+  const nr = Math.max(1, Math.floor(Number(sida)) || 1)
+
+  /** Samma filter på både räkningen och sidhämtningen. */
+  const filtrera = <T extends { eq: any; or: any }>(f: T): T => {
+    let x: any = f
+    if (valtAmne) x = x.eq('amne', valtAmne)
+    if (valtRm) x = x.eq('rm', valtRm)
+    // Sökfältet lovar sakfråga, beteckning och utskott. Frågan sökte bara i
+    // sakfraga, så "FiU12" gav tyst noll träffar trots att fältet stod där.
+    // Betänkandets titel tas med på köpet: den som söker på ett ärendenamn
+    // menar rimligen det, och kolumnen finns redan i vyn.
+    if (sok) {
+      const v = somMonster(sok)
+      x = x.or(['sakfraga', 'beteckning', 'betankande', 'organ']
+        .map((kolumn) => `${kolumn}.ilike.${v}`).join(','))
+    }
+    return x
+  }
+
+  // Räknas före hämtningen. PostgREST svarar 416 när range() börjar bortom
+  // sista raden, så sidnumret måste vara känt giltigt innan frågan ställs —
+  // annars blir /?sida=999 ett 500-fel i stället för ett 404.
+  const traffar = await rakna(filtrera(antal(klient, 'votering_lista')), 'voteringar')
+  const sidor = Math.max(1, Math.ceil(traffar / PER_SIDA))
+  if (nr > sidor) return null
+
+  const punkter = await rader<Rad>(
+    filtrera(
+      klient.from('votering_lista')
+        .select('forslagspunkt_id, rm, beteckning, punkt, votering_id, datum, sakfraga, amne, sakerhet'))
+      // Datum, inte forslagspunkt_id: id-ordningen är importordning, och 2024/25
+      // ligger på de lägsta id:na trots att det är periodens tredje riksmöte.
+      .order('datum', { ascending: false })
+      .order('forslagspunkt_id', { ascending: false })
+      .range((nr - 1) * PER_SIDA, nr * PER_SIDA - 1))
+
+  // Partiernas röster för de voteringar som faktiskt visas — som mest 40 rader
+  // gånger åtta partier.
+  const roster = await rader<PartiRad & { votering_id: string }>(
+    klient.from('parti_rost').select('votering_id, parti, ja, nej, avstar, franvarande')
+      .in('votering_id', punkter.map((p) => p.votering_id).filter(Boolean) as string[]))
+
+  const perVotering = new Map<string, PartiRad[]>()
+  for (const r of roster) {
+    if (!perVotering.has(r.votering_id)) perVotering.set(r.votering_id, [])
+    perVotering.get(r.votering_id)!.push(r)
+  }
+
+  // Stommen bär riksmoten, totalt, medRoster, avlagda, foljde och
+  // likhetsspann — alltså allt som är lika för varje besökare.
+  return {
+    ...stom,
+    punkter,
+    perVotering,
+    traffar,
+    sidor,
+    nr,
+    valt: { amne: valtAmne, rm: valtRm, q: sok } as Valt,
+  }
 }
 
-export default async function Start() {
-  const d = await hamta()
+/** Adress till samma sökning med ett filter eller sidnummer utbytt. */
+function lank(valt: Valt, andring: Partial<Valt & { sida: number }>) {
+  const slut = { ...valt, sida: 1, ...andring }
+  const p = new URLSearchParams()
+  if (slut.q) p.set('q', slut.q)
+  if (slut.amne) p.set('amne', slut.amne)
+  if (slut.rm) p.set('rm', slut.rm)
+  if (slut.sida && slut.sida > 1) p.set('sida', String(slut.sida))
+  const s = p.toString()
+  return s ? `/?${s}` : '/'
+}
 
-  // Meningarna nedan hämtar både tal och namn ur data. En hårdkodad formulering
-  // som "båda gångerna" eller "M, KD och L gjorde det aldrig" blir tyst osann
-  // så fort nästa riksmöte importeras.
-  const aldrigEnsamma = d.rankade.filter((p) => p.ensam === 0).map((p) => namn(p.parti))
-  const forlustPartier = [...new Set(d.forluster.flatMap((f) => f.motforslag_partier ?? []))]
-  const storstEnsam = d.rankade[0]?.ensam || 1
-  // De av de tre utbytbara partierna som faktiskt står i ämnescitatet. Oftast
-  // ett, men paret kan bestå av två av dem, och då ska båda namnges.
-  const utpekade = d.amne
-    ? REGERINGSPARTIERNA.filter((p) => p === d.amne.avvikande_1 || p === d.amne.avvikande_2)
-    : []
-  // Citatet kan lika gärna handla om ett par som röstar ovanligt lika som om
-  // ett som röstar ovanligt olikt. Talen bär inte riktningen på egen hand:
-  // 61 mot 36 ser ut som en spricka tills det står att 36 är det normala.
-  const amnetIsar = d.amne ? Number(d.amne.avvikande_delta) < 0 : false
+/**
+ * Sidnumren som ska synas: alltid första och sista, plus ett fönster runt den
+ * aktuella. `null` är ett hopp och renderas som ett ellipstecken.
+ */
+function sidnummer(nr: number, sidor: number): (number | null)[] {
+  const visa = new Set([1, sidor, nr - 1, nr, nr + 1])
+  const lista = [...visa].filter((n) => n >= 1 && n <= sidor).sort((a, b) => a - b)
+  return lista.flatMap((n, i) => (i > 0 && n - lista[i - 1] > 1 ? [null, n] : [n]))
+}
+
+export default async function Start({ searchParams }: { searchParams: Promise<Sok> }) {
+  const d = await hamta(await searchParams)
+  // Ett sidnummer bortom sista sidan är inte en tom lista, det är en adress
+  // som inte finns.
+  if (!d) notFound()
+  const forsta = d.traffar === 0 ? 0 : (d.nr - 1) * PER_SIDA + 1
+  const sista = Math.min(d.nr * PER_SIDA, d.traffar)
+  const amnen = [...AMNEN].sort((a, b) => a.localeCompare(b, 'sv'))
+  // Sökningen och filtren är sidans hero. Är någon av dem satt har läsaren
+  // redan gjort sitt val, och då ska träffarna ligga högst upp i stället för
+  // en ingress som förklarar vad sajten är.
+  const soker = Boolean(d.valt.q || d.valt.amne || d.valt.rm)
 
   return (
     <main>
-      {/* Hero */}
-      <section className="pb-16 pt-[72px] sm:pb-[72px] sm:pt-[88px]">
-        <div className="stig flex items-center gap-2.5" style={{ animationDelay: '0ms' }}>
-          <span
-            aria-hidden
-            className="inline-block h-[9px] w-[9px] rounded-full"
-            style={{ background: 'var(--accent)' }}
-          />
-          <span className="text-[13px] font-semibold" style={{ color: 'var(--accent)' }}>
-            Mandatperioden 2022–2026
-          </span>
-        </div>
+      {/* Luftigt nog att bära en display-rubrik, stramt nog att första träffen
+          ryms över vecket på 1280×720 — den fanns på y=724 med magasinets
+          rytm, och en söksida som inte visar ett enda resultat ser ut som en
+          startsida med ett sökfält på. */}
+      <section className={soker ? 'pb-6 pt-10' : 'pb-7 pt-12'}>
+        <Etikett className="stig" ton="signal">Mandatperioden 2022–2026</Etikett>
 
         <h1
-          className="display stig mt-10 max-w-[15ch] text-[clamp(3rem,9vw,116px)]"
+          className="display stig mt-5 max-w-[14ch] text-[clamp(2.6rem,7.5vw,80px)]"
           style={{ animationDelay: '80ms' }}
         >
-          Så röstade riksdagen.
+          Vad gjorde de?
         </h1>
 
-        <p
-          className="stig mt-10 max-w-[46ch] text-[clamp(18px,2.4vw,22px)] leading-[1.45]"
-          style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}
-        >
-          {heltal(d.voteringar)} voteringar med namnupprop, var och en förklarad
-          på vanlig svenska. Här är fem saker de tillsammans visar.
-        </p>
-
-        <div className="stig mt-10 flex flex-wrap gap-3" style={{ animationDelay: '160ms' }}>
-          <Knapp href="#fynd">Läs de fem fynden</Knapp>
-          <Knapp href="/voteringar" ton="sekundar">Sök en votering</Knapp>
-        </div>
-      </section>
-
-      {/* Fynd 01–02 — två celler delade av en hårlinje */}
-      <section
-        id="fynd"
-        className="grid scroll-mt-6 border-t sm:grid-cols-2"
-        style={{ borderColor: 'var(--linje)' }}
-      >
-        <div
-          className="border-b py-11 sm:border-b-0 sm:border-r sm:pr-12"
-          style={{ borderColor: 'var(--linje)' }}
-        >
-          <Etikett>Fynd 01 · Samstämmighet</Etikett>
-          <Nyckeltal klass="mt-[22px] text-[clamp(3.4rem,10vw,92px)]">
-            {d.topp ? heltal(Number(d.topp.lika)) : '—'}
-          </Nyckeltal>
-          <p className="mt-[22px] max-w-[34ch] text-[18px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
-            av {heltal(Number(d.topp?.gemensamma ?? 0))} voteringar röstade{' '}
-            {namn(d.topp?.parti_1)} och {namn(d.topp?.parti_2)} lika.{' '}
-            {Number(d.topp?.lika) === Number(d.topp?.gemensamma)
-              ? 'Deras linjer gick aldrig isär.'
-              : `Det är ${tal(Number(d.topp?.samstammighet ?? 0))} % — inget par röstade oftare lika.`}
+        {!soker && (
+          <p
+            className="stig mt-6 max-w-[54ch] text-[clamp(18px,2.2vw,21px)] leading-[1.45]"
+            style={{ color: 'var(--black-mjuk)', animationDelay: '160ms' }}
+          >
+            Valkompasserna frågar vad partierna vill göra. Här står vad de
+            gjorde: {heltal(d.totalt)} beslut med namnupprop, vart och ett
+            förklarat på vanlig svenska — vad frågan gällde, vad ett ja innebar
+            och vad ett nej innebar.
           </p>
-          <Textlank href="/samstammighet" className="mt-5">Se hela matrisen</Textlank>
-        </div>
-
-        <div className="py-11 sm:pl-12">
-          <Etikett>Fynd 02 · Ensam mot alla</Etikett>
-          <Nyckeltal klass="mt-[22px] text-[clamp(3.4rem,10vw,92px)]">
-            {heltal(d.mestEnsam?.ensam ?? 0)}
-          </Nyckeltal>
-          <p className="mt-[22px] max-w-[34ch] text-[18px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
-            gånger stod {namn(d.mestEnsam?.parti)} ensamt mot alla sju andra
-            partier — oftare än något annat parti.
-            {aldrigEnsamma.length ? ` ${lista(aldrigEnsamma)} gjorde det aldrig.` : ''}
-          </p>
-          <Textlank href="#ensam" className="mt-5">Se alla åtta partier</Textlank>
-        </div>
-      </section>
-
-      {/* Fynd 03 — tal och mening i samma baslinje */}
-      <section className="regel py-11">
-        <Etikett>Fynd 03 · Kammaren fällde utskottet</Etikett>
-        <div className="mt-5 flex flex-wrap items-end gap-x-8 gap-y-4">
-          <Nyckeltal klass="text-[clamp(3.4rem,10vw,92px)]">{d.forluster.length}</Nyckeltal>
-          <p className="mb-2 max-w-[52ch] text-[18px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
-            gånger föll utskottets förslag i kammaren, av {heltal(d.voteringar)} voteringar.
-            {forlustPartier.length ? ` Reservationen kom från ${lista(forlustPartier.map(namn))}.` : ''}
-          </p>
-        </div>
-        <Textlank href="#forlorade" className="mt-6">Se fallen</Textlank>
-      </section>
-
-      {/* Fynd 04–05 — sidans enda mörka fält. Lime får bara förekomma här. */}
-      <section className="panel helbredd py-16 sm:py-20">
-        <div className="mx-auto grid max-w-5xl items-center gap-y-12 px-5 sm:px-8 md:grid-cols-[1.1fr_1fr] md:gap-x-14">
-        <div>
-          <Etikett>Fynd 04 · Frånvaro</Etikett>
-          <Nyckeltal ton="signal" klass="mt-5 text-[clamp(4rem,13vw,148px)]">
-            {tal(d.franvaroandel)} %
-          </Nyckeltal>
-          <p className="mt-7 max-w-[38ch] text-[20px] leading-[1.45]" style={{ color: 'var(--black-mjuk)' }}>
-            av {heltal(d.roster)} röstningstillfällen stod tomma. Andelen
-            varierar mellan riksmötena: {tal(d.hogsta?.andel ?? 0)} % i {d.hogsta?.rm}{' '}
-            mot {tal(d.lagsta?.andel ?? 0)} % i {d.lagsta?.rm}.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3.5">
-          <Etikett>Fynd 05 · Frånvaron avgjorde</Etikett>
-          <Nyckeltal ton="signal" klass="text-[clamp(3.4rem,10vw,92px)]">
-            {heltal(d.avgjorde)}
-          </Nyckeltal>
-          <p className="max-w-[40ch] text-[17px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
-            voteringar hade kunnat sluta annorlunda om alla frånvarande röstat
-            med sitt parti — av {heltal(d.jamna)} som avgjordes med tre rösters
-            marginal eller mindre.
-          </p>
-          <p className="max-w-[44ch] text-[13.5px] leading-[1.55]" style={{ color: 'var(--black-svag)' }}>
-            Aritmetik, inte anklagelse: riksdagen kvittar frånvaro, och vilka
-            voteringar som kvittades framgår inte av öppna data. Beräkningen
-            antar att alla frånvarande hade röstat med sitt parti.
-          </p>
-          <Textlank href="/franvaro#avgjorde" className="mt-2">
-            Se de {heltal(d.avgjorde)} fallen
-          </Textlank>
-        </div>
-        </div>
-      </section>
-
-      {/* Ämnesutsagan — sidans enda pull-quote */}
-      {d.amne && (
-        <section className="regel py-16">
-          <p className="rubrik max-w-[24ch] text-[clamp(1.9rem,5.5vw,46px)] leading-[1.05]">
-            I frågor om {d.amne.amne} röstar {namn(d.amne.avvikande_1)} och{' '}
-            {namn(d.amne.avvikande_2)} lika i
-            <span style={{ color: 'var(--accent)' }}> {tal(d.amne.avvikande_har)} % </span>
-            av voteringarna — mot {tal(d.amne.avvikande_normalt)} % i alla frågor.
-          </p>
-          <p className="mt-6 max-w-[56ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
-            {tal(d.amne.avvikande_storlek)} procentenheter{' '}
-            {amnetIsar ? 'under' : 'över'} parets egen normalnivå — riksdagens
-            största ämnesutslag. Inget annat partipar ligger så långt från sin
-            vanliga nivå i något ämne, åt något håll. Alla 28 partipar är mätta
-            likadant i alla {AMNEN.length} ämnen, utan att något par valts ut i
-            förväg.
-            {utbytbara(d.amne) && (
-              <>
-                {/* filter och inte find: står två av de tre i citatet ska båda
-                    namnges, annars pekar meningen ut det ena utan att säga
-                    varför just det. */}
-                {' '}Att det står {lista(utpekade.map(namn))} här avgörs av
-                tiondelar: {lista(REGERINGSPARTIERNA.map(namn))} röstar lika i{' '}
-                {d.likhetsspann} av alla voteringar, så fyndet gäller alla tre.
-              </>
-            )}
-          </p>
-          <Textlank href="/amnen" className="mt-5">Se alla {AMNEN.length} ämnen</Textlank>
-        </section>
-      )}
-
-      {/* Ensam mot alla — tabellen */}
-      <section id="ensam" className="regel scroll-mt-6 py-16">
-        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3">
-          <h2 className="rubrik text-[clamp(2rem,5vw,44px)]">Ensam mot alla</h2>
-          <p className="max-w-[42ch] text-[14.5px] sm:text-right" style={{ color: 'var(--black-mjuk)' }}>
-            Hur ofta ett parti drev en linje som ingen av de sju andra delade,
-            räknat på {heltal(d.mestEnsam?.av ?? 0)} voteringar.
-          </p>
-        </div>
-
-        <div className="mt-7">
-          {d.rankade.map((p) => (
-            <div
-              key={p.parti}
-              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-5 gap-y-2 py-4 sm:grid-cols-[minmax(180px,240px)_96px_1fr_80px]"
-              style={{ borderBottom: '1px solid var(--linje)' }}
-            >
-              <span className="flex items-center gap-3 text-[17px] font-bold sm:text-[19px]">
-                <Partiprick parti={p.parti} />
-                {namn(p.parti)}
-              </span>
-              <span
-                className="tabular text-right text-[17px] font-bold sm:text-left sm:text-[19px]"
-                style={{ color: p.ensam > 0 ? 'var(--black)' : 'var(--black-svag)' }}
-              >
-                {heltal(p.ensam)}
-              </span>
-              <span className="hidden sm:block">
-                <Stapel andel={(100 * p.ensam) / storstEnsam} />
-              </span>
-              <span
-                className="tabular col-span-2 text-[15px] sm:col-span-1 sm:text-right"
-                style={{ color: 'var(--black-svag)' }}
-              >
-                {tal(p.andel)} %
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <Forbehall rubrik="Nollorna är mekaniska." className="mt-7">
-          {lista(REGERINGSPARTIERNA.map(namn))} röstar lika i {d.likhetsspann} av
-          alla voteringar. Ett av dem kan därför nästan aldrig bli ensamt — de
-          två andra står redan på samma linje. Siffran mäter inte hur
-          självständigt ett parti är, utan hur ofta det drev en linje utan att få
-          sällskap.
-        </Forbehall>
-
-        {d.ensamExempel.length > 0 && (
-          <>
-            <Etikett className="mt-14">
-              De tre senaste gångerna {namn(d.mestEnsam?.parti)} stod ensamt
-            </Etikett>
-            <ol className="mt-5">
-              {d.ensamExempel.map((e) => (
-                <li key={e.forslagspunkt_id} className="regel py-5">
-                  <Link href={`/voteringar/${e.forslagspunkt_id}`} className="group block">
-                    <div className="mono flex flex-wrap gap-x-3.5 gap-y-1 text-[11.5px] uppercase tracking-[0.1em]"
-                         style={{ color: 'var(--etikett)' }}>
-                      <span>{e.beteckning} · punkt {e.punkt}</span>
-                      <span>{datum(e.datum)}</span>
-                      <span style={{ color: 'var(--accent)' }}>{e.amne}</span>
-                    </div>
-                    <p className="mt-2.5 max-w-[56ch] text-[19px] font-semibold leading-[1.35] tracking-[-0.01em] transition-opacity duration-150 group-hover:opacity-70">
-                      {e.sakfraga}
-                    </p>
-                  </Link>
-                  <div className="mt-3.5 flex items-center gap-2.5">
-                    <Linjeetikett parti={e.parti} linje={e.linje} />
-                    <span className="text-[13.5px]" style={{ color: 'var(--black-svag)' }}>
-                      röstade {e.linje.toLowerCase()} — ensamt
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </>
         )}
       </section>
 
-      {/* När utskottet förlorade */}
-      <section id="forlorade" className="regel scroll-mt-6 py-16">
-        <h2 className="rubrik text-[clamp(2rem,5vw,44px)]">När utskottet förlorade</h2>
-        <p className="mt-5 max-w-[64ch] text-[16.5px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
-          I varje votering ställs utskottets förslag som ja och reservationen som
-          nej. Under hela mandatperioden vann nej-sidan {d.forluster.length} gånger.
-        </p>
+      {/* Sökfältet är ett vanligt GET-formulär. Filtren följer med som dolda
+          fält, annars nollställs de av en sökning. */}
+      {/* Samma beat som ingressen, inte ett fjärde steg. Sökfältet är sidans
+          uppgift och ska inte vara det sista som infinner sig. */}
+      <form className="stig flex flex-col gap-3.5 pb-6" style={{ animationDelay: '160ms' }}>
+        {d.valt.amne && <input type="hidden" name="amne" value={d.valt.amne} />}
+        {d.valt.rm && <input type="hidden" name="rm" value={d.valt.rm} />}
+        {/* Knappen sitter inne i pillret, därav den lilla högermarginalen mot
+            den stora vänstra: 7 px runt knappen, 26 px in till texten. */}
+        <label
+          className="flex w-full max-w-[680px] items-center gap-3 rounded-full py-[7px] pl-[22px] pr-[7px] sm:gap-3.5 sm:pl-[26px]"
+          style={{ border: '1px solid var(--linje-stark)' }}
+        >
+          <span className="shrink-0" style={{ color: 'var(--black-svag)' }}>
+            <Forstoringsglas storlek={20} />
+          </span>
+          <input
+            name="q"
+            defaultValue={d.valt.q ?? ''}
+            // Konkreta exempel och inte "sök här": placeholdern är det enda
+            // stället som visar vad man kan fråga om. Alla tre ger träffar
+            // (13, 96 respektive 97) — ett förslag utan resultat vore värre
+            // än ett tomt fält.
+            placeholder="Sök på en fråga — kärnkraft, skolan, klimat"
+            aria-label="Sök bland riksdagens beslut"
+            className="w-full min-w-0 bg-transparent py-2.5 text-[16px] outline-none placeholder:text-[var(--black-svag)] sm:text-[17px]"
+          />
+          <button
+            type="submit"
+            className="shrink-0 rounded-full px-[20px] py-3 text-[14.5px] font-semibold transition-[filter] duration-150 hover:brightness-[0.94] sm:px-[24px]"
+            style={{ background: 'var(--black)', color: 'var(--papper)' }}
+          >
+            Sök
+          </button>
+        </label>
 
-        <ol className="mt-9">
-          {d.forluster.map((f) => (
-            <li key={f.forslagspunkt_id} className="regel py-6">
-              <div className="mono flex flex-wrap gap-x-3.5 gap-y-1 text-[11.5px] uppercase tracking-[0.1em]"
-                   style={{ color: 'var(--etikett)' }}>
-                <span>{f.beteckning} · punkt {f.punkt}</span>
-                <span>{datum(f.datum)}</span>
-              </div>
-              <Link href={`/voteringar/${f.forslagspunkt_id}`} className="group block">
-                <p className="mt-2.5 max-w-[56ch] text-[19px] font-semibold leading-[1.35] tracking-[-0.01em] transition-opacity duration-150 group-hover:opacity-70">
-                  {f.sakfraga}
-                </p>
-              </Link>
-              <p className="tabular mt-4 text-[15px]">
-                <span className="font-bold" style={{ color: 'var(--nej)' }}>{f.nej} nej</span>
-                <span style={{ color: 'var(--black-svag)' }}> mot </span>
-                <span className="font-bold">{f.ja} ja</span>
-                <span style={{ color: 'var(--black-svag)' }}>
-                  {' '}· reservationen kom från {f.motforslag_partier?.join(', ') ?? '—'}
-                </span>
-              </p>
-              {/* Klartexten inleds nästan alltid med "Nej innebar…", så någon
-                  egen etikett behövs inte — den skulle bara upprepa texten. */}
-              <p className="mt-3.5 max-w-[64ch] py-1 pl-4 text-[14.5px] leading-relaxed"
-                 style={{ borderLeft: '3px solid var(--nej)', color: 'var(--black-mjuk)' }}>
-                {f.nej_innebar}
-              </p>
-            </li>
+        {/* En vågrät remsa under 640 px, ett lindande fält däröver.
+            De 21 chipsen staplades till 547 px på 375 px bredd, vilket sköt
+            första beslutet till y=1183 — halvannan skärm att scrolla innan
+            sajten visade något av det den handlar om. Remsan gör dem till en
+            rad. Negativ marginal plus samma padding låter den blöda ut till
+            skärmkanten, vilket är det som visar att den fortsätter. */}
+        <div className="-mx-5 flex items-stretch gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-x-visible sm:px-0 sm:pb-0">
+          <Chip href={lank(d.valt, { amne: undefined })} aktiv={!d.valt.amne}>Alla ämnen</Chip>
+          {amnen.map((a) => (
+            <Chip
+              key={a}
+              href={lank(d.valt, { amne: d.valt.amne === a ? undefined : a })}
+              aktiv={d.valt.amne === a}
+            >
+              {a}
+            </Chip>
           ))}
-        </ol>
-
-        <p className="mt-6 max-w-[64ch] text-[13.5px] leading-relaxed" style={{ color: 'var(--black-svag)' }}>
-          Siffran gäller kammaren, inte regeringen. En regering kan förlora i
-          utskottet innan frågan når votering, och sådana förluster syns inte i
-          röstdata.
-        </p>
-      </section>
-
-      {/* Varför ett nej sällan betyder nej */}
-      <section className="regel py-16">
-        <h2 className="rubrik max-w-[18ch] text-[clamp(2rem,5vw,44px)]">
-          Varför ett nej sällan betyder nej
-        </h2>
-        <div className="mt-6 grid max-w-[70ch] gap-4 text-[16.5px] leading-[1.6]"
-             style={{ color: 'var(--black-mjuk)' }}>
-          <p>
-            I riksdagen ställs utskottets förslag mot en reservation. Ett parti
-            som röstar nej till mer pengar till skolan har därför oftast röstat
-            för sitt eget förslag om mer pengar till skolan.
-          </p>
-          <p>
-            Därför står det här alltid utskrivet vad reservationen ville — inte
-            bara att någon röstade nej. Utan den upplysningen blir varje slutsats
-            om ett partis hållning missvisande.
-          </p>
+          <span aria-hidden className="mx-2 my-1 w-px shrink-0" style={{ background: 'var(--linje-stark)' }} />
+          {d.riksmoten.map((rm) => (
+            <Chip
+              key={rm}
+              href={lank(d.valt, { rm: d.valt.rm === rm ? undefined : rm })}
+              aktiv={d.valt.rm === rm}
+            >
+              {rm}
+            </Chip>
+          ))}
         </div>
-        <div className="mt-8">
-          <Knapp href="/voteringar" ton="sekundar">Bläddra bland voteringarna</Knapp>
+      </form>
+
+      <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2 pb-4">
+        <Rostnyckel />
+        {d.traffar > 0 && (
+          <p className="tabular text-[14px]" style={{ color: 'var(--black-svag)' }}>
+            Visar {heltal(forsta)}–{heltal(sista)} av {heltal(d.traffar)}
+          </p>
+        )}
+      </div>
+
+      <ol>
+        {d.punkter.map((p) => {
+          const roster = (p.votering_id && d.perVotering.get(p.votering_id)) || []
+          const ja = roster.reduce((n, r) => n + Number(r.ja), 0)
+          const nej = roster.reduce((n, r) => n + Number(r.nej), 0)
+          const avstar = roster.reduce((n, r) => n + Number(r.avstar), 0)
+          return (
+            <li key={p.forslagspunkt_id}>
+              <Link
+                href={`/voteringar/${p.forslagspunkt_id}`}
+                // 356 px, inte designens 300: alla åtta partier ska rymmas på en
+                // rad. Med 300 bryter etiketterna 6 + 2 och mönstret går förlorat.
+                className="grid items-start gap-x-8 gap-y-4 py-6 transition-opacity duration-150 hover:opacity-70 md:grid-cols-[1fr_356px]"
+                style={{ borderTop: '1px solid var(--linje)' }}
+              >
+                <div>
+                  <div className="mono flex flex-wrap gap-x-3.5 gap-y-1 text-[11.5px] uppercase tracking-[0.1em]"
+                       style={{ color: 'var(--etikett)' }}>
+                    <span>{p.beteckning} · punkt {p.punkt}</span>
+                    <span>{datum(p.datum)}</span>
+                    <span style={{ color: 'var(--accent)' }}>{p.amne}</span>
+                    {p.sakerhet !== 'hög' && <span>osäker tolkning</span>}
+                  </div>
+                  <p className="mt-2.5 max-w-[56ch] text-[19px] font-semibold leading-[1.35] tracking-[-0.01em]">
+                    {p.sakfraga}
+                  </p>
+                </div>
+                {roster.length > 0 && (
+                  <div className="flex flex-col gap-2.5 md:items-end">
+                    <Rostrad rader={roster} kompakt />
+                    <span className="tabular text-[13.5px]" style={{ color: 'var(--black-svag)' }}>
+                      {heltal(ja)} ja · {heltal(nej)} nej
+                      {avstar > 0 && ` · ${heltal(avstar)} avstår`}
+                    </span>
+                  </div>
+                )}
+              </Link>
+            </li>
+          )
+        })}
+      </ol>
+
+      {d.punkter.length === 0 && (
+        <p className="regel py-14 text-[16.5px]" style={{ color: 'var(--black-svag)' }}>
+          Inga voteringar matchade sökningen.{' '}
+          <Link href="/" className="underline hover:opacity-70">Visa alla</Link>
+        </p>
+      )}
+
+      {d.sidor > 1 && (
+        <nav
+          className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 py-7"
+          style={{ borderTop: '1px solid var(--linje)' }}
+          aria-label="Sidnavigering"
+        >
+          <span className="tabular text-[14px]" style={{ color: 'var(--black-svag)' }}>
+            Visar {heltal(forsta)}–{heltal(sista)} av {heltal(d.traffar)}
+          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {sidnummer(d.nr, d.sidor).map((n, i) =>
+              n === null ? (
+                <span key={`hopp-${i}`} className="px-1.5" style={{ color: 'var(--etikett)' }}>…</span>
+              ) : n === d.nr ? (
+                <span
+                  key={n}
+                  aria-current="page"
+                  className="tabular rounded-full px-3.5 py-2.5 text-[14px] font-semibold"
+                  style={{ background: 'var(--black)', color: 'var(--papper)' }}
+                >
+                  {n}
+                </span>
+              ) : (
+                <Link
+                  key={n}
+                  href={lank(d.valt, { sida: n })}
+                  className="tabular rounded-full px-3.5 py-2.5 text-[14px] transition-colors duration-150 hover:bg-[var(--papper-djup)]"
+                  style={{ color: 'var(--black-mjuk)' }}
+                >
+                  {n}
+                </Link>
+              ),
+            )}
+            {d.nr < d.sidor && (
+              <Link
+                href={lank(d.valt, { sida: d.nr + 1 })}
+                className="ml-2 rounded-full px-[18px] py-2.5 text-[14px] font-semibold transition-colors duration-150 hover:bg-[var(--papper-djup)]"
+                style={{ border: '1px solid var(--linje-stark)' }}
+              >
+                Nästa
+              </Link>
+            )}
+          </div>
+        </nav>
+      )}
+
+      {/* Tesen. Sidans enda mörka fält, och det ligger sist med flit: verktyget
+          ska mötas först, argumentet läsas efteråt. Aggregat överst var precis
+          det som fick en förstaläsare att läsa "ensam mot alla" som ett
+          omdöme om partiet. */}
+      <section className="panel helbredd mt-4 py-16 sm:py-20">
+        <div className="mx-auto grid max-w-5xl items-start gap-y-12 px-5 sm:px-8 md:grid-cols-[1.1fr_1fr] md:gap-x-14">
+          <div>
+            <Etikett>Därför står partiernas linjer här, inte ledamöternas</Etikett>
+            <Nyckeltal ton="signal" klass="mt-5 text-[clamp(3.4rem,11vw,116px)]">
+              {tal(d.foljde)} %
+            </Nyckeltal>
+            <p className="mt-7 max-w-[40ch] text-[19px] leading-[1.45]" style={{ color: 'var(--black-mjuk)' }}>
+              av {heltal(d.avlagda)} avlagda röster följde det egna partiets
+              linje. Vilken ledamot som satt på stolen avgjorde alltså nästan
+              aldrig hur rösten föll — partiets linje gjorde det.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <Etikett>Tre partier, ett röstfacit</Etikett>
+            <p className="max-w-[42ch] text-[17px] leading-[1.5]" style={{ color: 'var(--black-mjuk)' }}>
+              Moderaterna, Kristdemokraterna och Liberalerna röstade lika i{' '}
+              {d.likhetsspann} av alla voteringar. Ett fynd som namnger ett av
+              dem gäller därför i praktiken alla tre — vilket som hamnar i
+              rubriken avgörs av tiondelar.
+            </p>
+            {/* Faller bort med skillnaden. Är talen lika finns inget att
+                förklara — och då renderar metodsidan inte heller #olika-tal,
+                så en oskyddad länk hit hade pekat på ett ankare som inte
+                finns. */}
+            {d.totalt > d.medRoster && (
+              <p className="max-w-[44ch] text-[13.5px] leading-[1.55]" style={{ color: 'var(--black-svag)' }}>
+                {heltal(d.medRoster)} av de {heltal(d.totalt)} besluten
+                avgjordes med namnupprop om sakfrågan. För de{' '}
+                {heltal(d.totalt - d.medRoster)} övriga gällde namnuppropet
+                motiveringen — hur beslutet skulle motiveras, inte vad som
+                beslutades. De raderna visas därför utan partiernas linjer.{' '}
+                <Link href="/metod#olika-tal" className="underline hover:opacity-70">
+                  Varför talen skiljer sig
+                </Link>
+              </p>
+            )}
+            <div className="mt-1 flex flex-wrap gap-x-7 gap-y-3">
+              <Textlank href="/fynd">Se vad materialet visar</Textlank>
+              <Textlank href="/metod">Så är det räknat</Textlank>
+            </div>
+          </div>
         </div>
       </section>
     </main>

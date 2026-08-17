@@ -1,7 +1,7 @@
 import { Etikett, Knapp, Textlank } from '@/components/system'
 
 /**
- * 404. Nås av notFound() i voteringsdetaljen, partisidan och voteringslistans
+ * 404. Nås av notFound() i voteringsdetaljen, partisidan och startsidans
  * sidnummer — alla tre kan få en adress som ser rimlig ut men inte finns.
  */
 export default function Saknas() {
@@ -16,9 +16,12 @@ export default function Saknas() {
         som inte sitter i riksdagen, eller ett sidnummer bortom listans slut.
       </p>
 
+      {/* Startsidan är sökningen sedan vändningen, så "Till startsidan" och
+          "Bläddra bland besluten" pekade båda på /. En av dem fick bli fynden
+          i stället — två knappar till samma adress är ingen valmöjlighet. */}
       <div className="mt-10 flex flex-wrap items-center gap-3">
-        <Knapp href="/">Till startsidan</Knapp>
-        <Knapp href="/voteringar" ton="sekundar">Bläddra bland voteringarna</Knapp>
+        <Knapp href="/">Sök bland besluten</Knapp>
+        <Knapp href="/fynd" ton="sekundar">Läs de fem fynden</Knapp>
       </div>
 
       <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3">
