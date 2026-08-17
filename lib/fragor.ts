@@ -2,7 +2,13 @@ import { db, rader } from '@/lib/db'
 import type { PartiRad } from '@/components/rostrad'
 
 /**
- * De nio valfrågor där en enda votering ordagrant matchar frågan.
+ * De nio valfrågor där en enda votering svarar mot frågan med entydig riktning.
+ *
+ * Inte "ordagrant matchar" — det ordet stod här och på indexsidan, och det är
+ * ett falsifierbart överpåstående: sjukvårdsvoteringen gällde att stoppa en
+ * utredning, DCA-voteringen en reservation om baser. På en sajt vars vallgrav
+ * är att inget påstående faller ska inte urvalsbeskrivningen vara det första
+ * som faller.
  *
  * **Urvalet är SVT:s valkompass 2026, formuleringarna är sajtens egna.** Vi
  * lånar vilka frågor som ligger på bordet inför valet, aldrig hur de är
@@ -255,14 +261,22 @@ export async function hamtaAllaFragor(): Promise<Map<string, AllaRad>> {
   const punkter = await rader<{ forslagspunkt_id: number; amne: string; forslagspunkt: any }>(
     klient
       .from('punkt_klartext')
-      .select('forslagspunkt_id, amne, forslagspunkt!inner(votering_id, betankande!inner(datum))')
+      .select(
+        'forslagspunkt_id, amne, forslagspunkt!inner(votering_id, motforslag_partier, betankande!inner(datum))',
+      )
       .in('forslagspunkt_id', FRAGOR.map((f) => f.forslagspunkt)),
   )
 
   const platt = punkter.map((p) => {
     const f = Array.isArray(p.forslagspunkt) ? p.forslagspunkt[0] : p.forslagspunkt
     const b = Array.isArray(f.betankande) ? f.betankande[0] : f.betankande
-    return { id: p.forslagspunkt_id, amne: p.amne, votering_id: f.votering_id as string | null, datum: b?.datum ?? '' }
+    return {
+      id: p.forslagspunkt_id,
+      amne: p.amne,
+      votering_id: f.votering_id as string | null,
+      datum: b?.datum ?? '',
+      motforslag_partier: (f.motforslag_partier ?? null) as string[] | null,
+    }
   })
 
   const roster = await rader<PartiRad & { votering_id: string }>(
@@ -285,13 +299,19 @@ export async function hamtaAllaFragor(): Promise<Map<string, AllaRad>> {
     karta.set(f.slug, {
       amne: p.amne,
       datum: p.datum,
+      motforslag_partier: p.motforslag_partier,
       roster: (p.votering_id && perVotering.get(p.votering_id)) || [],
     })
   }
   return karta
 }
 
-export type AllaRad = { amne: string; datum: string; roster: PartiRad[] }
+export type AllaRad = {
+  amne: string
+  datum: string
+  motforslag_partier: string[] | null
+  roster: PartiRad[]
+}
 
 /**
  * Utfallet, räknat ur rösterna.

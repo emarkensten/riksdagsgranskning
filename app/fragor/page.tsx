@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { datum, heltal } from '@/lib/db'
+import { PARTIER, datum, heltal, lista, namn } from '@/lib/db'
 import { FRAGOR, hamtaAllaFragor, rakneord, utfall } from '@/lib/fragor'
 import { Rostrad, Rostnyckel } from '@/components/rostrad'
 import { Etikett, Forbehall, Textlank } from '@/components/system'
@@ -13,7 +13,7 @@ export const revalidate = 3600
 export const metadata = sidmetadata({
   titel: `${storBokstav(rakneord(FRAGOR.length))} valfrågor, och hur riksdagen faktiskt röstade`,
   beskrivning:
-    `${storBokstav(rakneord(FRAGOR.length))} av valets frågor där en votering i riksdagen ordagrant matchar frågan. ` +
+    `${storBokstav(rakneord(FRAGOR.length))} av valets frågor där en votering i riksdagen svarar mot frågan. ` +
     'Vad ett ja innebar, vad ett nej innebar och hur de åtta partierna röstade. ' +
     'Urvalet följer SVT:s valkompass 2026, formuleringarna är våra egna.',
   sokvag: '/fragor',
@@ -30,6 +30,23 @@ export const metadata = sidmetadata({
  */
 export default async function Fragor() {
   const karta = await hamtaAllaFragor()
+
+  // Urvalets egen form, räknad ur data. Sajten skriver ut M/KD/L-förbehållet
+  // bredvid varje siffra som namnger ett av dem — då ska den också skriva ut
+  // sitt eget urvals slagsida i stället för att låta en statsvetare räkna
+  // fram den på fem minuter. Våg 1 i distributionen ber uttryckligen
+  // statsvetare göra sönder metoden; den billigaste fällningen ska inte ligga
+  // outtalad.
+  const rader = FRAGOR.map((f) => karta.get(f.slug)).filter(
+    (d): d is NonNullable<typeof d> => Boolean(d),
+  )
+  const vanns = rader.filter((d) => utfall(d.roster).utskottetVann).length
+  const reservantAntal = new Map<string, number>()
+  for (const d of rader)
+    for (const p of d.motforslag_partier ?? [])
+      reservantAntal.set(p, (reservantAntal.get(p) ?? 0) + 1)
+  const flest = [...reservantAntal.entries()].sort((a, b) => b[1] - a[1])[0]
+  const aldrig = PARTIER.filter((p) => !reservantAntal.has(p))
 
   return (
     <main>
@@ -54,8 +71,8 @@ export default async function Fragor() {
       {/* Den ärliga raden. Att sajten stannar vid nio är dess starkaste
           egenskap och ska stå före listan, inte gömmas efter den. */}
       <Forbehall rubrik={`${storBokstav(rakneord(FRAGOR.length))} frågor, inte trettiofem.`}>
-        De {rakneord(FRAGOR.length)} nedan är de frågor där en enskild votering matchar frågan
-        ordagrant och har en entydig riktning. För de övriga har vi inte kunnat
+        De {rakneord(FRAGOR.length)} nedan är de frågor där en enskild votering svarar mot
+        frågan och har en entydig riktning. För de övriga har vi inte kunnat
         fastställa någon sådan votering — riksdagen kan mycket väl ha behandlat
         dem ändå, i propositioner utan namnupprop eller i punkter som buntar
         ihop flera frågor. <strong style={{ color: 'var(--black)' }}>Att en
@@ -133,13 +150,26 @@ export default async function Fragor() {
             kompassfråga är formulerad för att kunna besvaras på en skala, en
             votering för att kunna vinnas, och att sätta likhetstecken mellan
             dem är just det som gör den här sortens jämförelse osann. Här står i
-            stället vad ett ja innebar och vad ett nej innebar, ordagrant. Vad
-            det säger om ett partis hållning avgör läsaren.
+            stället vad ett ja innebar och vad ett nej innebar, med
+            originaltexterna en klick bort. Vad det säger om ett partis hållning
+            avgör läsaren.
           </p>
           <p>
             Ett parti som röstade nej hade nästan alltid ett eget förslag, och
             röstade för det. Det är därför nej-sidan inte är samma sak som
             motstånd mot sakfrågan.
+          </p>
+          <p>
+            Urvalets egen form ska också stå utskriven: utskottets förslag vann{' '}
+            {vanns === rader.length ? `samtliga ${rakneord(vanns)}` : `${rakneord(vanns)} av ${rakneord(rader.length)}`}{' '}
+            voteringar{flest ? `, och motförslaget kom från ${namn(flest[0])} i ${rakneord(flest[1])} av dem` : ''}
+            {aldrig.length > 0 ? ` — från ${lista(aldrig.map(namn))} aldrig` : ''}. Det
+            är inte en hållning utan metodens avtryck. Bara voteringar med
+            entydig riktning har tagits med; entydig riktning kräver ett rent
+            motförslag, och rena motförslag skrivs oftast av ett parti som står
+            ensamt. Regeringssidans egen politik gick genom propositioner utan
+            namnupprop och kan därför inte synas här alls — det är samma
+            asymmetri som varje frågesida öppnar med.
           </p>
         </div>
         <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3">

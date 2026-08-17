@@ -98,6 +98,26 @@ export default async function Fragesida({ params }: { params: Promise<{ slug: st
         <p className="mt-6 max-w-[58ch] text-[17px] leading-[1.6]" style={{ color: 'var(--black-mjuk)' }}>
           {f.ingress}
         </p>
+        {/* Svaret på rubrikens fråga, ovanför vecket.
+            Rubriken ställer en fråga och delningskortet ställer samma fråga —
+            då ska svaret inte ligga under två förbehåll och ett metodblock.
+            Läxan från /fynd var förbehåll före TOLKNING, inte före fakta:
+            utfallsraden är aritmetik utan tolkningsrisk och kan stå här, medan
+            asymmetriförbehållet står kvar före partilistan, som är det som kan
+            feltolkas. En journalist med fyrtio sekunder behöver rubrik → svar
+            → siffra → källa, i den ordningen. */}
+        {u.rostades && (
+          <p className="tabular mt-5 text-[17px] font-semibold leading-[1.5]">
+            {u.oavgjort
+              ? `Lika röstetal, ${heltal(u.ja)} mot ${heltal(u.nej)} — avgjort genom lottning`
+              : `Riksdagen röstade ${u.utskottetVann ? 'ja' : 'nej'} med ${heltal(
+                  u.utskottetVann ? u.ja : u.nej,
+                )} röster mot ${heltal(u.utskottetVann ? u.nej : u.ja)}`}{' '}
+            <span className="font-normal" style={{ color: 'var(--black-svag)' }}>
+              · {datum(d.datum)}
+            </span>
+          </p>
+        )}
         {/* Källraden står i heron och inte i en fotnot: den som ska kunna lita
             på sidan behöver veta varifrån urvalet kommer innan hen läser
             listan, inte efter. */}
