@@ -91,9 +91,14 @@ varje barn. Allt inuti — etiketter, staplar, länkar, förbehåll — byter pa
 sig självt, och en komponent behöver aldrig veta att den ligger där. Inuti fältet
 är `--accent` lime.
 
-**Ett fält per sida, aldrig fler.** I dag: startsidans fynd 04–05,
-frånvarosidans hero, metodsidans negativa resultat, blocksidans antal
-reservationer.
+**Ett fält per sida, aldrig fler.** I dag: startsidans tes längst ned,
+fyndsidans fynd 04–05, frånvarosidans hero, metodsidans negativa resultat,
+blocksidans antal reservationer.
+
+På startsidan ligger fältet **sist**, inte i heron. Sidan är ett verktyg:
+sökningen ska mötas först och argumentet läsas efteråt. Ett aggregat överst
+var precis det som fick en förstaläsare att läsa "556 gånger ensam mot alla"
+som ett omdöme om partiet i stället för som ett mått.
 
 Fältet går kant i kant med fönstret via `.helbredd`, tillsammans med hårlinjerna
 kring sidhuvud och sidfot. Ett halvt utbrott — till innehållskolumnens ytterkant

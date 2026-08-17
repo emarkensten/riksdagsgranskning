@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { unstable_cache } from 'next/cache'
 import { notFound } from 'next/navigation'
 import { antal, db, datum, heltal, rader, rakna, tal } from '@/lib/db'
 import AMNEN from '@/lib/amnen.json'
@@ -27,32 +28,67 @@ type Rad = {
   sakerhet: string
 }
 
+/**
+ * De fem frågor som inte beror på sökningen.
+ *
+ * Sidan är dynamisk — den läser searchParams — så utan den här inramningen
+ * körs de vid *varje* anrop, inklusive varje unik sökning. Uppmätt i
+ * utveckling: en sökning som ingen ställt förut kostade 300–700 ms, och fyra
+ * sjundedelar av rundresorna gick till tal som är desamma för alla besökare.
+ * De ändras bara när ETL:n körts, alltså långt mer sällan än en gång i
+ * timmen — samma `revalidate` som resten av sajten använder.
+ *
+ * `unstable_cache` och inte fetch-cachen: supabase-js går visserligen genom
+ * fetch, men vilken cache den hamnar i beror på Next-version och på vad
+ * sidan råkar göra i övrigt. Det här säger ut vad som ska cachas.
+ */
+const stommen = unstable_cache(
+  async () => {
+    const klient = db()
+    const [riksmoten, totalt, medRoster, disciplin, likhetsspann] = await Promise.all([
+      rader<{ rm: string }>(
+        klient.from('riksmote_summering').select('rm').order('rm', { ascending: false })),
+      // Hela listans storlek, oberoende av filtren. Ingressen påstår hur många
+      // beslut sajten förklarar, och det talet får inte stå hårdkodat.
+      rakna(antal(klient, 'votering_lista'), 'voteringar'),
+      // votering_lista är varje förslagspunkt med klarspråk — den filtrerar inte
+      // på röstdata. jamn_votering har en rad per votering_id i parti_rost, alltså
+      // de punkter som faktiskt fick protokollförda röster. Skillnaden är liten
+      // (18 av 2 587) men den förklarar varför /fynd säger ett annat tal än den
+      // här sidan, och då ska den stå utskriven i stället för att förvirra.
+      rakna(antal(klient, 'jamn_votering'), 'voteringar med röstdata'),
+      // Åtta rader. Summeras i JS och inte i SQL därför att PostgREST inte har
+      // någon aggregatform som `rader()` kan felkontrollera på samma sätt.
+      rader<{ avlagda: number; avvikande: number }>(
+        klient.from('parti_disciplin').select('avlagda, avvikande')),
+      regeringsspann(),
+    ])
+    const avlagda = disciplin.reduce((n, r) => n + Number(r.avlagda), 0)
+    const avvikande = disciplin.reduce((n, r) => n + Number(r.avvikande), 0)
+    return {
+      riksmoten: riksmoten.map((r) => r.rm),
+      totalt,
+      medRoster,
+      avlagda,
+      // Andelen som följde, inte andelen som avvek. Tesen handlar om vad man kan
+      // lita på — 0,139 % avvikande är samma tal, men läses som en felmarginal.
+      foljde: avlagda > 0 ? (100 * (avlagda - avvikande)) / avlagda : 0,
+      likhetsspann,
+    }
+  },
+  ['startsidans-stomme'],
+  { revalidate: 3600 },
+)
+
 async function hamta({ amne, q, rm, sida }: Sok) {
   const klient = db()
-
-  const [riksmoten, totalt, medRoster, disciplin, likhetsspann] = await Promise.all([
-    rader<{ rm: string }>(
-      klient.from('riksmote_summering').select('rm').order('rm', { ascending: false })),
-    // Hela listans storlek, oberoende av filtren. Ingressen påstår hur många
-    // beslut sajten förklarar, och det talet får inte stå hårdkodat.
-    rakna(antal(klient, 'votering_lista'), 'voteringar'),
-    // votering_lista är varje förslagspunkt med klarspråk — den filtrerar inte
-    // på röstdata. jamn_votering har en rad per votering_id i parti_rost, alltså
-    // de punkter som faktiskt fick protokollförda röster. Skillnaden är liten
-    // (18 av 2 587) men den förklarar varför /fynd säger ett annat tal än den
-    // här sidan, och då ska den stå utskriven i stället för att förvirra.
-    rakna(antal(klient, 'jamn_votering'), 'voteringar med röstdata'),
-    // Åtta rader. Summeras här och inte i SQL därför att PostgREST inte har
-    // någon aggregatform som `rader()` kan felkontrollera på samma sätt.
-    rader<{ avlagda: number; avvikande: number }>(
-      klient.from('parti_disciplin').select('avlagda, avvikande')),
-    regeringsspann(),
-  ])
+  const stom = await stommen()
+  const { riksmoten } = stom
 
   // Filtren valideras mot kända värden. Ett okänt ämne eller riksmöte ska ge
   // hela listan, inte noll träffar utan förklaring.
   const valtAmne = amne && AMNEN.includes(amne) ? amne : undefined
-  const valtRm = rm && riksmoten.some((r) => r.rm === rm) ? rm : undefined
+  const valtRm = rm && riksmoten.includes(rm) ? rm : undefined
   const sok = q?.trim() || undefined
   /**
    * Söksträngen som ett citerat ilike-mönster.
@@ -114,23 +150,15 @@ async function hamta({ amne, q, rm, sida }: Sok) {
     perVotering.get(r.votering_id)!.push(r)
   }
 
-  const avlagda = disciplin.reduce((n, r) => n + Number(r.avlagda), 0)
-  const avvikande = disciplin.reduce((n, r) => n + Number(r.avvikande), 0)
-
+  // Stommen bär riksmoten, totalt, medRoster, avlagda, foljde och
+  // likhetsspann — alltså allt som är lika för varje besökare.
   return {
+    ...stom,
     punkter,
     perVotering,
     traffar,
-    totalt,
-    medRoster,
     sidor,
     nr,
-    riksmoten: riksmoten.map((r) => r.rm),
-    avlagda,
-    // Andelen som följde, inte andelen som avvek. Tesen handlar om vad man kan
-    // lita på — 0,139 % avvikande är samma tal, men läses som en felmarginal.
-    foljde: avlagda > 0 ? (100 * (avlagda - avvikande)) / avlagda : 0,
-    likhetsspann,
     valt: { amne: valtAmne, rm: valtRm, q: sok } as Valt,
   }
 }
@@ -201,7 +229,9 @@ export default async function Start({ searchParams }: { searchParams: Promise<So
 
       {/* Sökfältet är ett vanligt GET-formulär. Filtren följer med som dolda
           fält, annars nollställs de av en sökning. */}
-      <form className="stig flex flex-col gap-3.5 pb-6" style={{ animationDelay: '240ms' }}>
+      {/* Samma beat som ingressen, inte ett fjärde steg. Sökfältet är sidans
+          uppgift och ska inte vara det sista som infinner sig. */}
+      <form className="stig flex flex-col gap-3.5 pb-6" style={{ animationDelay: '160ms' }}>
         {d.valt.amne && <input type="hidden" name="amne" value={d.valt.amne} />}
         {d.valt.rm && <input type="hidden" name="rm" value={d.valt.rm} />}
         {/* Knappen sitter inne i pillret, därav den lilla högermarginalen mot
