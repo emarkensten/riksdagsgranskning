@@ -31,14 +31,15 @@ const GRUPPER: { rubrik: string; lankar: Lank[] }[] = [
   {
     rubrik: 'Utforska',
     lankar: [
-      { href: '/voteringar', text: 'Voteringar' },
+      { href: '/', text: 'Besluten' },
+      { href: '/fynd', text: 'Fem fynd' },
       { href: '/partier', text: 'Partier' },
-      { href: '/amnen', text: 'Ämnen' },
     ],
   },
   {
     rubrik: 'Analyser',
     lankar: [
+      { href: '/amnen', text: 'Ämnen' },
       { href: '/blocken', text: 'Blocken' },
       { href: '/samstammighet', text: 'Vem röstar med vem' },
       { href: '/franvaro', text: 'Frånvaro' },

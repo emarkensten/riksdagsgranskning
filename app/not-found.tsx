@@ -18,7 +18,7 @@ export default function Saknas() {
 
       <div className="mt-10 flex flex-wrap items-center gap-3">
         <Knapp href="/">Till startsidan</Knapp>
-        <Knapp href="/voteringar" ton="sekundar">Bläddra bland voteringarna</Knapp>
+        <Knapp href="/" ton="sekundar">Bläddra bland besluten</Knapp>
       </div>
 
       <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3">

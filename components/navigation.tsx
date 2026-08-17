@@ -3,14 +3,19 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+/**
+ * Fyra objekt, inte sju.
+ *
+ * `/amnen`, `/samstammighet`, `/blocken` och `/franvaro` låg här fram till
+ * vändningen och nås nu från `/fynd`, som samlar dem under rubriken "Hela
+ * genomgången". Sidorna finns kvar oförändrade på sina adresser — det som
+ * ändrades är vad navigeringen påstår att sajten är. Sju genomgångar överst
+ * säger "statistikmagasin"; sökningen och fynden säger "verktyg".
+ */
 const SIDOR = [
-  // Partier först — det är den ingång flest söker.
+  { href: '/', text: 'Besluten' },
+  { href: '/fynd', text: 'Fynd' },
   { href: '/partier', text: 'Partier' },
-  { href: '/amnen', text: 'Ämnen' },
-  { href: '/samstammighet', text: 'Vem röstar med vem' },
-  { href: '/blocken', text: 'Blocken' },
-  { href: '/voteringar', text: 'Voteringar' },
-  { href: '/franvaro', text: 'Frånvaro' },
   { href: '/metod', text: 'Metod' },
 ]
 
@@ -25,7 +30,12 @@ export function Navigation() {
   return (
     <nav className="-mx-1.5 flex flex-wrap gap-1.5 text-[13.5px] font-medium">
       {SIDOR.map((s) => {
-        const aktiv = sokvag === s.href || sokvag?.startsWith(`${s.href}/`)
+        // Roten kräver exakt träff. Prefixregeln nedan matchar '/' mot varje
+        // sökväg som finns, så utan undantaget hade "Besluten" stått markerad
+        // på hela sajten samtidigt som den riktiga sidan också var det.
+        const aktiv = s.href === '/'
+          ? sokvag === '/'
+          : sokvag === s.href || sokvag?.startsWith(`${s.href}/`)
         return (
           <Link
             key={s.href}

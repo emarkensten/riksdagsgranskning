@@ -35,7 +35,7 @@ const INNEHALL = [
   ['definitioner', 'Hur räknas samstämmighet, frånvaro och partilinje?'],
   ['ja-och-nej', 'Betyder ett nej att partiet är emot förslaget?'],
   ['klarsprak', 'Kan jag lita på AI-sammanfattningarna?'],
-  ['olika-tal', 'Varför säger startsidan och voteringssidan olika många?'],
+  ['olika-tal', 'Varför säger listan och fynden olika många?'],
   ['regeringssidan', 'Fick regeringen igenom sin politik?'],
   ['tre-lika', 'Varför ser tre av partisidorna likadana ut?'],
   ['begransningar', 'Vad kan materialet inte svara på?'],
@@ -187,8 +187,8 @@ export default async function Metod() {
   // tidigare differensen forklarade − voteringar och kallade den "namnupprop om
   // motivfrågan" — men differensen rymmer båda skälen till att en punkt saknar
   // röstdata. Talen är lika i dag bara därför att utanUpprop är noll.
-  // Avsnittet #olika-tal finns när voteringssidan listar fler beslut än
-  // startsidan räknar mönster på — oavsett vilket av de två skälen som gör det.
+  // Avsnittet #olika-tal finns när startsidans lista visar fler beslut än
+  // fynden räknar mönster på — oavsett vilket av de två skälen som gör det.
   // Att bara fråga efter motivfrågorna hade dolt avsnittet, och därmed
   // varningen, precis den gång punkter saknar röstdata utan att någon
   // motivfråga finns kvar att hänga förklaringen på.
@@ -547,12 +547,12 @@ export default async function Metod() {
       {olikaTal && (
         <section id="olika-tal" className="regel scroll-mt-6 py-16">
           <h2 className="rubrik max-w-[24ch] text-[clamp(1.8rem,4.4vw,44px)]">
-            Varför säger startsidan och voteringssidan olika många?
+            Varför säger listan och fynden olika många?
           </h2>
           <div className="mt-7 grid max-w-[66ch] gap-4 text-[16.5px] leading-[1.6]"
                style={{ color: 'var(--black-mjuk)' }}>
             <p>
-              Därför att de räknar två olika saker. Voteringssidan listar{' '}
+              Därför att de räknar två olika saker. Listan på startsidan visar{' '}
               <strong style={{ color: 'var(--black)' }}>{heltal(d.listade)}</strong>{' '}
               förslagspunkter med klarspråksförklaring.{' '}
               {/* Sakfrågetalet ur samma rad som listade och motivupprop, inte ur
@@ -561,7 +561,7 @@ export default async function Metod() {
                   stycket faktiskt delar upp varandra. */}
               <strong style={{ color: 'var(--black)' }}>{heltal(d.sakfrageupprop)}</strong>{' '}
               av dem avgjordes med namnupprop om sakfrågan, och det är de som bär
-              varje mönster på startsidan.
+              varje mönster på fyndsidan.
             </p>
             {/* Vart och ett av de två skälen skrivs ut bara när det finns.
                 Stycket nedan har hela avsnittets historia bakom sig — 18 av 18
@@ -599,7 +599,7 @@ export default async function Metod() {
               )}
             </p>
           </div>
-          <Textlank href="/voteringar" className="mt-8">
+          <Textlank href="/" className="mt-8">
             Se alla {heltal(d.listade)} beslut i listan
           </Textlank>
         </section>
@@ -626,7 +626,7 @@ export default async function Metod() {
             regeringssidan, så att dess linje vinner är nästan samma påstående som
             att utskottets förslag vinner. Talet beskriver hur riksdagen fungerar
             — inte hur skickliga regeringspartierna varit. Det är skälet till att
-            det står här och inte som ett fynd på startsidan.
+            det står här och inte som ett fynd bland de fem.
           </p>
         </div>
 
