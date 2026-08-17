@@ -1,14 +1,17 @@
-# Namnupprop
+# Riksdagskammaren
 
-**Varje votering i riksdagen, på vanlig svenska.**
+**Varje votering, förklarad på vanlig svenska.**
 
 Sveriges riksdags öppna data är fritt tillgängligt och nästan oläsbart.
 Voteringarna heter saker som `SfU16 punkt 3`, och utfallet är ett ja eller nej
-mot ett procedurförslag — inte mot sakfrågan. Namnupprop översätter varje sådan
-votering under mandatperioden 2022–2026 till klarspråk, med originaltexten öppen
-bredvid.
+mot ett procedurförslag — inte mot sakfrågan. Riksdagskammaren översätter varje
+sådan votering under mandatperioden 2022–2026 till klarspråk, med originaltexten
+öppen bredvid.
 
-Sajten är privat och har ingen koppling till Sveriges riksdag.
+Sajten är privat och har **ingen koppling till Sveriges riksdag**. Namnet är
+rummet där de 349 ledamöterna röstar, och avgränsar vad sajten täcker — inte vem
+som står bakom den. Repot heter fortfarande `riksdagsgranskning`, av samma skäl
+som varje gammal länk fortsätter fungera.
 
 ---
 
@@ -41,7 +44,7 @@ nedlagd.** Tre resultat sänkte den:
    bedömare med uppgift att motbevisa dem. Sju föll, två blev osäkra, inget höll.
 
 Verktyget byggdes aldrig. Det negativa resultatet publicerades i stället, med
-räkningen öppen — se `/metod#hyckleri` på sajten. Namnupprop lovar alltså inga
+räkningen öppen — se `/metod#hyckleri` på sajten. Sajten lovar alltså inga
 avslöjanden, och det är ett resultat och inte en brist.
 
 ---

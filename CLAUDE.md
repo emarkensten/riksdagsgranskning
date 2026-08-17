@@ -1,4 +1,4 @@
-# Namnupprop
+# Riksdagskammaren
 
 Granskar Sveriges riksdag 2022–2026 med öppna data från `data.riksdagen.se`.
 Next.js 14 + Supabase + OpenAI Batch API.
