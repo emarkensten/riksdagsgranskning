@@ -69,11 +69,20 @@ const LANG_SAKFRAGA = 110
  */
 export function Rostning({
   fragor,
+  adress,
   ingress,
   children,
   likhetsnotKort,
 }: {
   fragor: Rostningsfraga[]
+  /**
+   * Quizets egen absoluta adress, för raden sist i den kopierade texten.
+   *
+   * Inskickad från servern och inte hämtad ur `SAJT_URL` här: se
+   * `sammanfattning()` i lib/rostning.ts för varför den konstanten ljuger i
+   * webbläsaren.
+   */
+  adress: string
   /**
    * Startskärmens ingress — de två meningar som säger vad quizet är.
    *
@@ -151,10 +160,21 @@ export function Rostning({
   // Inget setNr här: `start` nås bara från fråga ett, som redan står på noll.
   const borja = () => setSteg('fragor')
 
+  /**
+   * Nästa steg är den första obesvarade frågan — inte nästa i ordningen.
+   *
+   * Med `nr + 1` hamnade den som backat för att rätta ett svar mitt i kön
+   * igen: "Ändra svar" på fråga tre kastade tillbaka besökaren till fråga
+   * fyra, och eftersom resultatskärmen bara nås genom att svara på den sista
+   * frågan krävdes sex klick till för att komma tillbaka dit hen kom ifrån.
+   * Är allt besvarat är quizet klart, oavsett vilken fråga som just ändrades.
+   */
   function svara(v: Svar) {
-    setSvar((f) => f.map((x, i) => (i === nr ? v : x)))
-    if (nr + 1 < fragor.length) setNr(nr + 1)
-    else setSteg('resultat')
+    const nya = svar.map((x, i) => (i === nr ? v : x))
+    setSvar(nya)
+    const kvar = nya.findIndex((x) => x === null)
+    if (kvar === -1) setSteg('resultat')
+    else setNr(kvar)
   }
 
   function tillbaka() {
@@ -162,9 +182,17 @@ export function Rostning({
     else setNr(nr - 1)
   }
 
-  /** Hoppa till en redan besvarad fråga — ur progressremsan eller ur kvittot. */
+  /**
+   * Hoppa till en redan besvarad fråga — ur progressremsan eller ur kvittot.
+   *
+   * Kvittensen om urklipp nollställs på vägen. Den som ändrar ett svar och
+   * kommer tillbaka till resultatet har en sammanfattning i urklipp som inte
+   * längre stämmer med skärmen, och raden "Sammanfattningen ligger i ditt
+   * urklipp" hade då påstått motsatsen.
+   */
   function gaTill(i: number) {
     setNr(i)
+    setKopierat('nej')
     setSteg('fragor')
   }
 
@@ -232,7 +260,7 @@ export function Rostning({
 
     async function kopiera() {
       try {
-        await navigator.clipboard.writeText(sammanfattning(fragor, klara, summor))
+        await navigator.clipboard.writeText(sammanfattning(fragor, klara, summor, adress))
         setKopierat('ja')
       } catch {
         // Urklipp kräver säker kontext och kan nekas av användaren. Då står

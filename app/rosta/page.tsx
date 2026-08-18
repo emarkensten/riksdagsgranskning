@@ -7,7 +7,7 @@ import { regeringsspann } from '@/lib/partier'
 import { Rostning } from '@/components/rostning'
 import { Kompasslank } from '@/components/kompasslank'
 import { Forbehall, Forbehallsrad } from '@/components/system'
-import { sidmetadata } from '@/lib/sajt'
+import { SAJT_URL, sidmetadata } from '@/lib/sajt'
 
 export const revalidate = 3600
 
@@ -70,6 +70,7 @@ export default async function Rosta() {
     <main>
       <Rostning
         fragor={fragor}
+        adress={`${SAJT_URL}/rosta`}
         ingress={
           <>
             Riksdagen avgjorde de här {rakneord(fragor.length)} frågorna under
