@@ -119,7 +119,7 @@ export const FRAGOR: Fraga[] = [
     ja_kort:
       'Reglerna ändras inte. Riksdagen ger regeringen inga nya uppdrag om uppehållstillstånd eller utvisning.',
     nej_kort:
-      'Två nya uppdrag till regeringen: språk- och samhällskunskapskrav för permanent uppehållstillstånd, och att utvisning för bristande vandel alltid ska kräva brottsliga handlingar.',
+      'Två nya uppdrag till regeringen: språk- och samhällskunskapskrav för permanent uppehållstillstånd, och att bristande vandel aldrig ensamt ska räcka för att utvisa någon eller neka uppehållstillstånd — det ska alltid krävas brottsliga handlingar.',
     forslagspunkt: 3557,
   },
   {
@@ -129,7 +129,7 @@ export const FRAGOR: Fraga[] = [
     ingress:
       'Om riksdagen skulle uppmana regeringen att avstå från att utreda ett statligt övertagande av sjukvården från regionerna.',
     ja_kort:
-      'Utredningen får fortsätta. Riksdagen ger regeringen inget uppdrag om sjukvårdens huvudmannaskap.',
+      'Riksdagen lägger sig inte i. Ingen uppmaning går till regeringen, och utredningen om ett statligt övertagande stoppas alltså inte.',
     nej_kort:
       'Utredningen stoppas. Regeringen uppmanas att avstå från att utreda ett statligt övertagande, och att i stället se över och stärka vårdens kapacitet.',
     forslagspunkt: 3107,
@@ -153,7 +153,7 @@ export const FRAGOR: Fraga[] = [
     ingress:
       'Om avverkning i skogar med höga naturvärden ska stoppas genom lagstiftning, och hur fjällnära skog ska få långsiktigt skydd.',
     ja_kort:
-      'Ingen ny lag. Avverkning i skogar med höga naturvärden fortsätter att regleras som i dag.',
+      'Ingen ny lag och ingen ny strategi. Både avverkning i skogar med höga naturvärden och skyddet av fjällnära skog fortsätter att regleras som i dag.',
     nej_kort:
       'Regeringen ska ta fram en lag som stoppar avverkning i skogar med höga naturvärden, och en strategi med pengar för att skydda fjällnära skog långsiktigt.',
     forslagspunkt: 2716,
@@ -192,7 +192,7 @@ export const FRAGOR: Fraga[] = [
     ja_kort:
       'Åldersgränserna sänks enligt regeringens förslag — både för avgiftsfri tandvård och för det statliga tandvårdsstödet.',
     nej_kort:
-      'Åldersgränserna ligger kvar. Besparingen görs inte för sig, utan ska vänta på en större tandvårdsreform med nytt högkostnadsskydd.',
+      'Åldersgränserna ligger kvar. Ändringen ska inte göras för sig, utan vänta på en större tandvårdsreform med ett nytt högkostnadsskydd för tandvård.',
     forslagspunkt: 2254,
   },
   {
