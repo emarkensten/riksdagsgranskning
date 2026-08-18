@@ -1,7 +1,9 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { PARTIER, REGERINGSPARTIERNA, datum, heltal, lista, namn, partilinje, utskott } from '@/lib/db'
-import { FRAGOR, KOMPASS, fraga, hamtaFraga, rakneord, utfall } from '@/lib/fragor'
+import { datum, heltal, lista, utskott } from '@/lib/db'
+import { PARTIER, REGERINGSPARTIERNA, namn, partilinje, regeringslikhet } from '@/lib/parti'
+import { FRAGOR, KOMPASS, fraga, hamtaFraga, utfall } from '@/lib/fragor'
+import { rakneord } from '@/lib/text'
 import { regeringsspann } from '@/lib/partier'
 import { Rostrad, Rostnyckel } from '@/components/rostrad'
 import { Kompasslank } from '@/components/kompasslank'
@@ -56,11 +58,7 @@ export default async function Fragesida({ params }: { params: Promise<{ slug: st
   // är så de röstar i praktiken varje gång.
   const utbytbara = REGERINGSPARTIERNA.map(namn)
   const spann = await regeringsspann()
-  const treLinjer = REGERINGSPARTIERNA.map((p) => {
-    const r = d.roster.find((x) => x.parti === p)
-    return r ? partilinje(r) : undefined
-  })
-  const treLika = treLinjer.every((l) => l !== undefined && l === treLinjer[0])
+  const tre = regeringslikhet(d.roster)
 
   // Partierna på motförslagets sida, med fulla namn. Räknas fram ur rösterna
   // och inte ur motforslag_partier: det fältet säger vilka som skrev under
@@ -243,9 +241,9 @@ export default async function Fragesida({ params }: { params: Promise<{ slug: st
         {/* Skrivs ut på varje sida där ett av de tre namnges, i klartext och
             inte som en fotnot. Se CLAUDE.md: vilket av dem som hamnar i en
             mening avgörs av tiondelar. */}
-        {treLika && treLinjer[0] && (
+        {tre.lika && tre.linje && (
           <p className="mt-4 max-w-[66ch] text-[13.5px] leading-[1.6]" style={{ color: 'var(--black-svag)' }}>
-            {lista(utbytbara)} landade alla på {treLinjer[0].toLowerCase()} här.
+            {lista(utbytbara)} landade alla på {tre.linje.toLowerCase()} här.
             Det säger inget särskilt om just den här frågan — de tre röstade
             lika i {spann} av mandatperiodens samtliga voteringar.
           </p>

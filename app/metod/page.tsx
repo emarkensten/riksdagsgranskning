@@ -1,6 +1,5 @@
-import {
-  antal, datum, db, heltal, lista, namn, rader, rakna, tal, REGERINGSPARTIERNA,
-} from '@/lib/db'
+import { antal, datum, db, heltal, lista, rader, rakna, tal } from '@/lib/db'
+import { namn, REGERINGSPARTIERNA } from '@/lib/parti'
 import { Stapel } from '@/components/stapel'
 import { Etikett, Forbehall, Nyckeltal, Textlank } from '@/components/system'
 import { regeringsspann } from '@/lib/partier'

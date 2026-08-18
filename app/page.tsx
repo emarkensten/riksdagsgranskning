@@ -3,10 +3,11 @@ import { unstable_cache } from 'next/cache'
 import { notFound } from 'next/navigation'
 import { antal, db, datum, heltal, rader, rakna, tal } from '@/lib/db'
 import AMNEN from '@/lib/amnen.json'
-import { FRAGOR, rakneord } from '@/lib/fragor'
+import { FRAGOR, gruppera } from '@/lib/fragor'
+import { rakneord } from '@/lib/text'
 import { Rostrad, Rostnyckel, type PartiRad } from '@/components/rostrad'
 import { Chip, Etikett, Nyckeltal, Textlank } from '@/components/system'
-import { Forstoringsglas } from '@/components/ikoner'
+import { Forstoringsglas, PilHoger } from '@/components/ikoner'
 import { regeringsspann } from '@/lib/partier'
 
 // Ingen revalidate: sidan läser searchParams och renderas därför alltid
@@ -145,11 +146,7 @@ async function hamta({ amne, q, rm, sida }: Sok) {
     klient.from('parti_rost').select('votering_id, parti, ja, nej, avstar, franvarande')
       .in('votering_id', punkter.map((p) => p.votering_id).filter(Boolean) as string[]))
 
-  const perVotering = new Map<string, PartiRad[]>()
-  for (const r of roster) {
-    if (!perVotering.has(r.votering_id)) perVotering.set(r.votering_id, [])
-    perVotering.get(r.votering_id)!.push(r)
-  }
+  const perVotering = gruppera(roster)
 
   // Stommen bär riksmoten, totalt, medRoster, avlagda, foljde och
   // likhetsspann — alltså allt som är lika för varje besökare.
@@ -201,10 +198,46 @@ export default async function Start({ searchParams }: { searchParams: Promise<So
 
   return (
     <main>
-      {/* Luftigt nog att bära en display-rubrik, stramt nog att första träffen
-          ryms över vecket på 1280×720 — den fanns på y=724 med magasinets
-          rytm, och en söksida som inte visar ett enda resultat ser ut som en
-          startsida med ett sökfält på. */}
+      {/* Dörren till quizet. Ligger överst därför att planen säger det, och är
+          en enda smal rad därför att planen också säger varför: startsidan är
+          sajtens ansikte mot den som bedömer källan, och en journalist som
+          överväger att citera ska mötas av materialet och inte av ett quiz.
+          En rad är en dörr, ett kort med rubrik och ingress hade varit ett rum.
+
+          Efter valet ska ingången tonas ned utan arkitekturändring — därav en
+          självständig block här och ingenting invävt i heron nedanför. */}
+      <Link
+        href="/rosta"
+        className="stig mt-7 flex items-center gap-4 rounded-[8px] px-5 py-3.5 text-[15px] transition-colors duration-150 hover:bg-[var(--papper-djup)]"
+        style={{ border: '1px solid var(--linje-stark)' }}
+      >
+        {/* Texten lindar inuti sin egen span, raden lindar inte. Med
+            flex-wrap på ytterelementet hamnade pilen ensam på en fjärde rad
+            på 375 px, längst ned till höger, utan något att peka på. */}
+        <span className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1">
+          <span className="etikett" style={{ color: 'var(--accent)' }}>Valet 2026</span>
+          <span className="font-semibold">Hur hade du röstat?</span>
+          <span style={{ color: 'var(--black-svag)' }}>
+            Rösta i de {rakneord(FRAGOR.length)} frågorna och jämför med partierna.
+          </span>
+        </span>
+        <span className="ml-auto shrink-0" style={{ color: 'var(--accent)' }} aria-hidden>
+          <PilHoger storlek={16} />
+        </span>
+      </Link>
+
+      {/* Luftigt nog att bära en display-rubrik.
+
+          Här stod också att heron är "stramt nog att första träffen ryms över
+          vecket på 1280×720". Det gäller inte längre och stryks i stället för
+          att stå kvar med förbehåll. Uppmätt 2026-08-18: första träffen ligger
+          på y=853 utan quizdörren ovanför och y=933 med den — under vecket i
+          båda fallen. Utrymmet gick åt när valfrågeremsan lades till, inte till
+          dörren, som kostar 80 px av de 213. Att lova något om vecket igen
+          kräver en ny mätning, inte att raden skrivs tillbaka.
+
+          Kvar står skälet raden fanns för: en söksida som inte visar ett enda
+          resultat ser ut som en startsida med ett sökfält på. */}
       <section className={soker ? 'pb-6 pt-10' : 'pb-7 pt-12'}>
         <Etikett className="stig" ton="signal">Mandatperioden 2022–2026</Etikett>
 

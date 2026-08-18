@@ -1,4 +1,7 @@
-import { db, rader } from '@/lib/db'
+import { datum, db, lista, rader } from '@/lib/db'
+import { PARTIER, linje, namn } from '@/lib/parti'
+import { rakneord, storBokstav } from '@/lib/text'
+import { utanStallningVerb, type Rostningsfraga } from '@/lib/rostning'
 import type { PartiRad } from '@/components/rostrad'
 
 /**
@@ -141,6 +144,25 @@ export const FRAGOR: Fraga[] = [
   },
 ]
 
+/**
+ * PostgREST skriver en inbäddad relation som lista utan genererade typer,
+ * men som objekt när `!inner` sitter på en till-en-relation. De tre
+ * hämtningarna nedan packade upp den var för sig, med samma fem tecken.
+ */
+function forst<T>(v: T | T[]): T {
+  return Array.isArray(v) ? v[0] : v
+}
+
+/** Rösterna grupperade per votering. Samma loop i alla hämtningar som läser flera. */
+export function gruppera<T extends { votering_id: string }>(roster: T[]) {
+  const karta = new Map<string, T[]>()
+  for (const r of roster) {
+    if (!karta.has(r.votering_id)) karta.set(r.votering_id, [])
+    karta.get(r.votering_id)!.push(r)
+  }
+  return karta
+}
+
 export function fraga(slug: string) {
   return FRAGOR.find((f) => f.slug === slug)
 }
@@ -168,28 +190,6 @@ export const KOMPASS = {
   url: 'https://valkompass.svt.se',
   ord: 'trettiofem',
 } as const
-
-const RAKNEORD = [
-  'noll', 'en', 'två', 'tre', 'fyra', 'fem', 'sex',
-  'sju', 'åtta', 'nio', 'tio', 'elva', 'tolv',
-]
-
-/**
- * Små tal som ord: 9 → "nio".
- *
- * Finns därför att sidorna säger "nio frågor" i löpande text, och ordet skulle
- * annars stå skrivet för hand på fyra ställen. Faller en fråga vid en
- * granskning ska sidan sluta lova nio av sig själv — en hårdkodad mening blir
- * tyst osann, och just den här är sajtens känsligaste: hela dess trovärdighet
- * ligger i att den stannar vid det den kan belägga.
- *
- * Över tolv faller den tillbaka på siffran. Svenska räkneord blir
- * sammansättningar däröver, och en lista som växer förbi tolv är en annan
- * produkt än den här.
- */
-export function rakneord(n: number) {
-  return RAKNEORD[n] ?? String(n)
-}
 
 export type FragaData = {
   sakfraga: string
@@ -243,8 +243,8 @@ export async function hamtaFraga(id: number): Promise<FragaData | null> {
   if (!data) return null
 
   const t = data as unknown as Traff
-  const f = Array.isArray(t.forslagspunkt) ? t.forslagspunkt[0] : t.forslagspunkt
-  const b = Array.isArray(f.betankande) ? f.betankande[0] : f.betankande
+  const f = forst(t.forslagspunkt)
+  const b = forst(f.betankande)
 
   const roster = await rader<PartiRad>(
     klient
@@ -292,8 +292,8 @@ export async function hamtaAllaFragor(): Promise<Map<string, AllaRad>> {
   )
 
   const platt = punkter.map((p) => {
-    const f = Array.isArray(p.forslagspunkt) ? p.forslagspunkt[0] : p.forslagspunkt
-    const b = Array.isArray(f.betankande) ? f.betankande[0] : f.betankande
+    const f = forst(p.forslagspunkt)
+    const b = forst(f.betankande)
     return {
       id: p.forslagspunkt_id,
       amne: p.amne,
@@ -310,11 +310,7 @@ export async function hamtaAllaFragor(): Promise<Map<string, AllaRad>> {
       .in('votering_id', platt.map((p) => p.votering_id).filter(Boolean) as string[]),
   )
 
-  const perVotering = new Map<string, PartiRad[]>()
-  for (const r of roster) {
-    if (!perVotering.has(r.votering_id)) perVotering.set(r.votering_id, [])
-    perVotering.get(r.votering_id)!.push(r)
-  }
+  const perVotering = gruppera(roster)
 
   const karta = new Map<string, AllaRad>()
   for (const f of FRAGOR) {
@@ -362,4 +358,114 @@ export function utfall(roster: PartiRad[]) {
     oavgjort: rostades && ja === nej,
     utskottetVann: rostades && ja > nej,
   }
+}
+
+/**
+ * Allt quizet på `/rosta` behöver, i två frågor.
+ *
+ * Partilinjerna hämtas här och skickas som props — aldrig hårdkodade i
+ * klienten. Uppmätt med `explain analyze` 2026-08-18: 15 ms för den första
+ * frågan, rena index scans, alltså långt under anons tak på tre sekunder.
+ *
+ * Samma tvåfrågemönster som `hamtaAllaFragor()`, men en annan avkastning:
+ * indexsidan vill ha råa röster och reservanter, quizet vill ha klarspråket
+ * och de förräknade meningarna. Att slå ihop dem hade gett indexsidan tre
+ * textstycken per fråga som den inte renderar, och quizet ett fält om
+ * motförslagets undertecknare som det inte visar.
+ *
+ * **Kastar hellre än tappar en fråga.** De nio id:na är hårdkodade och ska
+ * finnas; ett bortfall skulle annars ge ett quiz med åtta frågor där varje
+ * "av nio" tyst blev osant.
+ */
+export async function hamtaRostning(): Promise<Rostningsfraga[]> {
+  const klient = db()
+  const punkter = await rader<{
+    forslagspunkt_id: number
+    sakfraga: string
+    ja_innebar: string
+    nej_innebar: string
+    amne: string
+    forslagspunkt: any
+  }>(
+    klient
+      .from('punkt_klartext')
+      .select(
+        'forslagspunkt_id, sakfraga, ja_innebar, nej_innebar, amne, forslagspunkt!inner(votering_id, betankande!inner(datum))',
+      )
+      .in('forslagspunkt_id', FRAGOR.map((f) => f.forslagspunkt)),
+  )
+
+  const platt = punkter.map((p) => {
+    const f = forst(p.forslagspunkt)
+    const b = forst(f.betankande)
+    return {
+      id: p.forslagspunkt_id,
+      sakfraga: p.sakfraga,
+      ja_innebar: p.ja_innebar,
+      nej_innebar: p.nej_innebar,
+      amne: p.amne,
+      votering_id: f.votering_id as string | null,
+      datum: (b?.datum ?? '') as string,
+    }
+  })
+
+  // Gruppen `-`, de partilösa, filtreras bort redan i frågan. Quizet jämför
+  // besökaren med de åtta partierna, och en nionde etikett i röstraden hade
+  // varit en jämförelse ingen bett om.
+  const roster = await rader<PartiRad & { votering_id: string }>(
+    klient
+      .from('parti_rost')
+      .select('votering_id, parti, ja, nej, avstar, franvarande')
+      .in('votering_id', platt.map((p) => p.votering_id).filter(Boolean) as string[])
+      .in('parti', [...PARTIER]),
+  )
+
+  const perVotering = gruppera(roster)
+
+  return FRAGOR.map((f) => {
+    const p = platt.find((x) => x.id === f.forslagspunkt)
+    const rad = p?.votering_id ? perVotering.get(p.votering_id) : undefined
+    if (!p || !rad?.length) {
+      throw new Error(`Röstningen saknar underlag för ${f.slug} (${f.forslagspunkt})`)
+    }
+    return {
+      slug: f.slug,
+      rubrik: f.rubrik,
+      amne: p.amne,
+      datumtext: datum(p.datum),
+      sakfraga: p.sakfraga,
+      ja_innebar: p.ja_innebar,
+      nej_innebar: p.nej_innebar,
+      roster: rad,
+      mening: { Ja: mening(rad, 'Ja'), Nej: mening(rad, 'Nej') },
+    }
+  })
+}
+
+/**
+ * Meningen under röstraden, härledd ur rösterna.
+ *
+ * Räknas på servern därför att det bara finns två möjliga svar per fråga —
+ * arton meningar totalt. Alternativet hade varit att sätta ihop dem i
+ * webbläsaren, och då hade `lista()`, `namn()` och `rakneord()` behövt följa
+ * med dit; de två första bor i `lib/db`, som drar in hela supabase-js.
+ *
+ */
+function mening(roster: PartiRad[], svar: 'Ja' | 'Nej') {
+  const linjer = PARTIER.map((parti) => ({ parti, linje: linje(roster, parti) }))
+  const lika = linjer.filter((l) => l.linje === svar).length
+  const utan = linjer.filter((l) => l.linje && l.linje !== 'Ja' && l.linje !== 'Nej')
+
+  // "Ett parti", inte "en". rakneord() räknar och känner inte till genus.
+  const inledning =
+    lika === 0
+      ? `Inget av de ${rakneord(PARTIER.length)} partierna röstade som du.`
+      : `${lika === 1 ? 'Ett' : storBokstav(rakneord(lika))} av ${rakneord(PARTIER.length)} partier röstade som du.`
+
+  if (!utan.length) return inledning
+  const avstod = utan.filter((l) => l.linje === 'Avstår').length
+  // Samma skillnad mellan avstående och frånvaro som resultatskärmen gör, och
+  // därför samma funktion — den beskriver antalet, här beskrivs vilka.
+  const verb = utanStallningVerb(utan.length, avstod)
+  return `${inledning} ${lista(utan.map((l) => namn(l.parti)))} ${verb}.`
 }

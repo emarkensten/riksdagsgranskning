@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { PARTIFARG } from '@/lib/db'
+import { PARTIFARG } from '@/lib/parti'
 import { Info, PilHoger, PilVanster } from '@/components/ikoner'
 
 /**
@@ -87,41 +87,76 @@ export function Textlank({
   )
 }
 
-/** Tillbakalänk med vänsterpil. Dämpad — den ska inte konkurrera med rubriken. */
-export function Tillbaka({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="inline-flex items-center gap-2 text-[13.5px] font-semibold transition-opacity duration-150 hover:opacity-70"
-      style={{ color: 'var(--black-svag)' }}
-    >
+/**
+ * Tillbakalänk med vänsterpil. Dämpad — den ska inte konkurrera med rubriken.
+ *
+ * Tar `href` eller `onClick`, som `Knapp`: quizets "Föregående fråga" går inte
+ * till en adress utan ett steg bakåt i en klientstat, och den ska ändå ha
+ * exakt de här måtten. Markup:en stod handskriven i klientfilen innan.
+ */
+export function Tillbaka({
+  children,
+  ...mal
+}: { children: React.ReactNode } & (
+  | { href: string; onClick?: never }
+  | { onClick: () => void; href?: never }
+)) {
+  const klass =
+    'inline-flex items-center gap-2 text-[13.5px] font-semibold transition-opacity duration-150 hover:opacity-70'
+  const stil = { color: 'var(--black-svag)' }
+  const innehall = (
+    <>
       <PilVanster storlek={15} />
       {children}
+    </>
+  )
+  if (mal.href === undefined) {
+    return (
+      <button type="button" onClick={mal.onClick} className={klass} style={stil}>
+        {innehall}
+      </button>
+    )
+  }
+  return (
+    <Link href={mal.href} className={klass} style={stil}>
+      {innehall}
     </Link>
   )
 }
 
-/** Pillerknapp. Primär = fylld signal, sekundär = hårlinjekant. */
+/**
+ * Pillerknapp. Primär = fylld signal, sekundär = hårlinjekant.
+ *
+ * Tar antingen `href` eller `onClick`. Quizet på `/rosta` är sajtens första
+ * yta med knappar som inte går någonstans — "Börja", "Börja om" — och de ska
+ * ha exakt pillrets 15×26 px och inte en egen uppsättning mått. Alternativet
+ * var en andra komponent i klientfilen med samma siffror inskrivna igen, och
+ * måtten står på ett ställe just för att det inte ska hända.
+ */
 export function Knapp({
-  href,
   children,
   ton = 'primar',
-}: {
-  href: string
-  children: React.ReactNode
-  ton?: 'primar' | 'sekundar'
-}) {
+  ...mal
+}: { children: React.ReactNode; ton?: 'primar' | 'sekundar' } & (
+  | { href: string; onClick?: never }
+  | { onClick: () => void; href?: never }
+)) {
   const primar = ton === 'primar'
+  const klass =
+    'inline-block rounded-full px-[26px] py-[15px] text-[15px] font-semibold transition-[filter,background] duration-150 hover:brightness-[0.94]'
+  const stil = primar
+    ? { background: 'var(--accent)', color: '#ffffff' }
+    : { border: '1px solid var(--linje-stark)', color: 'var(--black)' }
+
+  if (mal.href === undefined) {
+    return (
+      <button type="button" onClick={mal.onClick} className={klass} style={stil}>
+        {children}
+      </button>
+    )
+  }
   return (
-    <Link
-      href={href}
-      className="inline-block rounded-full px-[26px] py-[15px] text-[15px] font-semibold transition-[filter,background] duration-150 hover:brightness-[0.94]"
-      style={
-        primar
-          ? { background: 'var(--accent)', color: '#ffffff' }
-          : { border: '1px solid var(--linje-stark)', color: 'var(--black)' }
-      }
-    >
+    <Link href={mal.href} className={klass} style={stil}>
       {children}
     </Link>
   )

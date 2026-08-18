@@ -1,6 +1,8 @@
 import Link from 'next/link'
-import { PARTIER, datum, heltal, lista, namn } from '@/lib/db'
-import { FRAGOR, KOMPASS, hamtaAllaFragor, rakneord, utfall } from '@/lib/fragor'
+import { datum, heltal, lista } from '@/lib/db'
+import { PARTIER, namn } from '@/lib/parti'
+import { FRAGOR, KOMPASS, hamtaAllaFragor, utfall } from '@/lib/fragor'
+import { rakneord, storBokstav } from '@/lib/text'
 import { Rostrad, Rostnyckel } from '@/components/rostrad'
 import { Kompasslank } from '@/components/kompasslank'
 import { Etikett, Textlank } from '@/components/system'
@@ -209,15 +211,11 @@ export default async function Fragor() {
           </p>
         </div>
         <div className="mt-8 flex flex-wrap gap-x-8 gap-y-3">
+          <Textlank href="/rosta">Rösta själv i de {rakneord(FRAGOR.length)} frågorna</Textlank>
           <Textlank href="/">Sök bland alla riksdagens beslut</Textlank>
           <Textlank href="/metod">Så är det räknat</Textlank>
         </div>
       </section>
     </main>
   )
-}
-
-/** "nio" → "Nio". Sidtiteln och raden under ingressen börjar båda med talet. */
-function storBokstav(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1)
 }

@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { antal, datum, db, heltal, lista, namn, rader, rakna, tal, REGERINGSPARTIERNA } from '@/lib/db'
+import { antal, datum, db, heltal, lista, rader, rakna, tal } from '@/lib/db'
+import { namn, REGERINGSPARTIERNA } from '@/lib/parti'
 import { Linjeetikett } from '@/components/rostrad'
 import { Etikett, Forbehall, Knapp, Nyckeltal, Partiprick, Textlank } from '@/components/system'
 import { Stapel } from '@/components/stapel'

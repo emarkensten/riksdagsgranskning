@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { db, heltal, lista, namn, rader, tal, REGERINGSPARTIERNA } from '@/lib/db'
+import { db, heltal, lista, rader, tal } from '@/lib/db'
+import { namn, REGERINGSPARTIERNA } from '@/lib/parti'
 import { Linjeetikett } from '@/components/rostrad'
 import { Etikett, Forbehall, Textlank } from '@/components/system'
 import { regeringsspann } from '@/lib/partier'

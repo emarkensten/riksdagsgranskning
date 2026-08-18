@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { antal, db, heltal, namn, rader, rakna, tal, PARTIFARG } from '@/lib/db'
+import { antal, db, heltal, rader, rakna, tal } from '@/lib/db'
+import { namn, PARTIFARG } from '@/lib/parti'
 import { Stapel } from '@/components/stapel'
 import { Etikett, Forbehall, Partiprick, Textlank } from '@/components/system'
 import { sidmetadata } from '@/lib/sajt'

@@ -1,5 +1,13 @@
 /**
- * HTML-entiteter i riksdagens texter, avkodade.
+ * Svensk text: riksdagens entiteter avkodade, och små tal som ord.
+ *
+ * De två delarna har ingen koppling till varandra utöver att båda är rena
+ * strängfunktioner utan beroenden. Det är också hela poängen med filen —
+ * `rakneord()` flyttade hit från `lib/fragor.ts` när quizet på `/rosta` behövde
+ * den i webbläsaren, och `lib/fragor` hänger i `lib/db` och därmed i
+ * supabase-js.
+ *
+ * ## Entiteterna
  *
  * `forslagspunkt.forslag` levereras från data.riksdagen.se med entiteter i
  * stället för tecken: `f&ouml;rslag`, `1 kap. 6 &sect;`, `&#160;`. React
@@ -50,4 +58,38 @@ export function avkoda(text: string | null | undefined): string | undefined {
     if (!Number.isFinite(kod) || kod < 1 || kod > 0x10ffff) return hel
     return String.fromCodePoint(kod)
   })
+}
+
+const RAKNEORD = [
+  'noll', 'en', 'två', 'tre', 'fyra', 'fem', 'sex',
+  'sju', 'åtta', 'nio', 'tio', 'elva', 'tolv',
+]
+
+/**
+ * Små tal som ord: 9 → "nio".
+ *
+ * Finns därför att sidorna säger "nio frågor" i löpande text, och ordet skulle
+ * annars stå skrivet för hand på fyra ställen. Faller en fråga vid en
+ * granskning ska sidan sluta lova nio av sig själv — en hårdkodad mening blir
+ * tyst osann, och just den här är sajtens känsligaste: hela dess trovärdighet
+ * ligger i att den stannar vid det den kan belägga.
+ *
+ * Över tolv faller den tillbaka på siffran. Svenska räkneord blir
+ * sammansättningar däröver, och en lista som växer förbi tolv är en annan
+ * produkt än den här.
+ */
+export function rakneord(n: number) {
+  return RAKNEORD[n] ?? String(n)
+}
+
+/**
+ * "nio" → "Nio".
+ *
+ * Finns därför att `rakneord()` alltid ger gemener medan flera meningar börjar
+ * med talet. Låg fram till nu som en lokal hjälpfunktion i `app/fragor/page.tsx`
+ * och behövdes på ett andra ställe när quizet skulle skriva "Ett av åtta
+ * partier röstade som du."
+ */
+export function storBokstav(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }

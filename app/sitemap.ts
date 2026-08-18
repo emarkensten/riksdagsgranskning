@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
-import { db, slug, PARTIER } from '@/lib/db'
+import { db } from '@/lib/db'
+import { slug, PARTIER } from '@/lib/parti'
 import { allaRader } from '@/lib/block'
 import { FRAGOR } from '@/lib/fragor'
 import { SAJT_URL } from '@/lib/sajt'
@@ -21,6 +22,10 @@ const STATISKA = [
   // en valfråga i väljarens egna ord, och indexering tar dagar — varje dags
   // fördröjning är förlorad räckvidd i september.
   ['/fragor', 0.9],
+  // Samma vikt som frågesidorna. Quizet är den delbara ytan distributionen
+  // saknade — lärarmejlet pekar hit — och det är en egen landningssida, inte
+  // en variant av /fragor.
+  ['/rosta', 0.9],
   ['/fynd', 0.9],
   ['/partier', 0.8],
   ['/samstammighet', 0.8],

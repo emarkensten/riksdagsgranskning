@@ -6,7 +6,7 @@
  *
  *   SQL   partilinje(ja, nej, avstar)  matar de materialiserade vyerna, och
  *         därmed varje tal på startsidan, /partier, /amnen och /samstammighet.
- *   TS    partilinje(r) i lib/db.ts    märker upp partiraderna på
+ *   TS    partilinje(r) i lib/parti.ts  märker upp partiraderna på
  *         voteringssidorna, alltså det läsaren ser bredvid rösterna.
  *
  * Går de isär visar sajten två olika linjer för samma votering, på två sidor,
@@ -23,7 +23,8 @@
  * och partilinje() körbar för anon.
  */
 import { config } from 'dotenv'
-import { db, partilinje } from '../lib/db.ts'
+import { db } from '../lib/db.ts'
+import { partilinje } from '../lib/parti.ts'
 
 config({ path: '.env.local' })
 
