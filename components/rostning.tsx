@@ -11,7 +11,7 @@ import {
   Textlank,
   Tillbaka,
 } from '@/components/system'
-import { Bock, Kryss, PilHoger } from '@/components/ikoner'
+import { Bock, Kryss } from '@/components/ikoner'
 import { ROSTFARG, namn } from '@/lib/parti'
 import { rakneord } from '@/lib/text'
 import {
@@ -599,30 +599,31 @@ export function Rostning({
           <Alternativ
             key={v}
             svar={v}
-            text={v === 'Ja' ? f.ja_innebar : f.nej_innebar}
+            text={v === 'Ja' ? f.ja_kort : f.nej_kort}
             valt={svar[nr] === v}
             onClick={() => svara(v)}
           />
         ))}
       </div>
 
-      <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-4">
+      {/*
+        Ingen länk till frågesidan härifrån.
+
+        Den stod här som "Hela frågan med rösterna — lämnar quizet", och båda
+        halvorna av den meningen var problem. Den lämnade quizet på riktigt:
+        svaren ligger i `useState`, så ett klick och en bakåtknapp kastade allt
+        och började om från fråga ett. Och den ledde till rösterna — alltså
+        till facit, mitt i ett prov. En läsare som slår upp svaret innan hen
+        svarar mäter inte längre sig själv.
+
+        Villkoret att varje fråga ska länka till sin frågesida uppfylls av
+        resultatskärmen, där varje rad i kvittot är en länk. Där är facit
+        redan givet.
+      */}
+      <div className="mt-8">
         <Tillbaka onClick={tillbaka}>
           {nr === 0 ? 'Tillbaka till början' : 'Föregående fråga'}
         </Tillbaka>
-        {/* Villkoret: varje fråga länkar till sin frågesida. Öppnas i samma
-            flik — quizet är inte värt att fälla en läsare för, och svaren
-            hittills går ändå förlorade vid en omladdning. Det står i länken.
-            Dämpad som tillbakalänken, inte signalfärgad: den ska inte
-            konkurrera med de två alternativen ovanför. */}
-        <Link
-          href={`/fragor/${f.slug}`}
-          className="inline-flex items-center gap-2 text-[13.5px] font-semibold transition-opacity duration-150 hover:opacity-70"
-          style={{ color: 'var(--black-svag)' }}
-        >
-          Hela frågan med rösterna — lämnar quizet
-          <PilHoger storlek={15} />
-        </Link>
       </div>
     </section>
   )
