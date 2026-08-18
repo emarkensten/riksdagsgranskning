@@ -1,12 +1,12 @@
 import Link from 'next/link'
 import { lista } from '@/lib/db'
 import { PARTIER, REGERINGSPARTIERNA, namn, regeringslikhet } from '@/lib/parti'
-import { FRAGOR, hamtaRostning } from '@/lib/fragor'
+import { FRAGOR, KOMPASS, hamtaRostning } from '@/lib/fragor'
 import { rakneord, storBokstav } from '@/lib/text'
 import { regeringsspann } from '@/lib/partier'
 import { Rostning } from '@/components/rostning'
 import { Kompasslank } from '@/components/kompasslank'
-import { Forbehall } from '@/components/system'
+import { Forbehall, Forbehallsrad } from '@/components/system'
 import { sidmetadata } from '@/lib/sajt'
 
 export const revalidate = 3600
@@ -28,6 +28,12 @@ export const metadata = sidmetadata({
  * gången och räkningen. Delningen är avsiktlig: allt som påstår något om
  * riksdagen renderas på servern ur databasen, och allt som rör besökarens egna
  * svar stannar i webbläsaren.
+ *
+ * **Ramen står kvar ord för ord, men i fyra utfällbara rader.** Fyra stycken
+ * och en stor `Forbehall` före knappen läste som en ansvarsfriskrivning och
+ * tryckte det första valet under vikningen; samma ord bakom "Läs varför" är
+ * fortfarande där för den som blir misstänksam, och den som inte blir det
+ * kommer i gång. Se `Forbehallsrad` i components/system.tsx.
  */
 export default async function Rosta() {
   // De två frågorna delar ingen data — regeringsspann() läser
@@ -64,6 +70,14 @@ export default async function Rosta() {
     <main>
       <Rostning
         fragor={fragor}
+        ingress={
+          <>
+            Riksdagen avgjorde de här {rakneord(fragor.length)} frågorna under
+            mandatperioden. Du får kammarens två alternativ — utskottets förslag
+            ställt mot motförslaget, båda utskrivna — och ställs sedan mot hur de{' '}
+            {rakneord(PARTIER.length)} partierna faktiskt röstade.
+          </>
+        }
         likhetsnotKort={
           <Forbehall litet>
             Innan talen: {lista(utbytbara)} röstade lika i {antalLika} frågor,
@@ -72,53 +86,64 @@ export default async function Rosta() {
           </Forbehall>
         }
       >
-        <p className="mt-7 max-w-[56ch] text-[clamp(17px,2.2vw,21px)] leading-[1.45]"
-           style={{ color: 'var(--black-mjuk)' }}>
-          Riksdagen avgjorde de här {rakneord(fragor.length)} frågorna under
-          mandatperioden. Du får samma val som kammaren hade — utskottets
-          förslag ställt mot motförslaget, båda utskrivna — och när du är
-          klar ställs dina svar mot hur de {rakneord(PARTIER.length)} partierna
-          faktiskt röstade.
-        </p>
-        {/* Ramen, utskriven innan första frågan. Skillnaden mot en
-            valkompass är hela skälet till att quizet håller: en kompass
-            frågar vad du tycker om en sakfråga, och det går inte att
-            jämföra med en votering. Här är instrumentet detsamma för
-            besökaren och för partierna — själva omröstningen. */}
-        <p className="mt-5 max-w-[62ch] text-[16px] leading-[1.6]"
-           style={{ color: 'var(--black-mjuk)' }}>
-          Det är inte en åsiktsmätning. Frågan är aldrig vad du tycker om
-          sakfrågan i stort, utan hur du hade röstat i den votering
-          riksdagen faktiskt höll — därför står det utskrivet vad ett ja
-          innebar och vad ett nej innebar innan du väljer. Ett parti som
-          röstade nej hade nästan alltid ett eget förslag och röstade för
-          det; nej är inte samma sak som motstånd mot sakfrågan.
-        </p>
-        <p className="mt-5 max-w-[62ch] text-[16px] font-semibold leading-[1.6]">
-          Dina svar stannar i din webbläsare. Ingenting sparas, ingenting
-          skickas någonstans och ingenting mäts — hur du skulle rösta är en
-          politisk åsikt, och den är inte vår.
-        </p>
-        <p className="mt-5 max-w-[62ch] text-[14.5px] leading-[1.6]"
-           style={{ color: 'var(--black-svag)' }}>
+        {/* Ramen, utskriven innan första frågan — men doserad. Skillnaden mot
+            en valkompass är hela skälet till att quizet håller, och den som
+            vill veta varför får hela stycket på ett klick. */}
+        <Forbehallsrad
+          etikett="Inte en åsiktsmätning"
+          kort="Frågan är hur du hade röstat i voteringen — inte vad du tycker om sakfrågan i stort."
+        >
+          En valkompass frågar vad du tycker om en sakfråga, och det går inte
+          att jämföra med en votering. Här är instrumentet detsamma för dig och
+          för partierna — själva omröstningen. Därför står det utskrivet vad ett
+          ja innebar och vad ett nej innebar innan du väljer. Ett parti som
+          röstade nej hade nästan alltid ett eget förslag och röstade för det;
+          nej är inte samma sak som motstånd mot sakfrågan.
+        </Forbehallsrad>
+
+        <Forbehallsrad
+          etikett="Svaren stannar hos dig"
+          kort="Ingenting sparas, skickas eller mäts. Lämnar du sidan är svaren borta."
+        >
+          Hur du skulle rösta är en politisk åsikt, och den är inte vår. Svaren
+          ligger i webbläsarens minne så länge fliken är öppen — inte i en
+          kaka, inte i adressfältet och inte hos oss. Räkningen mot partiernas
+          linjer görs i din webbläsare, av kod som redan har linjerna med sig.
+        </Forbehallsrad>
+
+        <Forbehallsrad
+          etikett={`${storBokstav(rakneord(REGERINGSPARTIERNA.length))} går inte att skilja`}
+          kort={
+            <>
+              {lista(utbytbara)} röstade lika i {antalLika} frågor. Du hamnar
+              lika nära alla tre — det är aritmetik, inte ett utfall av dina
+              svar.
+            </>
+          }
+        >
+          Vilket du än svarar får de tre därför exakt samma tal, och quizet kan
+          inte skilja dem åt
+          {gemensam ? ` — de röstade ${gemensam.toLowerCase()} i var och en` : ''}.
+          Det är ingen egenhet hos de här frågorna: de tre röstade lika i {spann}{' '}
+          av mandatperiodens samtliga voteringar.
+        </Forbehallsrad>
+
+        <Forbehallsrad
+          etikett="Urvalet"
+          kort={`Frågorna följer ${KOMPASS.namn}. Formuleringarna är våra egna.`}
+        >
           {/* Repots idiom för länk i löptext, som i Kompasslank: understruken
               och i bläck. En `Textlank` här hade satt sin pil mitt i
               meningen och lämnat punkten hängande efter den. */}
-          Frågorna är samma {rakneord(fragor.length)} som står under{' '}
+          Vi har valt ut de {rakneord(fragor.length)} voteringar som ligger
+          närmast frågorna i <Kompasslank />, och skrivit om dem till det val
+          kammaren faktiskt ställdes inför. Samma {rakneord(fragor.length)}{' '}
+          frågor står under{' '}
           <Link href="/fragor" className="underline hover:opacity-70" style={{ color: 'var(--black)' }}>
             Valfrågor
           </Link>
-          . Urvalet följer <Kompasslank />, formuleringarna är våra egna.
-        </p>
-        <div className="mt-10">
-          <Forbehall rubrik={`${storBokstav(rakneord(REGERINGSPARTIERNA.length))} av ${rakneord(PARTIER.length)} går inte att skilja åt.`}>
-            {lista(utbytbara)} röstade lika i {antalLika} frågor
-            {gemensam ? ` — ${gemensam.toLowerCase()} i var och en` : ''}. Vilket
-            du än svarar får de tre därför exakt samma tal, och quizet kan inte
-            skilja dem åt. Det är ingen egenhet hos de här frågorna: de tre
-            röstade lika i {spann} av mandatperiodens samtliga voteringar.
-          </Forbehall>
-        </div>
+          , där varje beslut går att läsa i sin helhet med rösterna.
+        </Forbehallsrad>
       </Rostning>
     </main>
   )
