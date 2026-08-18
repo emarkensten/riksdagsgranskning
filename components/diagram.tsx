@@ -1,4 +1,4 @@
-import { PARTIFARG } from '@/lib/db'
+import { PARTIFARG } from '@/lib/parti'
 
 /**
  * De tre diagrammen på /blocken.

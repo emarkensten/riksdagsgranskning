@@ -1,4 +1,5 @@
-import { db, rader, tal, REGERINGSPARTIERNA } from '@/lib/db'
+import { db, rader, tal } from '@/lib/db'
+import { REGERINGSPARTIERNA } from '@/lib/parti'
 
 /**
  * Underlaget som både /partier och /partier/[parti] bygger på.

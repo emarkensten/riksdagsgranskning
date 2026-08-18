@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { db, heltal, lista, namn, rader, tal, PARTIER, REGERINGSPARTIERNA } from '@/lib/db'
+import { db, heltal, lista, rader, tal } from '@/lib/db'
+import { namn, PARTIER, REGERINGSPARTIERNA } from '@/lib/parti'
 import { Stapel } from '@/components/stapel'
 import { Chip, Etikett, Forbehall, Nyckeltal } from '@/components/system'
 import AMNEN from '@/lib/amnen.json'

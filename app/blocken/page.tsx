@@ -1,8 +1,6 @@
 import Link from 'next/link'
-import {
-  db, datum, heltal, lista, namn, rader, tal, utskott,
-  PARTIER, REGERINGSPARTIERNA,
-} from '@/lib/db'
+import { db, datum, heltal, lista, rader, tal, utskott } from '@/lib/db'
+import { namn, PARTIER, REGERINGSPARTIERNA } from '@/lib/parti'
 import { allaRader } from '@/lib/block'
 import { Gnista, Lutning, Tidslinje, manadsnummer } from '@/components/diagram'
 import { Etikett, Forbehall, Knapp, Partiprick } from '@/components/system'

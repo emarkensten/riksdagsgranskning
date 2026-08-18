@@ -1,4 +1,12 @@
-import { PARTIER, PARTIFARG, ROSTFARG, ROSTTEXT, partilinje } from '@/lib/db'
+import { PARTIER, PARTIFARG, ROSTFARG, ROSTTEXT, partilinje, type Linje } from '@/lib/parti'
+
+/**
+ * Importerar från `lib/parti` och inte från `lib/db`.
+ *
+ * Filen används numera också inifrån quizet på `/rosta`, som är en
+ * klientkomponent. Med den gamla importen hade hela `@supabase/supabase-js`
+ * följt med in i webbläsarens bundle utan att någonsin anropas.
+ */
 
 export type PartiRad = {
   parti: string
@@ -20,11 +28,26 @@ export function Linjeetikett({
   linje,
   titel,
   kompakt = false,
+  lika = false,
 }: {
   parti: string
   linje: string
   titel?: string
   kompakt?: boolean
+  /**
+   * Partiet röstade som besökaren i quizet.
+   *
+   * Ringen är en **upprepning**, aldrig den enda bäraren: den dolda texten
+   * intill säger samma sak för den som inte ser färg, och raden under
+   * etiketterna räknar upp träffarna i klartext. Se regel 1 i
+   * docs/DESIGN_GUIDELINES.md — färgen kodar redan röst och parti, och en
+   * tredje betydelse i samma etikett måste därför skrivas ut.
+   *
+   * `outline` och inte `border`: kanten läggs utanpå och ändrar varken
+   * etikettens mått eller radens brytpunkter, så mönstret av åtta etiketter
+   * ser likadant ut med och utan markering.
+   */
+  lika?: boolean
 }) {
   return (
     <span
@@ -38,9 +61,11 @@ export function Linjeetikett({
         background: ROSTFARG[linje],
         color: ROSTTEXT[linje],
         boxShadow: `inset 0 -3px 0 ${PARTIFARG[parti] ?? 'transparent'}`,
+        ...(lika ? { outline: '2px solid var(--accent)', outlineOffset: 2 } : {}),
       }}
     >
       {parti}
+      {lika && <span className="sr-only"> — röstade som du</span>}
     </span>
   )
 }
@@ -51,10 +76,26 @@ export function Linjeetikett({
  * Poängen är att man ska kunna skanna en lista och se mönstret utan att läsa —
  * vilka som röstade lika.
  */
-export function Rostrad({ rader, kompakt = false }: { rader: PartiRad[]; kompakt?: boolean }) {
+export function Rostrad({
+  rader,
+  kompakt = false,
+  likaSom,
+}: {
+  rader: PartiRad[]
+  kompakt?: boolean
+  /**
+   * Markera de partier vars linje var den här — quizets svar på "vilka röstade
+   * som jag". Utelämnas överallt annars, och raden ser då ut som förut.
+   *
+   * Bara `Ja` och `Nej` kan skickas in. Ett `Avstår` hade markerat de partier
+   * som inte tog ställning som träffar, och att avstå är varken träff eller
+   * miss — se `summera()` i lib/rostning.ts.
+   */
+  likaSom?: 'Ja' | 'Nej'
+}) {
   const karta = new Map(rader.map((r) => [r.parti, r]))
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className={`flex flex-wrap ${likaSom ? 'gap-2' : 'gap-1'}`}>
       {PARTIER.map((p) => {
         const r = karta.get(p)
         if (!r) {
@@ -72,13 +113,14 @@ export function Rostrad({ rader, kompakt = false }: { rader: PartiRad[]; kompakt
             </span>
           )
         }
-        const linje = partilinje(r)
+        const linje: Linje = partilinje(r)
         return (
           <Linjeetikett
             key={p}
             parti={p}
             linje={linje}
             kompakt={kompakt}
+            lika={likaSom !== undefined && linje === likaSom}
             titel={`${p}: ${linje} (Ja ${r.ja}, Nej ${r.nej}, Avstår ${r.avstar}, Frånv. ${r.franvarande})`}
           />
         )

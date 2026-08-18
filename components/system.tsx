@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { PARTIFARG } from '@/lib/db'
+import { PARTIFARG } from '@/lib/parti'
 import { Info, PilHoger, PilVanster } from '@/components/ikoner'
 
 /**
@@ -101,27 +101,42 @@ export function Tillbaka({ href, children }: { href: string; children: React.Rea
   )
 }
 
-/** Pillerknapp. Primär = fylld signal, sekundär = hårlinjekant. */
+/**
+ * Pillerknapp. Primär = fylld signal, sekundär = hårlinjekant.
+ *
+ * Tar antingen `href` eller `onClick`. Quizet på `/rosta` är sajtens första
+ * yta med knappar som inte går någonstans — "Börja", "Börja om" — och de ska
+ * ha exakt pillrets 15×26 px och inte en egen uppsättning mått. Alternativet
+ * var en andra komponent i klientfilen med samma siffror inskrivna igen, och
+ * måtten står på ett ställe just för att det inte ska hända.
+ */
 export function Knapp({
   href,
+  onClick,
   children,
   ton = 'primar',
 }: {
-  href: string
+  href?: string
+  onClick?: () => void
   children: React.ReactNode
   ton?: 'primar' | 'sekundar'
 }) {
   const primar = ton === 'primar'
+  const klass =
+    'inline-block rounded-full px-[26px] py-[15px] text-[15px] font-semibold transition-[filter,background] duration-150 hover:brightness-[0.94]'
+  const stil = primar
+    ? { background: 'var(--accent)', color: '#ffffff' }
+    : { border: '1px solid var(--linje-stark)', color: 'var(--black)' }
+
+  if (href === undefined) {
+    return (
+      <button type="button" onClick={onClick} className={klass} style={stil}>
+        {children}
+      </button>
+    )
+  }
   return (
-    <Link
-      href={href}
-      className="inline-block rounded-full px-[26px] py-[15px] text-[15px] font-semibold transition-[filter,background] duration-150 hover:brightness-[0.94]"
-      style={
-        primar
-          ? { background: 'var(--accent)', color: '#ffffff' }
-          : { border: '1px solid var(--linje-stark)', color: 'var(--black)' }
-      }
-    >
+    <Link href={href} className={klass} style={stil}>
       {children}
     </Link>
   )

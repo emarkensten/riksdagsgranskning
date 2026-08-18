@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { db, heltal, namn, rader, partilinje } from '@/lib/db'
+import { db, heltal, rader } from '@/lib/db'
+import { namn, partilinje } from '@/lib/parti'
 import { Linjeetikett, Rostnyckel } from '@/components/rostrad'
 import { Stapel } from '@/components/stapel'
 import { Forbehall, Tillbaka } from '@/components/system'

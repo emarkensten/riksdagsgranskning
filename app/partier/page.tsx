@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { PARTIER, heltal, lista, namn, slug, tal, REGERINGSPARTIERNA } from '@/lib/db'
+import { heltal, lista, tal } from '@/lib/db'
+import { PARTIER, namn, slug, REGERINGSPARTIERNA } from '@/lib/parti'
 import { hamtaAlla, motparter, snitt } from '@/lib/partier'
 import { Etikett, Forbehall, Partiprick, Textlank } from '@/components/system'
 import { sidmetadata } from '@/lib/sajt'

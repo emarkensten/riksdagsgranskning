@@ -1,9 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import {
-  db, heltal, lista, namn, partiFranSlug, rader, slug, tal,
-  PARTIER, PARTIFARG, REGERINGSPARTIERNA,
-} from '@/lib/db'
+import { db, heltal, lista, rader, tal } from '@/lib/db'
+import { namn, partiFranSlug, slug, PARTIER, PARTIFARG, REGERINGSPARTIERNA } from '@/lib/parti'
 import { Stapel } from '@/components/stapel'
 import { Etikett, Forbehall, Partiprick, Textlank, Tillbaka } from '@/components/system'
 import {

@@ -1,5 +1,13 @@
-import { db, rader } from '@/lib/db'
+import { datum, db, lista, rader } from '@/lib/db'
+import { PARTIER, namn, partilinje } from '@/lib/parti'
+import { rakneord, storBokstav } from '@/lib/text'
+import type { Rostningsfraga } from '@/lib/rostning'
 import type { PartiRad } from '@/components/rostrad'
+
+// rakneord() bor i lib/text: quizet på /rosta behöver den i webbläsaren, och
+// den här filen hänger i lib/db och därmed i supabase-js. Återexporten står
+// kvar så att sidorna som redan importerar den härifrån inte behövde röras.
+export { rakneord } from '@/lib/text'
 
 /**
  * De nio valfrågor där en enda votering svarar mot frågan med entydig riktning.
@@ -168,28 +176,6 @@ export const KOMPASS = {
   url: 'https://valkompass.svt.se',
   ord: 'trettiofem',
 } as const
-
-const RAKNEORD = [
-  'noll', 'en', 'två', 'tre', 'fyra', 'fem', 'sex',
-  'sju', 'åtta', 'nio', 'tio', 'elva', 'tolv',
-]
-
-/**
- * Små tal som ord: 9 → "nio".
- *
- * Finns därför att sidorna säger "nio frågor" i löpande text, och ordet skulle
- * annars stå skrivet för hand på fyra ställen. Faller en fråga vid en
- * granskning ska sidan sluta lova nio av sig själv — en hårdkodad mening blir
- * tyst osann, och just den här är sajtens känsligaste: hela dess trovärdighet
- * ligger i att den stannar vid det den kan belägga.
- *
- * Över tolv faller den tillbaka på siffran. Svenska räkneord blir
- * sammansättningar däröver, och en lista som växer förbi tolv är en annan
- * produkt än den här.
- */
-export function rakneord(n: number) {
-  return RAKNEORD[n] ?? String(n)
-}
 
 export type FragaData = {
   sakfraga: string
@@ -362,4 +348,122 @@ export function utfall(roster: PartiRad[]) {
     oavgjort: rostades && ja === nej,
     utskottetVann: rostades && ja > nej,
   }
+}
+
+/**
+ * Allt quizet på `/rosta` behöver, i två frågor.
+ *
+ * Partilinjerna hämtas här och skickas som props — aldrig hårdkodade i
+ * klienten. Uppmätt med `explain analyze` 2026-08-18: 15 ms för den första
+ * frågan, rena index scans, alltså långt under anons tak på tre sekunder.
+ *
+ * Samma tvåfrågemönster som `hamtaAllaFragor()`, men en annan avkastning:
+ * indexsidan vill ha råa röster och reservanter, quizet vill ha klarspråket
+ * och de förräknade meningarna. Att slå ihop dem hade gett indexsidan tre
+ * textstycken per fråga som den inte renderar, och quizet ett fält om
+ * motförslagets undertecknare som det inte visar.
+ *
+ * **Kastar hellre än tappar en fråga.** De nio id:na är hårdkodade och ska
+ * finnas; ett bortfall skulle annars ge ett quiz med åtta frågor där varje
+ * "av nio" tyst blev osant.
+ */
+export async function hamtaRostning(): Promise<Rostningsfraga[]> {
+  const klient = db()
+  const punkter = await rader<{
+    forslagspunkt_id: number
+    sakfraga: string
+    ja_innebar: string
+    nej_innebar: string
+    amne: string
+    forslagspunkt: any
+  }>(
+    klient
+      .from('punkt_klartext')
+      .select(
+        'forslagspunkt_id, sakfraga, ja_innebar, nej_innebar, amne, forslagspunkt!inner(votering_id, betankande!inner(datum))',
+      )
+      .in('forslagspunkt_id', FRAGOR.map((f) => f.forslagspunkt)),
+  )
+
+  const platt = punkter.map((p) => {
+    const f = Array.isArray(p.forslagspunkt) ? p.forslagspunkt[0] : p.forslagspunkt
+    const b = Array.isArray(f.betankande) ? f.betankande[0] : f.betankande
+    return {
+      id: p.forslagspunkt_id,
+      sakfraga: p.sakfraga,
+      ja_innebar: p.ja_innebar,
+      nej_innebar: p.nej_innebar,
+      amne: p.amne,
+      votering_id: f.votering_id as string | null,
+      datum: (b?.datum ?? '') as string,
+    }
+  })
+
+  // Gruppen `-`, de partilösa, filtreras bort redan i frågan. Quizet jämför
+  // besökaren med de åtta partierna, och en nionde etikett i röstraden hade
+  // varit en jämförelse ingen bett om.
+  const roster = await rader<PartiRad & { votering_id: string }>(
+    klient
+      .from('parti_rost')
+      .select('votering_id, parti, ja, nej, avstar, franvarande')
+      .in('votering_id', platt.map((p) => p.votering_id).filter(Boolean) as string[])
+      .in('parti', [...PARTIER]),
+  )
+
+  const perVotering = new Map<string, PartiRad[]>()
+  for (const r of roster) {
+    if (!perVotering.has(r.votering_id)) perVotering.set(r.votering_id, [])
+    perVotering.get(r.votering_id)!.push(r)
+  }
+
+  return FRAGOR.map((f) => {
+    const p = platt.find((x) => x.id === f.forslagspunkt)
+    const rad = p?.votering_id ? perVotering.get(p.votering_id) : undefined
+    if (!p || !rad?.length) {
+      throw new Error(`Röstningen saknar underlag för ${f.slug} (${f.forslagspunkt})`)
+    }
+    return {
+      slug: f.slug,
+      rubrik: f.rubrik,
+      amne: p.amne,
+      datumtext: datum(p.datum),
+      sakfraga: p.sakfraga,
+      ja_innebar: p.ja_innebar,
+      nej_innebar: p.nej_innebar,
+      roster: rad,
+      mening: { Ja: mening(rad, 'Ja'), Nej: mening(rad, 'Nej') },
+    }
+  })
+}
+
+/**
+ * Meningen under röstraden, härledd ur rösterna.
+ *
+ * Räknas på servern därför att det bara finns två möjliga svar per fråga —
+ * arton meningar totalt. Alternativet hade varit att sätta ihop dem i
+ * webbläsaren, och då hade `lista()`, `namn()` och `rakneord()` behövt följa
+ * med dit; de två första bor i `lib/db`, som drar in hela supabase-js.
+ *
+ * Partiord och inte `rakneord()` rakt av: *ett* parti, inte *en*. Räkneordet
+ * finns för antal i allmänhet och känner inte till genus.
+ */
+function mening(roster: PartiRad[], svar: 'Ja' | 'Nej') {
+  const linjer = PARTIER.map((parti) => {
+    const r = roster.find((x) => x.parti === parti)
+    return { parti, linje: r ? partilinje(r) : undefined }
+  })
+  const lika = linjer.filter((l) => l.linje === svar).length
+  const utan = linjer.filter((l) => l.linje && l.linje !== 'Ja' && l.linje !== 'Nej')
+  const partiord = (n: number) => (n === 1 ? 'ett' : rakneord(n))
+
+  const inledning =
+    lika === 0
+      ? `Inget av de ${rakneord(PARTIER.length)} partierna röstade som du.`
+      : `${storBokstav(partiord(lika))} av ${rakneord(PARTIER.length)} partier röstade som du.`
+
+  if (!utan.length) return inledning
+  // "avstod" om samtliga var uttryckliga avståenden, annars den vidare
+  // formuleringen. Se utanStallningText() i lib/rostning.ts för samma skillnad.
+  const verb = utan.every((l) => l.linje === 'Avstår') ? 'avstod' : 'tog inte ställning'
+  return `${inledning} ${lista(utan.map((l) => namn(l.parti)))} ${verb}.`
 }

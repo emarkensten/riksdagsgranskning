@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { PARTIER, REGERINGSPARTIERNA, datum, heltal, lista, namn, partilinje, utskott } from '@/lib/db'
+import { datum, heltal, lista, utskott } from '@/lib/db'
+import { PARTIER, REGERINGSPARTIERNA, namn, partilinje } from '@/lib/parti'
 import { FRAGOR, KOMPASS, fraga, hamtaFraga, rakneord, utfall } from '@/lib/fragor'
 import { regeringsspann } from '@/lib/partier'
 import { Rostrad, Rostnyckel } from '@/components/rostrad'
