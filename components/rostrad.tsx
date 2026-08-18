@@ -95,7 +95,10 @@ export function Rostrad({
 }) {
   const karta = new Map(rader.map((r) => [r.parti, r]))
   return (
-    <div className={`flex flex-wrap ${markera ? 'gap-2' : 'gap-1'}`}>
+    // `.rostrad` och inte `flex flex-wrap`: layouten byter till ett rutnät på
+    // de smalaste telefonerna, och den regeln måste kunna vinna över klassen.
+    // Se globals.css för arithmetiken bakom brytpunkten.
+    <div className={`rostrad ${markera ? 'gap-2' : 'gap-1'}`}>
       {PARTIER.map((p) => {
         const r = karta.get(p)
         if (!r) {

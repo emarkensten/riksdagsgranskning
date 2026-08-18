@@ -264,6 +264,107 @@ body {
 }
 
 /*
+  Navremsan.
+
+  Under 640 px ligger navet på egen rad under ordmärket, och med sex pill lindar
+  det till två rader — sidhuvudet blir då ~170 px innan innehållet börjar. Här
+  blir det i stället en rad som blöder ut till fönsterkanten, med samma svepgest
+  som filtren och valfrågorna: avskärningen vid kanten är det enda som behöver
+  visa att raden fortsätter.
+
+  Egen klass och inte `.remsa`, av två skäl som båda är mätta:
+
+  `.remsa` behåller sitt utbrott på pekplattor bredare än 640 px, och där ligger
+  navet i en `justify-between`-rad — de negativa marginalerna hade skjutit det
+  32 px förbi högerkanten och gett sidan vågrät scroll.
+
+  Och navet är ett flexbarn i ett `items-start`-sidhuvud, alltså innehållsbrett.
+  `overflow-x: auto` hindrar inte ett sådant element från att växa: det blev
+  513 px brett i ett 360 px-fönster, så hela SIDAN fick scrolla i stället för
+  remsan. `align-self: stretch` ger den bredden att svämma över innanför.
+
+  Måtten måste vara samma som sidhuvudets `px-5`, precis som för `.remsa`.
+
+  `display` och `flex-wrap` står här och inte som klasser — annars vinner
+  Tailwinds utilities, som ligger sist i filen, över regeln nedan.
+*/
+.navremsa { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+
+@media (max-width: 639px) {
+  .navremsa {
+    align-self: stretch;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-inline: -1.25rem;
+    padding-inline: 1.25rem;
+    padding-bottom: 0.25rem;
+  }
+}
+
+/*
+  Röstraden — de åtta partietiketterna.
+
+  Mönstret av åtta på EN rad är hela poängen: man ska kunna skanna en lista och
+  se vilka som röstade lika utan att läsa. Bryter raden 7 + 1 är mönstret borta.
+
+  Och den bröt. Åtta etiketter à 40 px med 8 px mellanrum är 376 px, och
+  innehållskolumnen på en 360 px-skärm är 320. Under brytpunkten blir raden
+  därför ett rutnät med lika breda spalter i stället: etiketterna krymper till
+  ~36 px och raden håller ihop.
+
+  Klassnamnet står två gånger i selektorn nedan, och det är inte ett skrivfel.
+  Barnen bär `min-w-[40px]` respektive `min-w-[46px]` från Tailwind, och de
+  måste upphävas — annars är spalten 36,5 px medan etiketten är 40 och raden
+  svämmar över med 4 px (uppmätt: `scrollWidth` 324 i en 320 px-container).
+  Ett `*` väger noll i specificitet, så `.rostrad > *` hamnar på exakt samma
+  vikt som utility-klassen och förlorar på att Tailwind står sist i filen.
+  Dubblerad klass väger tyngre och vinner oavsett ordning.
+
+  `grid-auto-flow: column` och inte `repeat(8, …)`: antalet partier står i
+  `PARTIER` och ska inte skrivas en andra gång i CSS.
+
+  440 px och inte 400: den bredaste varianten är quizets resultat, där
+  markeringsringarna kräver 8 px mellanrum (376 px). Vid 440 px är kolumnen
+  400 px och rymmer den. Smalare fönster på en dator får samma rutnät — det
+  ser likadant ut, och alternativet vore en brytpunkt som beror på pekdon.
+
+  `display: flex` bor här och inte i klassnamnet, eftersom rutnätet nedan
+  annars förlorar mot Tailwinds `.flex`.
+*/
+.rostrad { display: flex; flex-wrap: wrap; }
+
+@media (max-width: 439px) {
+  .rostrad {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+  }
+  .rostrad.rostrad > * { min-width: 0; }
+}
+
+/*
+  Träffytan på pekskärm.
+
+  Navpillret är 7 + 13,5 + 7 ≈ 34 px högt, filterchipset likaså, sidnumren
+  38 och sidfotens femton länkar ~22. På en telefon är chipsremsan dessutom
+  det man svepar i — små mål och en svepgest på samma yta.
+
+  Måtten i komponenterna står kvar för mus, och 44 px läggs på först när
+  pekdonet är trubbigt. Samma resonemang som `.remsa` redan gör mellan `fine`
+  och `coarse`: det är inte skärmens bredd som avgör hur exakt fingret är.
+
+  `inline-flex` + `align-items: center` och inte lodrät padding: pillren och
+  chipsen är runda, och padding hade dragit ut radien till en kapsel.
+*/
+@media (pointer: coarse) {
+  .traffyta {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+/*
   Den utfällbara förbehållsraden.
 
   Markören tas bort på båda hållen — `list-style` för Firefox och den nyare

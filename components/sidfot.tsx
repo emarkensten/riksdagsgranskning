@@ -135,7 +135,7 @@ export async function Sidfot() {
                     key={l.href}
                     href={l.href}
                     {...(l.extern ? { target: '_blank', rel: 'noreferrer' } : {})}
-                    className="text-[15.5px] transition-opacity duration-150 hover:opacity-70"
+                    className="traffyta text-[15.5px] transition-opacity duration-150 hover:opacity-70"
                   >
                     {l.text}
                   </Link>

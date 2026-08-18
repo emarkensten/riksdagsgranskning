@@ -136,7 +136,7 @@ export default async function Amnen() {
             <Link
               key={r.amne}
               href={`#${ankare(r.amne)}`}
-              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-2 py-5 transition-opacity duration-150 hover:opacity-70 sm:grid-cols-[110px_1fr_auto_240px]"
+              className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-6 gap-y-2 py-5 transition-colors duration-150 hover:bg-[var(--papper-djup)] sm:grid-cols-[110px_1fr_auto_240px]"
               style={{ borderBottom: '1px solid var(--linje)' }}
             >
               <span

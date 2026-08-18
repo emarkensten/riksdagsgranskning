@@ -121,7 +121,7 @@ export default async function Fragor() {
                 href={`/fragor/${f.slug}`}
                 // 356 px, som på startsidan: alla åtta partier ska rymmas på en
                 // rad. Med 300 bryter etiketterna 6 + 2 och mönstret går förlorat.
-                className="grid items-start gap-x-8 gap-y-4 py-7 transition-opacity duration-150 hover:opacity-70 md:grid-cols-[1fr_356px]"
+                className="grid items-start gap-x-8 gap-y-4 py-7 transition-colors duration-150 hover:bg-[var(--papper-djup)] md:grid-cols-[1fr_356px]"
                 style={{ borderTop: '1px solid var(--linje)' }}
               >
                 <div>

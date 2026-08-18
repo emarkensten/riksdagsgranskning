@@ -179,7 +179,7 @@ export function Chip({
       // shrink-0 och nowrap: chipsen ligger i en vågrät scrollremsa på små
       // skärmar, och utan dem pressas de ihop till oläsliga stumpar i stället
       // för att skjutas utanför kanten.
-      className="shrink-0 whitespace-nowrap rounded-full px-[14px] py-2 text-[13.5px] font-medium transition-colors duration-150"
+      className="traffyta shrink-0 whitespace-nowrap rounded-full px-[14px] py-2 text-[13.5px] font-medium transition-colors duration-150"
       style={
         aktiv
           ? { background: 'var(--black)', color: 'var(--papper)', border: '1px solid var(--black)' }
