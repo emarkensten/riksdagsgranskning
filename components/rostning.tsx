@@ -25,10 +25,14 @@ const MARKERING = 'röstade som du'
  * fetch, och ingen `track()` mot Vercel Web Analytics. Svaren står inte heller
  * i adressfältet — en `?svar=JNJ…` hade följt med i varje sidvisning som
  * analysen mäter, i `Referer` till varje utgående länk och i vad besökaren
- * råkar klistra in någonstans. Sidan renderas därför på samma adress hela
- * vägen, och det enda quizet efterlämnar är en `history`-post per klick som
- * webbläsaren aldrig får se innehållet i. Hur någon skulle rösta är en politisk
- * åsikt, alltså en känslig personuppgift.
+ * råkar klistra in någonstans. Hur någon skulle rösta är en politisk åsikt,
+ * alltså en känslig personuppgift.
+ *
+ * Uppmätt i webbläsaren efter nio svar, 2026-08-18: adressen står kvar på
+ * `/rosta` utan frågesträng, `localStorage` och `sessionStorage` är tomma,
+ * inga kakor är satta, `history.length` är oförändrad — stegen är React-tillstånd
+ * och inte navigeringar — och den enda händelse analysen skickat är sidvisningen
+ * av `/rosta` själv.
  *
  * Därav också formen: partilinjerna kommer färdiga som props, jämförelsen görs
  * av `summera()` i `lib/rostning.ts`, och ingen av dem behöver veta något om

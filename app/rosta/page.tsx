@@ -72,44 +72,44 @@ export default async function Rosta() {
           </Forbehall>
         }
       >
-            <p className="mt-7 max-w-[56ch] text-[clamp(17px,2.2vw,21px)] leading-[1.45]"
-               style={{ color: 'var(--black-mjuk)' }}>
-              Riksdagen avgjorde de här {rakneord(fragor.length)} frågorna under
-              mandatperioden. Du får samma val som kammaren hade — utskottets
-              förslag ställt mot motförslaget, båda utskrivna — och när du är
-              klar ställs dina svar mot hur de {rakneord(PARTIER.length)} partierna
-              faktiskt röstade.
-            </p>
-            {/* Ramen, utskriven innan första frågan. Skillnaden mot en
-                valkompass är hela skälet till att quizet håller: en kompass
-                frågar vad du tycker om en sakfråga, och det går inte att
-                jämföra med en votering. Här är instrumentet detsamma för
-                besökaren och för partierna — själva omröstningen. */}
-            <p className="mt-5 max-w-[62ch] text-[16px] leading-[1.6]"
-               style={{ color: 'var(--black-mjuk)' }}>
-              Det är inte en åsiktsmätning. Frågan är aldrig vad du tycker om
-              sakfrågan i stort, utan hur du hade röstat i den votering
-              riksdagen faktiskt höll — därför står det utskrivet vad ett ja
-              innebar och vad ett nej innebar innan du väljer. Ett parti som
-              röstade nej hade nästan alltid ett eget förslag och röstade för
-              det; nej är inte samma sak som motstånd mot sakfrågan.
-            </p>
-            <p className="mt-5 max-w-[62ch] text-[16px] font-semibold leading-[1.6]">
-              Dina svar stannar i din webbläsare. Ingenting sparas, ingenting
-              skickas någonstans och ingenting mäts — hur du skulle rösta är en
-              politisk åsikt, och den är inte vår.
-            </p>
-            <p className="mt-5 max-w-[62ch] text-[14.5px] leading-[1.6]"
-               style={{ color: 'var(--black-svag)' }}>
-              {/* Repots idiom för länk i löptext, som i Kompasslank: understruken
-                  och i bläck. En `Textlank` här hade satt sin pil mitt i
-                  meningen och lämnat punkten hängande efter den. */}
-              Frågorna är samma {rakneord(fragor.length)} som står under{' '}
-              <Link href="/fragor" className="underline hover:opacity-70" style={{ color: 'var(--black)' }}>
-                Valfrågor
-              </Link>
-              . Urvalet följer <Kompasslank />, formuleringarna är våra egna.
-            </p>
+        <p className="mt-7 max-w-[56ch] text-[clamp(17px,2.2vw,21px)] leading-[1.45]"
+           style={{ color: 'var(--black-mjuk)' }}>
+          Riksdagen avgjorde de här {rakneord(fragor.length)} frågorna under
+          mandatperioden. Du får samma val som kammaren hade — utskottets
+          förslag ställt mot motförslaget, båda utskrivna — och när du är
+          klar ställs dina svar mot hur de {rakneord(PARTIER.length)} partierna
+          faktiskt röstade.
+        </p>
+        {/* Ramen, utskriven innan första frågan. Skillnaden mot en
+            valkompass är hela skälet till att quizet håller: en kompass
+            frågar vad du tycker om en sakfråga, och det går inte att
+            jämföra med en votering. Här är instrumentet detsamma för
+            besökaren och för partierna — själva omröstningen. */}
+        <p className="mt-5 max-w-[62ch] text-[16px] leading-[1.6]"
+           style={{ color: 'var(--black-mjuk)' }}>
+          Det är inte en åsiktsmätning. Frågan är aldrig vad du tycker om
+          sakfrågan i stort, utan hur du hade röstat i den votering
+          riksdagen faktiskt höll — därför står det utskrivet vad ett ja
+          innebar och vad ett nej innebar innan du väljer. Ett parti som
+          röstade nej hade nästan alltid ett eget förslag och röstade för
+          det; nej är inte samma sak som motstånd mot sakfrågan.
+        </p>
+        <p className="mt-5 max-w-[62ch] text-[16px] font-semibold leading-[1.6]">
+          Dina svar stannar i din webbläsare. Ingenting sparas, ingenting
+          skickas någonstans och ingenting mäts — hur du skulle rösta är en
+          politisk åsikt, och den är inte vår.
+        </p>
+        <p className="mt-5 max-w-[62ch] text-[14.5px] leading-[1.6]"
+           style={{ color: 'var(--black-svag)' }}>
+          {/* Repots idiom för länk i löptext, som i Kompasslank: understruken
+              och i bläck. En `Textlank` här hade satt sin pil mitt i
+              meningen och lämnat punkten hängande efter den. */}
+          Frågorna är samma {rakneord(fragor.length)} som står under{' '}
+          <Link href="/fragor" className="underline hover:opacity-70" style={{ color: 'var(--black)' }}>
+            Valfrågor
+          </Link>
+          . Urvalet följer <Kompasslank />, formuleringarna är våra egna.
+        </p>
         <div className="mt-10">
           <Forbehall rubrik={`${storBokstav(rakneord(REGERINGSPARTIERNA.length))} av ${rakneord(PARTIER.length)} går inte att skilja åt.`}>
             {lista(utbytbara)} röstade lika i {antalLika} frågor

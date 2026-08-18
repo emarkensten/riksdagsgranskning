@@ -450,8 +450,6 @@ export async function hamtaRostning(): Promise<Rostningsfraga[]> {
  * webbläsaren, och då hade `lista()`, `namn()` och `rakneord()` behövt följa
  * med dit; de två första bor i `lib/db`, som drar in hela supabase-js.
  *
- * Partiord och inte `rakneord()` rakt av: *ett* parti, inte *en*. Räkneordet
- * finns för antal i allmänhet och känner inte till genus.
  */
 function mening(roster: PartiRad[], svar: 'Ja' | 'Nej') {
   const linjer = PARTIER.map((parti) => ({ parti, linje: linje(roster, parti) }))
