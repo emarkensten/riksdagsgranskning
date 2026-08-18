@@ -114,6 +114,44 @@ Byt några av startsidans 16 byråkratiska ämneschips mot de nio frågorna.
 `/fragor` får en indexsida med en ärlig rad: nio frågor där en votering
 ordagrant matchar; för övriga har ingen entydig votering kunnat fastställas.
 
+## AP2b — "Hur hade du röstat?" Egen PR efter AP2
+
+Kollegans andra idé: besökaren röstar själv i de nio frågorna och jämförs med
+hur partierna faktiskt röstade. Premissen mättes mot databasen före beslutet:
+partilinjerna över de tio voteringarna ger **sex distinkta profiler av åtta
+partier** — bara M, KD och L är identiska — så quizet särskiljer på riktigt.
+
+Varför det inte är det avvisade 2022-spåret: jämförelsen går **din röst mot
+partiets röst**, inte partiets ord mot partiets röst. Ingen anklagas. Ingen
+SVT-data behövs. Riktningsproblemet uppstår aldrig, eftersom användaren svarar
+på samma instrument som partierna — själva voteringen, med vad ja och vad nej
+innebar utskrivet.
+
+**Placering: egen sida på `/rosta`, inte ny startsida.** Startsidan är sajtens
+ansikte mot den som bedömer källan — en journalist som överväger att citera ska
+mötas av materialet, inte av ett quiz. Quizet får en tydlig ingång högst upp på
+startsidan och delas som egen länk med egen delningsbild. Efter valet tonas
+ingången ned utan ny arkitekturändring.
+
+Villkor, formulerade för att fälla quizet om de bryts:
+
+- **"Du röstade som partiet i X av 9" — aldrig procent.** Nio frågor bär inte
+  procentsatser.
+- **Resultatet är matrisen, inte en dom.** Per fråga, alla åtta linjer synliga,
+  avstår redovisat som avstår. Ingen "du är X-partist"-skärm.
+- **M/KD/L-likheten skrivs ut innan resultatet**, inte efter.
+- **Ramen är "samma val som kammaren stod inför"** — förslag mot motförslag,
+  båda förklarade — inte "vad tycker du om sakfrågan".
+- **Svaren lämnar aldrig webbläsaren.** Ingen lagring, inga analytics-händelser
+  på svaren, och det står utskrivet på sidan. Hur man skulle rösta är en
+  politisk åsikt — en känslig personuppgift.
+- Varje fråga länkar till sin frågesida. Partilinjerna hämtas ur `parti_rost`
+  vid bygget, aldrig hårdkodade.
+
+Quizet är den delbara komponent distributionen saknade: lärarmejlet blir "låt
+klassen rösta i riksdagens riktiga beslut och se facit".
+
+
 ## AP4 — Distribution
 
 **Pitcha sidan, inte sajten.** Ingen redaktion adopterar ett verktyg i valspurt;
@@ -151,7 +189,7 @@ indexering och uppföljning tar kalendertid som inte går att komprimera.
 
 | När | Vad | Vem |
 |---|---|---|
-| **17 aug, kväll** | AP0 + AP5 + AP2 i sin helhet. Namnbyte, analys, nio frågesidor, indexsida, startsidans chips. | Bygget |
+| **17 aug, kväll** | AP0 + AP5 + AP2 i sin helhet, därefter AP2b som egen PR. | Bygget |
 | 17–18 aug | Registrera `riksdagskammaren.se`, koppla i Vercel, sätt `NEXT_PUBLIC_SITE_URL`. Sajtkartan till Search Console. Heads-up till arbetsgivaren. | Erik |
 | 18–20 aug | Presspaket + våg 1 — statsvetare och datajournalister | Erik |
 | 20 aug–5 sep | Våg 2, lärarkanaler, regionalt, egna kanaler. Uppföljning. | Erik |
@@ -212,8 +250,9 @@ ett val är en trovärdighetsrisk), **ny ETL**, **redesign**.
 
 **60–70 procents risk att sajten inte får någon redaktionell uppmärksamhet
 alls.** Utan distributionen: nära 100. Realistisk bästa utgång är en till tre
-verkliga citeringar plus några tusen besök kring valveckan. Viralitet är inte ett
-utfall den här sajten har, och ska inte ha.
+verkliga citeringar plus några tusen besök kring valveckan. Viralitet genom utpekande fynd är
+inte ett utfall den här sajten ska ha. Quizet är det medvetna undantaget:
+delning av ett eget resultat pekar inte ut någon.
 
 Oddsen är ändå värda att ta: distributionsinsatsen kostar ~15 timmar mot de
 månader som redan är nedlagda, så väntevärdet är positivt även vid 30 procents
