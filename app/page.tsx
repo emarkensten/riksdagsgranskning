@@ -3,7 +3,8 @@ import { unstable_cache } from 'next/cache'
 import { notFound } from 'next/navigation'
 import { antal, db, datum, heltal, rader, rakna, tal } from '@/lib/db'
 import AMNEN from '@/lib/amnen.json'
-import { FRAGOR, rakneord } from '@/lib/fragor'
+import { FRAGOR, gruppera } from '@/lib/fragor'
+import { rakneord } from '@/lib/text'
 import { Rostrad, Rostnyckel, type PartiRad } from '@/components/rostrad'
 import { Chip, Etikett, Nyckeltal, Textlank } from '@/components/system'
 import { Forstoringsglas, PilHoger } from '@/components/ikoner'
@@ -145,11 +146,7 @@ async function hamta({ amne, q, rm, sida }: Sok) {
     klient.from('parti_rost').select('votering_id, parti, ja, nej, avstar, franvarande')
       .in('votering_id', punkter.map((p) => p.votering_id).filter(Boolean) as string[]))
 
-  const perVotering = new Map<string, PartiRad[]>()
-  for (const r of roster) {
-    if (!perVotering.has(r.votering_id)) perVotering.set(r.votering_id, [])
-    perVotering.get(r.votering_id)!.push(r)
-  }
+  const perVotering = gruppera(roster)
 
   // Stommen bär riksmoten, totalt, medRoster, avlagda, foljde och
   // likhetsspann — alltså allt som är lika för varje besökare.

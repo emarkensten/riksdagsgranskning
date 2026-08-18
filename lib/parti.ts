@@ -2,15 +2,25 @@
  * Partierna och röstlinjen — allt som är rent, och ingenting som rör databasen.
  *
  * Filen finns därför att `lib/db.ts` har `@supabase/supabase-js` som statisk
- * import. Den första klientkomponent som importerar därifrån drar in ~40 kB
- * som aldrig kommer till användning i webbläsaren, och `components/rostrad.tsx`
- * — den enda komponent som kan rita en partilinje — låg bakom just den
- * importen. Quizet på `/rosta` är sajtens första klientyta och behöver rita
- * åtta linjer per fråga; alternativet hade varit en andra kopia av `ROSTFARG`
- * och `PARTINAMN` i klientkoden, alltså två ställen att hålla i takt.
+ * import. Varje klientkomponent som importerar därifrån drar in ~40 kB som
+ * aldrig anropas i webbläsaren.
  *
- * `lib/db.ts` återexporterar allt härifrån, så ingen befintlig import behövde
- * ändras. **Ny klientkod importerar härifrån, aldrig från `lib/db`.**
+ * **Det hade redan hänt, oupptäckt.** `app/error.tsx` är en klientkomponent
+ * sedan #37 och importerar `Etikett` ur `components/system.tsx`, som hämtade
+ * `PARTIFARG` ur `lib/db`. Kedjan error → system → db → supabase-js har alltså
+ * legat i bunten i månader utan att någon mätt den. Quizet på `/rosta` är inte
+ * den första klientytan — det är den första som var stor nog att få någon att
+ * titta.
+ *
+ * Alternativet till flytten var en andra kopia av `ROSTFARG` och `PARTINAMN`
+ * i klientkoden, alltså två ställen att hålla i takt.
+ *
+ * **`lib/db.ts` återexporterar ingenting härifrån**, och det är avsiktligt.
+ * En återexport hade dolt gränsen igen — den första som importerade `namn()`
+ * från `lib/db` hade fått supabase-js på köpet utan att något sa ifrån — och
+ * den hade dessutom fällt `npm run kontrollera`, som laddar `lib/db.ts` i
+ * naken Node där `@/`-aliaset inte finns. Anropsställena importerar därför
+ * härifrån, allihop.
  */
 
 export const PARTIER = ['S', 'M', 'SD', 'C', 'V', 'KD', 'MP', 'L'] as const
@@ -83,14 +93,22 @@ export const ROSTTEXT: Record<string, string> = {
   Frånvarande: 'var(--franvarande-text)',
 }
 
-export type PartiRost = {
+/**
+ * Ett partis röstetal i en votering.
+ *
+ * `components/rostrad.tsx` exporterar den under namnet `PartiRad`, som ett
+ * rent typalias. Att `lib/db` inte får återexportera härifrån gäller värden —
+ * typer försvinner vid kompilering och kostar ingenting i bunten.
+ */
+export type Rost = {
   parti: string
   ja: number
   nej: number
   avstar: number
   franvarande: number
-  linje: Linje
 }
+
+export type PartiRost = Rost & { linje: Linje }
 
 /** De fyra värden en partilinje kan anta. */
 export type Linje = 'Ja' | 'Nej' | 'Avstår' | 'Frånvarande'
@@ -121,4 +139,36 @@ export function partilinje(r: Omit<PartiRost, 'parti' | 'linje'>): Linje {
   const bast = avlagda.sort((a, b) => b[1] - a[1])[0]
   // Bara om ingen enda ledamot röstade är frånvaro partiets faktiska hållning.
   return bast[1] > 0 ? bast[0] : 'Frånvarande'
+}
+
+/**
+ * Ett partis linje i en votering, eller undefined om partiet saknas i raderna.
+ *
+ * Uppslagningen "hitta partiets rad, kör partilinje()" fanns i fyra
+ * stavningar med fyra olika hanteringar av en rad som saknas. Den är den
+ * operation `npm run kontrollera` finns för att skydda, och då ska den ha ett
+ * utförande.
+ */
+export function linje(roster: Rost[], parti: string): Linje | undefined {
+  const r = roster.find((x) => x.parti === parti)
+  return r ? partilinje(r) : undefined
+}
+
+/**
+ * Röstade M, KD och L likadant i den här voteringen?
+ *
+ * `CLAUDE.md`: namnges ett av de tre gäller fyndet alla tre, och förbehållet
+ * ska stå bredvid siffran. Regeln gäller hela sajten, så härledningen ligger
+ * här och inte i en sida — frågesidan och quizet räknade fram den var för sig,
+ * och en tredje sida som namnger ett av dem hade blivit en tredje kopia utan
+ * något som håller dem i takt.
+ *
+ * Svaret är `lika: false` om något av de tre saknas i raderna. Att kalla ett
+ * bortfall för likhet vore att påstå ett samförstånd som inte är mätt.
+ */
+export function regeringslikhet(roster: Rost[]): { lika: boolean; linje?: Linje } {
+  const linjer = REGERINGSPARTIERNA.map((p) => linje(roster, p))
+  const forst = linjer[0]
+  const lika = forst !== undefined && linjer.every((l) => l === forst)
+  return lika ? { lika, linje: forst } : { lika: false }
 }

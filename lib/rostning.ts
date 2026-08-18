@@ -1,4 +1,4 @@
-import { PARTIER, namn, partilinje, type Linje } from '@/lib/parti'
+import { PARTIER, linje } from '@/lib/parti'
 import { rakneord } from '@/lib/text'
 import type { PartiRad } from '@/components/rostrad'
 
@@ -41,11 +41,8 @@ export type Rostningsfraga = {
 
 export type Partisumma = {
   parti: string
-  namn: string
   /** Frågor där partiets linje var densamma som besökarens svar. */
   lika: number
-  /** Frågor där partiet röstade tvärtom. */
-  olika: number
   /**
    * Frågor där partiet varken röstade ja eller nej.
    *
@@ -73,28 +70,31 @@ export type Partisumma = {
 export function summera(fragor: Rostningsfraga[], svar: (Svar | null)[]): Partisumma[] {
   return PARTIER.map((parti) => {
     let lika = 0
-    let olika = 0
+    let stallning = 0
     let utanStallning = 0
     let avstod = 0
     fragor.forEach((f, i) => {
       const mitt = svar[i]
-      const rad = f.roster.find((r) => r.parti === parti)
-      if (!mitt || !rad) return
-      const linje: Linje = partilinje(rad)
-      if (linje === 'Ja' || linje === 'Nej') {
-        if (linje === mitt) lika++
-        else olika++
+      const l = mitt && linje(f.roster, parti)
+      if (!l) return
+      if (l === 'Ja' || l === 'Nej') {
+        stallning++
+        if (l === mitt) lika++
         return
       }
       utanStallning++
-      if (linje === 'Avstår') avstod++
+      if (l === 'Avstår') avstod++
     })
-    return { parti, namn: namn(parti), lika, olika, utanStallning, avstod, stallning: lika + olika }
+    return { parti, lika, utanStallning, avstod, stallning }
   })
 }
 
 /**
- * "avstod i fyra frågor" — hur ett partis uteblivna ställningstagande beskrivs.
+ * "avstod" eller "tog inte ställning" — verbet för ett uteblivet ställningstagande.
+ *
+ * Anropas både av resultatskärmen, per parti över nio frågor, och av
+ * `mening()` i lib/fragor.ts, per fråga över åtta partier. Samma skillnad,
+ * samma ord.
  *
  * Två formuleringar därför att `partilinje()` har två utfall som inte är ja
  * eller nej. I det här materialet är samtliga tio uttryckliga avståenden och
@@ -102,10 +102,11 @@ export function summera(fragor: Rostningsfraga[], svar: (Svar | null)[]): Partis
  * men skillnaden mellan "avstod" och "var inte på plats" är ett sakförhållande
  * och inte en nyansskillnad — den ena är ett beslut, den andra är frånvaro.
  */
-export function utanStallningText(s: Partisumma) {
-  const antal = rakneord(s.utanStallning)
-  const fragor = s.utanStallning === 1 ? 'fråga' : 'frågor'
-  return s.avstod === s.utanStallning
-    ? `avstod i ${antal} ${fragor}`
-    : `tog inte ställning i ${antal} ${fragor}`
+export function utanStallningVerb(utan: number, avstod: number) {
+  return avstod === utan ? 'avstod' : 'tog inte ställning'
+}
+
+/** Samma sak med antalet i sig: "avstod i fyra frågor". */
+export function utanStallningText(utan: number, avstod: number) {
+  return `${utanStallningVerb(utan, avstod)} i ${rakneord(utan)} ${utan === 1 ? 'fråga' : 'frågor'}`
 }

@@ -1,13 +1,8 @@
 import { datum, db, lista, rader } from '@/lib/db'
-import { PARTIER, namn, partilinje } from '@/lib/parti'
+import { PARTIER, linje, namn } from '@/lib/parti'
 import { rakneord, storBokstav } from '@/lib/text'
-import type { Rostningsfraga } from '@/lib/rostning'
+import { utanStallningVerb, type Rostningsfraga } from '@/lib/rostning'
 import type { PartiRad } from '@/components/rostrad'
-
-// rakneord() bor i lib/text: quizet på /rosta behöver den i webbläsaren, och
-// den här filen hänger i lib/db och därmed i supabase-js. Återexporten står
-// kvar så att sidorna som redan importerar den härifrån inte behövde röras.
-export { rakneord } from '@/lib/text'
 
 /**
  * De nio valfrågor där en enda votering svarar mot frågan med entydig riktning.
@@ -149,6 +144,25 @@ export const FRAGOR: Fraga[] = [
   },
 ]
 
+/**
+ * PostgREST skriver en inbäddad relation som lista utan genererade typer,
+ * men som objekt när `!inner` sitter på en till-en-relation. De tre
+ * hämtningarna nedan packade upp den var för sig, med samma fem tecken.
+ */
+function forst<T>(v: T | T[]): T {
+  return Array.isArray(v) ? v[0] : v
+}
+
+/** Rösterna grupperade per votering. Samma loop i alla hämtningar som läser flera. */
+export function gruppera<T extends { votering_id: string }>(roster: T[]) {
+  const karta = new Map<string, T[]>()
+  for (const r of roster) {
+    if (!karta.has(r.votering_id)) karta.set(r.votering_id, [])
+    karta.get(r.votering_id)!.push(r)
+  }
+  return karta
+}
+
 export function fraga(slug: string) {
   return FRAGOR.find((f) => f.slug === slug)
 }
@@ -229,8 +243,8 @@ export async function hamtaFraga(id: number): Promise<FragaData | null> {
   if (!data) return null
 
   const t = data as unknown as Traff
-  const f = Array.isArray(t.forslagspunkt) ? t.forslagspunkt[0] : t.forslagspunkt
-  const b = Array.isArray(f.betankande) ? f.betankande[0] : f.betankande
+  const f = forst(t.forslagspunkt)
+  const b = forst(f.betankande)
 
   const roster = await rader<PartiRad>(
     klient
@@ -278,8 +292,8 @@ export async function hamtaAllaFragor(): Promise<Map<string, AllaRad>> {
   )
 
   const platt = punkter.map((p) => {
-    const f = Array.isArray(p.forslagspunkt) ? p.forslagspunkt[0] : p.forslagspunkt
-    const b = Array.isArray(f.betankande) ? f.betankande[0] : f.betankande
+    const f = forst(p.forslagspunkt)
+    const b = forst(f.betankande)
     return {
       id: p.forslagspunkt_id,
       amne: p.amne,
@@ -296,11 +310,7 @@ export async function hamtaAllaFragor(): Promise<Map<string, AllaRad>> {
       .in('votering_id', platt.map((p) => p.votering_id).filter(Boolean) as string[]),
   )
 
-  const perVotering = new Map<string, PartiRad[]>()
-  for (const r of roster) {
-    if (!perVotering.has(r.votering_id)) perVotering.set(r.votering_id, [])
-    perVotering.get(r.votering_id)!.push(r)
-  }
+  const perVotering = gruppera(roster)
 
   const karta = new Map<string, AllaRad>()
   for (const f of FRAGOR) {
@@ -386,8 +396,8 @@ export async function hamtaRostning(): Promise<Rostningsfraga[]> {
   )
 
   const platt = punkter.map((p) => {
-    const f = Array.isArray(p.forslagspunkt) ? p.forslagspunkt[0] : p.forslagspunkt
-    const b = Array.isArray(f.betankande) ? f.betankande[0] : f.betankande
+    const f = forst(p.forslagspunkt)
+    const b = forst(f.betankande)
     return {
       id: p.forslagspunkt_id,
       sakfraga: p.sakfraga,
@@ -410,11 +420,7 @@ export async function hamtaRostning(): Promise<Rostningsfraga[]> {
       .in('parti', [...PARTIER]),
   )
 
-  const perVotering = new Map<string, PartiRad[]>()
-  for (const r of roster) {
-    if (!perVotering.has(r.votering_id)) perVotering.set(r.votering_id, [])
-    perVotering.get(r.votering_id)!.push(r)
-  }
+  const perVotering = gruppera(roster)
 
   return FRAGOR.map((f) => {
     const p = platt.find((x) => x.id === f.forslagspunkt)
@@ -448,22 +454,20 @@ export async function hamtaRostning(): Promise<Rostningsfraga[]> {
  * finns för antal i allmänhet och känner inte till genus.
  */
 function mening(roster: PartiRad[], svar: 'Ja' | 'Nej') {
-  const linjer = PARTIER.map((parti) => {
-    const r = roster.find((x) => x.parti === parti)
-    return { parti, linje: r ? partilinje(r) : undefined }
-  })
+  const linjer = PARTIER.map((parti) => ({ parti, linje: linje(roster, parti) }))
   const lika = linjer.filter((l) => l.linje === svar).length
   const utan = linjer.filter((l) => l.linje && l.linje !== 'Ja' && l.linje !== 'Nej')
-  const partiord = (n: number) => (n === 1 ? 'ett' : rakneord(n))
 
+  // "Ett parti", inte "en". rakneord() räknar och känner inte till genus.
   const inledning =
     lika === 0
       ? `Inget av de ${rakneord(PARTIER.length)} partierna röstade som du.`
-      : `${storBokstav(partiord(lika))} av ${rakneord(PARTIER.length)} partier röstade som du.`
+      : `${lika === 1 ? 'Ett' : storBokstav(rakneord(lika))} av ${rakneord(PARTIER.length)} partier röstade som du.`
 
   if (!utan.length) return inledning
-  // "avstod" om samtliga var uttryckliga avståenden, annars den vidare
-  // formuleringen. Se utanStallningText() i lib/rostning.ts för samma skillnad.
-  const verb = utan.every((l) => l.linje === 'Avstår') ? 'avstod' : 'tog inte ställning'
+  const avstod = utan.filter((l) => l.linje === 'Avstår').length
+  // Samma skillnad mellan avstående och frånvaro som resultatskärmen gör, och
+  // därför samma funktion — den beskriver antalet, här beskrivs vilka.
+  const verb = utanStallningVerb(utan.length, avstod)
   return `${inledning} ${lista(utan.map((l) => namn(l.parti)))} ${verb}.`
 }

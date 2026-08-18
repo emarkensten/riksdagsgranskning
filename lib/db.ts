@@ -1,18 +1,21 @@
 import { createClient, type PostgrestError, type SupabaseClient } from '@supabase/supabase-js'
 
 /**
- * Den här filen är server-only, och det är hela poängen med att den är liten.
+ * Filen ska behandlas som server-only: `createClient` står överst, så allt som
+ * importerar härifrån drar med sig ~40 kB supabase-js.
  *
- * Allt här hänger i `createClient`. Partierna, röstfärgerna och `partilinje()`
- * låg också här fram till quizet på `/rosta`, som är sajtens första
- * klientkomponent — och en klientkomponent som importerar `namn()` härifrån
- * drar med sig ~40 kB supabase-js in i webbläsaren utan att någonsin anropa
- * den. De flyttade därför till `lib/parti.ts`, som inte importerar någonting
- * alls.
+ * Partierna, röstfärgerna och `partilinje()` låg också här fram till quizet på
+ * `/rosta`, och flyttade till `lib/parti.ts`, som inte importerar någonting
+ * alls. Ingen återexport härifrån: den hade dolt gränsen igen, och dessutom
+ * fällt `npm run kontrollera`, som laddar den här filen i naken Node där
+ * `@/`-aliaset inte finns.
  *
- * Ingen återexport härifrån: den hade dolt gränsen igen, och dessutom fällt
- * `npm run kontrollera`, som laddar den här filen i naken Node där `@/`-aliaset
- * inte finns.
+ * **Formatterarna nedan — `utskott`, `lista`, `tal`, `heltal`, `datum`,
+ * `datumtid` — är rena och hör egentligen hemma i `lib/text.ts` av samma skäl.
+ * De ligger kvar för att flytten är ännu en omskrivning av fjorton
+ * importrader, inte för att gränsen går här.** Kostnaden syns redan: quizet
+ * förräknar sina datum och sina meningar på servern eftersom `datum()` och
+ * `lista()` inte når webbläsaren.
  */
 
 /**

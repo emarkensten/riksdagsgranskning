@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Rostrad, Rostnyckel } from '@/components/rostrad'
-import { Etikett, Knapp, Partiprick } from '@/components/system'
-import { Bock, Kryss, PilHoger, PilVanster } from '@/components/ikoner'
+import { Etikett, Knapp, Partiprick, Textlank, Tillbaka } from '@/components/system'
+import { Bock, Kryss, PilHoger } from '@/components/ikoner'
+import { ROSTFARG, namn } from '@/lib/parti'
 import { rakneord } from '@/lib/text'
 import {
   summera,
@@ -13,8 +14,11 @@ import {
   type Svar,
 } from '@/lib/rostning'
 
+/** Ordet som förklarar ringen kring en etikett. Står här, inte i Linjeetikett. */
+const MARKERING = 'röstade som du'
+
 /**
- * Quizet. Sajtens enda klientkomponent.
+ * Quizet.
  *
  * **Svaren lämnar aldrig webbläsaren.** De ligger i `useState` och ingenting
  * annat: ingen `localStorage`, ingen `sessionStorage`, ingen cookie, ingen
@@ -37,17 +41,21 @@ import {
  */
 export function Rostning({
   fragor,
-  intro,
-  likhetsnot,
+  children,
   likhetsnotKort,
 }: {
   fragor: Rostningsfraga[]
-  /** Startskärmens text. Serverrenderad och inskickad — servern äger orden. */
-  intro: React.ReactNode
-  /** M/KD/L-noten i sin fulla form, på startskärmen. */
-  likhetsnot: React.ReactNode
   /**
-   * Samma faktum, kort, direkt under resultatets rubrik.
+   * Startskärmens text — ingress och M/KD/L-förbehållet.
+   *
+   * Serverrenderad och inskickad. Regeln är inte att servern äger varje ord
+   * (rubriker, nyckel och nämnarförklaringen nedan står i klartext här), utan
+   * att **allt som påstår något om riksdagen räknas fram ur databasen** och
+   * därför måste renderas där frågorna ställs.
+   */
+  children: React.ReactNode
+  /**
+   * M/KD/L-likheten igen, kort, direkt under resultatets rubrik.
    *
    * Villkoret säger att likheten ska skrivas ut **innan** resultatet visas.
    * Startskärmen är innan, men den lästes för nio frågor sedan; den korta
@@ -63,16 +71,11 @@ export function Rostning({
 
   const rubrikRef = useRef<HTMLHeadingElement>(null)
   const sektionRef = useRef<HTMLElement>(null)
-  // Fokus flyttas bara efter att besökaren gjort något. Utan spärren hade
-  // första renderingen ryckt fokus från sidans början till quizet, och en
-  // tangentbordsanvändare som just landat hade tappat både hoppa-länken och
-  // navigeringen.
-  const rort = useRef(false)
 
   /**
    * Varje steg börjar överst, med fokus på den nya rubriken.
    *
-   * Två fällor, båda uppmätta i webbläsaren:
+   * Tre fällor, alla uppmätta i webbläsaren:
    *
    * `focus()` på ett element som **redan** har fokus gör ingenting alls — och
    * React återanvänder samma `<h2>`-nod mellan frågorna, eftersom den står på
@@ -80,40 +83,42 @@ export function Rostning({
    * en skärmläsare läste inte upp den nya frågan. `nyckel` tvingar fram en ny
    * nod per steg, så fokusbytet blir verkligt.
    *
-   * Och rullningen sköts uttryckligen i stället för att överlåtas åt
-   * `focus()`. Den rullar bara så långt att elementet nätt och jämnt syns, och
-   * den som backade till föregående fråga hamnade därför med rubriken 386 px
-   * ovanför fönsterkanten — mitt i svarsalternativen, utan att se vilken fråga
-   * de gällde. `preventScroll` lämnar över den uppgiften helt.
+   * Rullningen sköts uttryckligen i stället för att överlåtas åt `focus()`.
+   * Den rullar bara så långt att elementet nätt och jämnt syns, och den som
+   * backade till föregående fråga hamnade därför med rubriken 386 px ovanför
+   * fönsterkanten — mitt i svarsalternativen, utan att se vilken fråga de
+   * gällde. `preventScroll` lämnar över den uppgiften helt.
+   *
+   * Och ingenting händer förrän besökaren gjort något. Utan jämförelsen mot
+   * `forra` hade första renderingen ryckt fokus från sidans början till
+   * quizet, och en tangentbordsanvändare som just landat hade tappat både
+   * hoppa-länken och navigeringen. Jämförelsen och inte en "har renderats"-
+   * flagga: den senare överlever inte StrictModes dubbla montering.
    */
   const nyckel = `${steg}-${nr}`
+  const forra = useRef(nyckel)
   useEffect(() => {
-    if (!rort.current) return
+    if (forra.current === nyckel) return
+    forra.current = nyckel
     sektionRef.current?.scrollIntoView({ block: 'start' })
     rubrikRef.current?.focus({ preventScroll: true })
   }, [nyckel])
 
-  function borja() {
-    rort.current = true
-    setSteg('fragor')
-    setNr(0)
-  }
+  // Inget setNr här: `start` nås bara från fråga ett, som redan står på noll.
+  const borja = () => setSteg('fragor')
 
   function svara(v: Svar) {
-    rort.current = true
     setSvar((f) => f.map((x, i) => (i === nr ? v : x)))
     if (nr + 1 < fragor.length) setNr(nr + 1)
     else setSteg('resultat')
   }
 
   function tillbaka() {
-    rort.current = true
     if (nr === 0) setSteg('start')
     else setNr(nr - 1)
   }
 
   function borjaOm() {
-    rort.current = true
     setSvar(fragor.map(() => null))
     setNr(0)
     setSteg('fragor')
@@ -133,10 +138,7 @@ export function Rostning({
           Hur hade du röstat?
         </h1>
         <div className="stig" style={{ animationDelay: '160ms' }}>
-          {intro}
-        </div>
-        <div className="stig mt-10" style={{ animationDelay: '240ms' }}>
-          {likhetsnot}
+          {children}
         </div>
         <div className="stig mt-10" style={{ animationDelay: '320ms' }}>
           <Knapp onClick={borja}>Börja med första frågan</Knapp>
@@ -146,7 +148,12 @@ export function Rostning({
   }
 
   if (steg === 'resultat') {
-    const summor = summera(fragor, svar)
+    // Varje fråga är besvarad här: `resultat` nås bara från `svara()` på sista
+    // frågan, och `svara()` är det enda som flyttar `nr` framåt. Utan den här
+    // raden hade resten av skärmen burit tre null-vakter som aldrig kan falla
+    // ut — och en vakt som inte kan falla ut läses som att den kan.
+    const klara = svar as Svar[]
+    const summor = summera(fragor, klara)
     return (
       <section ref={sektionRef} className="pb-6 pt-12">
         <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2">
@@ -173,17 +180,23 @@ export function Rostning({
             <div className="flex flex-col gap-1.5">
               <Rostnyckel />
               <span className="text-[12.5px]" style={{ color: 'var(--black-svag)' }}>
-                Ram i signalfärg = partiet röstade som du
+                Ram i signalfärg = partiet {MARKERING}
               </span>
             </div>
           </div>
           <ol>
             {fragor.map((f, i) => {
-              const mitt = svar[i]
+              const mitt = klara[i]
               return (
                 <li key={f.slug}>
+                  {/* 376 px, inte 356 som på /fragor och startsidan.
+                      Mönstret av åtta etiketter ska rymmas på en rad — bryter
+                      de 7 + 2 går det förlorat — och här är mellanrummet 8 px
+                      i stället för 4, eftersom markeringsringen ligger 2 px
+                      utanför etiketten och två ringar annars nuddar varandra.
+                      8 × 40 + 7 × 8 = 376. Uppmätt, inte uppskattat. */}
                   <div
-                    className="grid items-start gap-x-8 gap-y-4 py-7 md:grid-cols-[1fr_356px]"
+                    className="grid items-start gap-x-8 gap-y-4 py-7 md:grid-cols-[1fr_376px]"
                     style={{ borderTop: '1px solid var(--linje)' }}
                   >
                     <div>
@@ -203,26 +216,23 @@ export function Rostning({
                       >
                         {f.rubrik}
                       </Link>
-                      {mitt && (
-                        <p className="mt-3 text-[15px]" style={{ color: 'var(--black-mjuk)' }}>
-                          Du svarade{' '}
-                          <strong style={{ color: mitt === 'Ja' ? 'var(--ja)' : 'var(--nej)' }}>
-                            {mitt.toLowerCase()}
-                          </strong>
-                          .
-                        </p>
-                      )}
+                      <p className="mt-3 text-[15px]" style={{ color: 'var(--black-mjuk)' }}>
+                        Du svarade{' '}
+                        <strong style={{ color: ROSTFARG[mitt] }}>{mitt.toLowerCase()}</strong>.
+                      </p>
                     </div>
                     <div className="flex flex-col gap-2.5 md:items-end">
-                      <Rostrad rader={f.roster} kompakt likaSom={mitt ?? undefined} />
-                      {mitt && (
-                        <span
-                          className="text-[13.5px] leading-[1.5] md:text-right"
-                          style={{ color: 'var(--black-svag)' }}
-                        >
-                          {f.mening[mitt]}
-                        </span>
-                      )}
+                      <Rostrad
+                        rader={f.roster}
+                        kompakt
+                        markera={{ linje: mitt, text: MARKERING }}
+                      />
+                      <span
+                        className="text-[13.5px] leading-[1.5] md:text-right"
+                        style={{ color: 'var(--black-svag)' }}
+                      >
+                        {f.mening[mitt]}
+                      </span>
                     </div>
                   </div>
                 </li>
@@ -252,12 +262,12 @@ export function Rostning({
               >
                 <span className="flex items-baseline gap-2.5">
                   <Partiprick parti={s.parti} />
-                  <span className="text-[17px] font-semibold">{s.namn}</span>
+                  <span className="text-[17px] font-semibold">{namn(s.parti)}</span>
                 </span>
                 <span className="flex items-baseline gap-3">
                   {s.utanStallning > 0 && (
                     <span className="text-[13.5px]" style={{ color: 'var(--black-svag)' }}>
-                      {utanStallningText(s)}
+                      {utanStallningText(s.utanStallning, s.avstod)}
                     </span>
                   )}
                   <span className="tabular text-[clamp(1.6rem,4vw,34px)] font-extrabold leading-none">
@@ -276,14 +286,9 @@ export function Rostning({
           <Knapp onClick={borjaOm} ton="sekundar">
             Börja om
           </Knapp>
-          <Link
-            href="/fragor"
-            className="inline-flex items-center gap-2 text-[14.5px] font-semibold transition-opacity duration-150 hover:opacity-70"
-            style={{ color: 'var(--accent)' }}
-          >
+          <Textlank href="/fragor">
             Läs alla {rakneord(fragor.length)} frågorna i sin helhet
-            <PilHoger storlek={16} />
-          </Link>
+          </Textlank>
         </div>
 
         {/* Sista ordet på skärmen där besökaren just gjort alla sina val. Kort,
@@ -316,11 +321,7 @@ export function Rostning({
             className="h-1.5 flex-1 rounded-[2px]"
             style={{
               background:
-                i === nr
-                  ? 'var(--accent)'
-                  : svar[i]
-                    ? 'var(--black)'
-                    : 'var(--linje)',
+                i === nr ? 'var(--accent)' : svar[i] ? 'var(--black)' : 'var(--linje)',
             }}
           />
         ))}
@@ -348,37 +349,26 @@ export function Rostning({
           dem: utskottets förslag som ja, motförslaget som nej. Alternativen är
           voteringens egna och inte en åsiktsskala. */}
       <div className="mt-9 grid gap-4 sm:grid-cols-2">
-        <Alternativ
-          etikett="Rösta ja"
-          text={f.ja_innebar}
-          farg="var(--ja)"
-          ikon={<Bock storlek={18} />}
-          valt={svar[nr] === 'Ja'}
-          onClick={() => svara('Ja')}
-        />
-        <Alternativ
-          etikett="Rösta nej"
-          text={f.nej_innebar}
-          farg="var(--nej)"
-          ikon={<Kryss storlek={18} />}
-          valt={svar[nr] === 'Nej'}
-          onClick={() => svara('Nej')}
-        />
+        {(['Ja', 'Nej'] as const).map((v) => (
+          <Alternativ
+            key={v}
+            svar={v}
+            text={v === 'Ja' ? f.ja_innebar : f.nej_innebar}
+            valt={svar[nr] === v}
+            onClick={() => svara(v)}
+          />
+        ))}
       </div>
 
       <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-4">
-        <button
-          type="button"
-          onClick={tillbaka}
-          className="inline-flex items-center gap-2 text-[13.5px] font-semibold transition-opacity duration-150 hover:opacity-70"
-          style={{ color: 'var(--black-svag)' }}
-        >
-          <PilVanster storlek={15} />
+        <Tillbaka onClick={tillbaka}>
           {nr === 0 ? 'Tillbaka till början' : 'Föregående fråga'}
-        </button>
+        </Tillbaka>
         {/* Villkoret: varje fråga länkar till sin frågesida. Öppnas i samma
             flik — quizet är inte värt att fälla en läsare för, och svaren
-            hittills går ändå förlorade vid en omladdning. Det står i länken. */}
+            hittills går ändå förlorade vid en omladdning. Det står i länken.
+            Dämpad som tillbakalänken, inte signalfärgad: den ska inte
+            konkurrera med de två alternativen ovanför. */}
         <Link
           href={`/fragor/${f.slug}`}
           className="inline-flex items-center gap-2 text-[13.5px] font-semibold transition-opacity duration-150 hover:opacity-70"
@@ -392,6 +382,12 @@ export function Rostning({
   )
 }
 
+/** Ikon, etikett och färg är en ren uppslagning på svaret. */
+const ALTERNATIV = {
+  Ja: { etikett: 'Rösta ja', ikon: <Bock storlek={18} /> },
+  Nej: { etikett: 'Rösta nej', ikon: <Kryss storlek={18} /> },
+} as const
+
 /**
  * Ett av kammarens två alternativ, som knapp.
  *
@@ -399,25 +395,23 @@ export function Rostning({
  * under — men klickbar. Att de ser lika ut är avsikten: den som gått quizet ska
  * känna igen frågesidan, och tvärtom.
  *
- * `--ja` och `--nej` sitter på ikon och etikett men aldrig på hela ytan.
- * Röstfärgen kodar en röst; en fylld grön knapp hade gjort ja till det
- * inbjudande valet och nej till varningen, och då tar gränssnittet ställning.
+ * Röstfärgen sitter på ikon och etikett men aldrig på hela ytan. Den kodar en
+ * röst; en fylld grön knapp hade gjort ja till det inbjudande valet och nej
+ * till varningen, och då tar gränssnittet ställning.
  */
 function Alternativ({
-  etikett,
+  svar,
   text,
-  farg,
-  ikon,
   valt,
   onClick,
 }: {
-  etikett: string
+  svar: Svar
   text: string
-  farg: string
-  ikon: React.ReactNode
   valt: boolean
   onClick: () => void
 }) {
+  const { etikett, ikon } = ALTERNATIV[svar]
+  const farg = ROSTFARG[svar]
   return (
     <button
       type="button"

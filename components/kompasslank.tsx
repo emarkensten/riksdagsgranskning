@@ -10,9 +10,10 @@ import { KOMPASS } from '@/lib/fragor'
  * två av dem.
  *
  * **Serverkomponent.** `lib/fragor` importerar `lib/db`, som i sin tur har
- * `@supabase/supabase-js` som statisk import. Den första klientkomponent som
+ * `@supabase/supabase-js` som statisk import. Varje klientkomponent som
  * importerar den här filen drar därför in ~40 kB i sin bundle. Behövs länken
- * i klientkod: flytta `KOMPASS` till en egen modul utan db-beroende först.
+ * i klientkod: flytta `KOMPASS` till en egen modul utan db-beroende först —
+ * det är precis vad `lib/parti.ts` gjorde för partierna när quizet byggdes.
  *
  * Alltid `--black`, oavsett vad omgivningen står i. Källraden i heron är
  * `--black-svag` — en länk som ärvde det hade varit tonad grå med

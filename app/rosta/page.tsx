@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import { lista } from '@/lib/db'
-import { PARTIER, REGERINGSPARTIERNA, namn, partilinje, type Linje } from '@/lib/parti'
-import { FRAGOR, hamtaRostning, rakneord } from '@/lib/fragor'
-import { storBokstav } from '@/lib/text'
+import { PARTIER, REGERINGSPARTIERNA, namn, regeringslikhet } from '@/lib/parti'
+import { FRAGOR, hamtaRostning } from '@/lib/fragor'
+import { rakneord, storBokstav } from '@/lib/text'
 import { regeringsspann } from '@/lib/partier'
 import { Rostning } from '@/components/rostning'
 import { Kompasslank } from '@/components/kompasslank'
@@ -30,10 +30,12 @@ export const metadata = sidmetadata({
  * svar stannar i webbläsaren.
  */
 export default async function Rosta() {
-  const fragor = await hamtaRostning()
+  // De två frågorna delar ingen data — regeringsspann() läser
+  // partisamstammighet och tar inga argument — så de väntas tillsammans.
+  const [fragor, spann] = await Promise.all([hamtaRostning(), regeringsspann()])
 
   /**
-   * M/KD/L-likheten, räknad ur de nio voteringarna och inte skriven för hand.
+   * M/KD/L-likheten, räknad per votering och summerad — inte skriven för hand.
    *
    * `CLAUDE.md`: namnges ett av de tre gäller fyndet alla tre, och förbehållet
    * ska stå bredvid siffran. Här är det starkare än så — de tre är identiska i
@@ -41,35 +43,35 @@ export default async function Rosta() {
    * hen svarar. Det måste läsaren veta **innan** resultatet, annars läses de
    * tre lika talen som ett utfall av svaren.
    *
-   * `likaAntal` räknas fram i stället för att antas vara nio. Mätt 2026-08-18:
+   * Antalet räknas fram i stället för att antas vara nio. Mätt 2026-08-18:
    * samtliga nio, ja i var och en. Skulle en fråga bytas ut skriver sidan ut
    * det nya talet i stället för att tyst fortsätta lova identiska linjer.
    */
   const utbytbara = REGERINGSPARTIERNA.map(namn)
-  const spann = await regeringsspann()
-  const treLinjer: (Linje | undefined)[][] = REGERINGSPARTIERNA.map((p) =>
-    fragor.map((f) => {
-      const r = f.roster.find((x) => x.parti === p)
-      return r ? partilinje(r) : undefined
-    }),
-  )
-  const likaAntal = fragor.filter((_, i) => {
-    const forst = treLinjer[0][i]
-    return forst !== undefined && treLinjer.every((rad) => rad[i] === forst)
-  }).length
-  const allaLika = likaAntal === fragor.length
-  const gemensam = allaLika && new Set(treLinjer[0]).size === 1 ? treLinjer[0][0] : undefined
+  const likheter = fragor.map((f) => regeringslikhet(f.roster))
+  const lika = likheter.filter((l) => l.lika)
+  const allaLika = lika.length === fragor.length
+  // Bara om alla nio dessutom landade på SAMMA linje går det att skriva ut
+  // vilken. Nio identiska par av tre är inte samma sak som nio gånger ja.
+  const gemensam =
+    allaLika && new Set(lika.map((l) => l.linje)).size === 1 ? lika[0].linje : undefined
 
   const antalLika = allaLika
     ? `samtliga ${rakneord(fragor.length)}`
-    : `${rakneord(likaAntal)} av ${rakneord(fragor.length)}`
+    : `${rakneord(lika.length)} av ${rakneord(fragor.length)}`
 
   return (
     <main>
       <Rostning
         fragor={fragor}
-        intro={
-          <>
+        likhetsnotKort={
+          <Forbehall litet>
+            Innan talen: {lista(utbytbara)} röstade lika i {antalLika} frågor,
+            så att du hamnar lika nära alla tre är aritmetik och inte ett utfall
+            av dina svar.
+          </Forbehall>
+        }
+      >
             <p className="mt-7 max-w-[56ch] text-[clamp(17px,2.2vw,21px)] leading-[1.45]"
                style={{ color: 'var(--black-mjuk)' }}>
               Riksdagen avgjorde de här {rakneord(fragor.length)} frågorna under
@@ -108,9 +110,7 @@ export default async function Rosta() {
               </Link>
               . Urvalet följer <Kompasslank />, formuleringarna är våra egna.
             </p>
-          </>
-        }
-        likhetsnot={
+        <div className="mt-10">
           <Forbehall rubrik={`${storBokstav(rakneord(REGERINGSPARTIERNA.length))} av ${rakneord(PARTIER.length)} går inte att skilja åt.`}>
             {lista(utbytbara)} röstade lika i {antalLika} frågor
             {gemensam ? ` — ${gemensam.toLowerCase()} i var och en` : ''}. Vilket
@@ -118,15 +118,8 @@ export default async function Rosta() {
             skilja dem åt. Det är ingen egenhet hos de här frågorna: de tre
             röstade lika i {spann} av mandatperiodens samtliga voteringar.
           </Forbehall>
-        }
-        likhetsnotKort={
-          <Forbehall litet>
-            Innan talen: {lista(utbytbara)} röstade lika i {antalLika} frågor,
-            så att du hamnar lika nära alla tre är aritmetik och inte ett utfall
-            av dina svar.
-          </Forbehall>
-        }
-      />
+        </div>
+      </Rostning>
     </main>
   )
 }

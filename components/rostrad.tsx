@@ -1,20 +1,17 @@
-import { PARTIER, PARTIFARG, ROSTFARG, ROSTTEXT, partilinje, type Linje } from '@/lib/parti'
+import { PARTIER, PARTIFARG, ROSTFARG, ROSTTEXT, partilinje, type Linje, type Rost } from '@/lib/parti'
 
 /**
  * Importerar från `lib/parti` och inte från `lib/db`.
  *
  * Filen används numera också inifrån quizet på `/rosta`, som är en
  * klientkomponent. Med den gamla importen hade hela `@supabase/supabase-js`
- * följt med in i webbläsarens bundle utan att någonsin anropas.
+ * följt med in i webbläsarens bundle utan att någonsin anropas — vilket det
+ * redan gjorde via `app/error.tsx` → `components/system.tsx` → `lib/db`, i
+ * månader, utan att någon mätt det.
  */
 
-export type PartiRad = {
-  parti: string
-  ja: number
-  nej: number
-  avstar: number
-  franvarande: number
-}
+/** Formen bor i `lib/parti` som `Rost`. Namnet står kvar; tio filer använder det. */
+export type PartiRad = Rost
 
 /**
  * Ett parti och dess linje som en etikett.
@@ -28,26 +25,29 @@ export function Linjeetikett({
   linje,
   titel,
   kompakt = false,
-  lika = false,
+  markering,
 }: {
   parti: string
   linje: string
   titel?: string
   kompakt?: boolean
   /**
-   * Partiet röstade som besökaren i quizet.
+   * Ringmarkera etiketten, och säg i text varför.
    *
-   * Ringen är en **upprepning**, aldrig den enda bäraren: den dolda texten
-   * intill säger samma sak för den som inte ser färg, och raden under
-   * etiketterna räknar upp träffarna i klartext. Se regel 1 i
-   * docs/DESIGN_GUIDELINES.md — färgen kodar redan röst och parti, och en
-   * tredje betydelse i samma etikett måste därför skrivas ut.
+   * Ringen är en **upprepning**, aldrig den enda bäraren: texten läses av den
+   * som inte ser färg. Se regel 1 i docs/DESIGN_GUIDELINES.md — färgen kodar
+   * redan röst och parti, och en tredje betydelse i samma etikett måste
+   * därför skrivas ut.
+   *
+   * Texten kommer utifrån och står inte här. Etiketten renderas på
+   * /voteringar, /amnen, /fynd och /fragor, och quizets "röstade som du"
+   * hade varit ett tilltal de fyra aldrig ber om.
    *
    * `outline` och inte `border`: kanten läggs utanpå och ändrar varken
    * etikettens mått eller radens brytpunkter, så mönstret av åtta etiketter
    * ser likadant ut med och utan markering.
    */
-  lika?: boolean
+  markering?: string
 }) {
   return (
     <span
@@ -61,11 +61,11 @@ export function Linjeetikett({
         background: ROSTFARG[linje],
         color: ROSTTEXT[linje],
         boxShadow: `inset 0 -3px 0 ${PARTIFARG[parti] ?? 'transparent'}`,
-        ...(lika ? { outline: '2px solid var(--accent)', outlineOffset: 2 } : {}),
+        ...(markering ? { outline: '2px solid var(--accent)', outlineOffset: 2 } : {}),
       }}
     >
       {parti}
-      {lika && <span className="sr-only"> — röstade som du</span>}
+      {markering && <span className="sr-only"> — {markering}</span>}
     </span>
   )
 }
@@ -79,23 +79,23 @@ export function Linjeetikett({
 export function Rostrad({
   rader,
   kompakt = false,
-  likaSom,
+  markera,
 }: {
   rader: PartiRad[]
   kompakt?: boolean
   /**
-   * Markera de partier vars linje var den här — quizets svar på "vilka röstade
-   * som jag". Utelämnas överallt annars, och raden ser då ut som förut.
+   * Ringmarkera de partier som landade på `linje`, och förklara markeringen
+   * med `text`. Utelämnas överallt utom i quizet, och raden ser då ut som förut.
    *
    * Bara `Ja` och `Nej` kan skickas in. Ett `Avstår` hade markerat de partier
    * som inte tog ställning som träffar, och att avstå är varken träff eller
    * miss — se `summera()` i lib/rostning.ts.
    */
-  likaSom?: 'Ja' | 'Nej'
+  markera?: { linje: 'Ja' | 'Nej'; text: string }
 }) {
   const karta = new Map(rader.map((r) => [r.parti, r]))
   return (
-    <div className={`flex flex-wrap ${likaSom ? 'gap-2' : 'gap-1'}`}>
+    <div className={`flex flex-wrap ${markera ? 'gap-2' : 'gap-1'}`}>
       {PARTIER.map((p) => {
         const r = karta.get(p)
         if (!r) {
@@ -120,7 +120,7 @@ export function Rostrad({
             parti={p}
             linje={linje}
             kompakt={kompakt}
-            lika={likaSom !== undefined && linje === likaSom}
+            markering={markera && linje === markera.linje ? markera.text : undefined}
             titel={`${p}: ${linje} (Ja ${r.ja}, Nej ${r.nej}, Avstår ${r.avstar}, Frånv. ${r.franvarande})`}
           />
         )

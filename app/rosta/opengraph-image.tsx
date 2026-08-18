@@ -1,5 +1,6 @@
 import { delningsbild, OG_STORLEK, OG_TYP } from '@/lib/og'
 import { FRAGOR } from '@/lib/fragor'
+import { rakneord } from '@/lib/text'
 
 export const alt = 'Hur hade du röstat? Rösta i riksdagens egna beslut och jämför med partierna'
 export const size = OG_STORLEK
@@ -24,6 +25,6 @@ export default function Bild() {
   return delningsbild({
     etikett: 'Valet 2026',
     rubrik: 'Hur hade du röstat?',
-    fot: `Rösta i ${FRAGOR.length} av riksdagens egna beslut och se hur partierna gjorde.`,
+    fot: `Rösta i ${rakneord(FRAGOR.length)} av riksdagens egna beslut och se hur partierna gjorde.`,
   })
 }
