@@ -1,5 +1,6 @@
-import { PARTIER, linje } from '@/lib/parti'
-import { rakneord } from '@/lib/text'
+import { PARTIER, linje, namn } from '@/lib/parti'
+import { SAJT } from '@/lib/sajt'
+import { rakneord, storBokstav } from '@/lib/text'
 import type { PartiRad } from '@/components/rostrad'
 
 /**
@@ -109,4 +110,55 @@ export function utanStallningVerb(utan: number, avstod: number) {
 /** Samma sak med antalet i sig: "avstod i fyra frågor". */
 export function utanStallningText(utan: number, avstod: number) {
   return `${utanStallningVerb(utan, avstod)} i ${rakneord(utan)} ${utan === 1 ? 'fråga' : 'frågor'}`
+}
+
+/**
+ * Resultatet som ren text, för besökarens urklipp.
+ *
+ * Räknas fram ur samma `summera()` som skärmen visar — inte ur en andra
+ * uppställning av samma tal. Går de isär är det för att någon ändrat på ett
+ * ställe, och det är precis det den här formen ska omöjliggöra.
+ *
+ * **Ingen länk till ett resultat, bara till quizet.** En delbar adress hade
+ * krävt svaren i frågesträngen, och de ska inte finnas någonstans utanför
+ * fliken — se komponentens huvudkommentar. Texten bär talen, inte ett spår
+ * tillbaka till den som svarade.
+ *
+ * **`adress` skickas in och läses inte ur `SAJT_URL`.** Den räknas fram ur
+ * `VERCEL_PROJECT_PRODUCTION_URL`, som inte börjar på `NEXT_PUBLIC_` och
+ * därför aldrig bakas in i klientbunten — i webbläsaren faller uttrycket ned
+ * till `http://localhost:3000`, tyst och i produktion. Uppmätt i den byggda
+ * bunten 2026-08-18. Servern har rätt värde, alltså skickar servern det.
+ * `SAJT` är en literal och klarar sig.
+ */
+export function sammanfattning(
+  fragor: Rostningsfraga[],
+  svar: Svar[],
+  summor: Partisumma[],
+  adress: string,
+): string {
+  const parti = summor.map((s) => {
+    const tal =
+      s.stallning > 0 ? `${s.lika} av ${s.stallning}` : 'ingen jämförelse'
+    const utan =
+      s.utanStallning > 0 ? ` (${utanStallningText(s.utanStallning, s.avstod)})` : ''
+    return `${namn(s.parti)}: ${tal}${utan}`
+  })
+
+  const fraga = fragor.map(
+    (f, i) => `${i + 1}. ${f.rubrik} — jag svarade ${svar[i].toLowerCase()}`,
+  )
+
+  return [
+    `Hur hade du röstat? — ${SAJT}`,
+    `${storBokstav(rakneord(fragor.length))} frågor som riksdagen avgjorde 2022–2026.`,
+    '',
+    'Parti för parti — andel av de frågor där partiet tog ställning:',
+    ...parti,
+    '',
+    'Fråga för fråga:',
+    ...fraga,
+    '',
+    `Svaren har inte sparats någonstans. ${adress}`,
+  ].join('\n')
 }

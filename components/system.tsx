@@ -246,3 +246,87 @@ export function Partiprick({ parti, storlek = 12 }: { parti: string; storlek?: n
     />
   )
 }
+
+/**
+ * Förbehållet som en utfällbar rad — den dämpade formen av `Forbehall`.
+ *
+ * Fyra stycken före en knapp läses som en ansvarsfriskrivning; fyra rader med
+ * samma ord bakom "Läs varför" läses som ett verktyg som har ordning på sig.
+ * Inget ord försvinner, bara doseringen ändras. Regeln bakom bytet: **högst en
+ * stor `Forbehall` per skärm** — rutan är stark just för att den är sällsynt,
+ * och två i samma flöde gör att läsaren slutar läsa båda.
+ *
+ * `<details>` och inte en `useState`-panel. Elementet är fokuserbart, säger
+ * själv om det är öppet eller stängt, och fungerar innan React laddat — vilket
+ * spelar roll här, eftersom raderna serverrenderas ur `app/rosta/page.tsx` och
+ * bär sidans hela ram.
+ */
+export function Forbehallsrad({
+  etikett,
+  kort,
+  children,
+}: {
+  /** Monoetiketten i vänsterkolumnen — radens namn, inte en rubrik. */
+  etikett: string
+  /** De tre raderna som alltid syns. */
+  kort: React.ReactNode
+  /** Hela stycket, bakom "Läs varför". */
+  children: React.ReactNode
+}) {
+  return (
+    <details className="utfall" style={{ borderBottom: '1px solid var(--linje)' }}>
+      <summary className="py-[18px]">
+        {/* Rutnätet ligger på en div INUTI <summary>, aldrig på elementet
+            självt. Ett `display` som inte är `list-item` tar bort triangeln i
+            Chrome och slår ut hela utfällningen i Safari — och tillgänglighets-
+            trädet tappar rollen, så raden läses upp som text i stället för som
+            en knapp man kan öppna. Uppmätt här 2026-08-18: med `grid` på
+            <summary> var raden `generic`, utan den är den en knapp. */}
+        <div className="grid items-baseline gap-x-6 gap-y-2 sm:grid-cols-[190px_1fr_auto]">
+          <span className="etikett">{etikett}</span>
+          <span className="text-[16px] leading-[1.5]">{kort}</span>
+          <span className="text-[14px] font-semibold" style={{ color: 'var(--accent)' }}>
+            Läs varför <span aria-hidden className="utfall-tecken" />
+          </span>
+        </div>
+      </summary>
+      <div
+        className="max-w-[64ch] pb-5 text-[15px] leading-[1.6] sm:pl-[214px]"
+        style={{ color: 'var(--black-mjuk)' }}
+      >
+        {children}
+      </div>
+    </details>
+  )
+}
+
+/**
+ * Andelen som en stapel. Spår i `--spar`, fylld del i bläck.
+ *
+ * **Aldrig partifärg som fyllning.** Färgen kodar parti, och en stapel som
+ * fylls med den kodar två saker med samma medel — se regel 1 i
+ * docs/DESIGN_GUIDELINES.md. Partiet står namngivet med sin prick bredvid.
+ *
+ * Stapeln visar `del / av` och ingenting annat. Frågor där partiet inte tog
+ * ställning ligger utanför både täljare och nämnare och ritas därför inte alls:
+ * en streckad svans i samma spår hade blandat två skalor i ett mått — andelen
+ * mäts mot de frågor partiet röstade i, svansen hade mätts mot alla nio.
+ * Antalet står i klartext bredvid i stället.
+ *
+ * `aria-hidden`: talet står utskrivet intill, och stapeln upprepar det.
+ */
+export function Andelsstapel({ del, av }: { del: number; av: number }) {
+  const andel = av > 0 ? del / av : 0
+  return (
+    <span
+      aria-hidden
+      className="block h-3.5 w-full overflow-hidden rounded-[2px]"
+      style={{ background: 'var(--spar)' }}
+    >
+      <span
+        className="block h-full rounded-[2px]"
+        style={{ width: `${andel * 100}%`, background: 'var(--black)' }}
+      />
+    </span>
+  )
+}

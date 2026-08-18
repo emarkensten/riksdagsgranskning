@@ -263,6 +263,23 @@ body {
   }
 }
 
+/*
+  Den utfällbara förbehållsraden.
+
+  Markören tas bort på båda hållen — `list-style` för Firefox och den nyare
+  Chrome, `::-webkit-details-marker` för Safari — och ersätts av tecknet efter
+  "Läs varför". Tecknet ligger i CSS och inte i markup:en därför att det är ren
+  dekor: <summary> säger redan själv om raden är öppen eller stängd, och en
+  utskriven "+" i DOM hade lästs upp som innehåll.
+
+  `cursor: pointer` för att hela raden är träffytan, inte bara orden till höger.
+*/
+.utfall > summary { list-style: none; cursor: pointer; }
+.utfall > summary::-webkit-details-marker { display: none; }
+.utfall-tecken::after { content: '+'; }
+.utfall[open] .utfall-tecken::after { content: '\2212'; }
+.utfall > summary:hover { background: var(--papper-djup); }
+
 /* Staplad reveal vid sidladdning — en gång, i heron, inte överallt. */
 @keyframes stig {
   from { opacity: 0; transform: translateY(0.6rem); }
