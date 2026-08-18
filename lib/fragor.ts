@@ -54,6 +54,36 @@ export type Fraga = {
   kort: string
   /** En mening om vad voteringen gällde. Ska gå att kontrollera mot ja/nej nedan. */
   ingress: string
+  /**
+   * Vad ett ja och ett nej faktiskt ledde till, i en mening — svaret på
+   * rubrikens fråga.
+   *
+   * Databasens `ja_innebar`/`nej_innebar` beskriver riksdagens FÖRFARANDE:
+   * "Ja innebar att riksdagen avslog samtliga motioner om att ändra
+   * kommunernas roll vid vindkraftsetableringar." Det är sant, och det är
+   * obegripligt för den som bara vill veta om kommunen får säga nej till ett
+   * vindkraftverk. Sju av de nio ja-alternativen är ett avslag på motioner,
+   * alltså står det "ingenting hände" där sakinnehållet är "reglerna behålls".
+   *
+   * Två regler för texten:
+   *
+   * **Säg utfallet, upprepa inte ja eller nej.** `statlig-sjukvard` visar
+   * varför: ett ja betyder att utredningen INTE stoppas, och ett "Nej, den
+   * stoppas inte" under etiketten "Rösta ja" läser som ett tryckfel.
+   *
+   * **Aldrig ett partinamn.** Samtliga nio nej-texter i databasen inleds med
+   * vems reservation det gäller — "Nej innebar stöd för Vänsterpartiets
+   * reservation" — och den som får veta det innan hen svarar svarar inte
+   * längre på frågan utan på partiet. Kontrollerat 2026-08-18: nio av nio.
+   * Attributionen är facit och står kvar på frågesidan, där rösterna ändå
+   * syns.
+   *
+   * Skriven för hand, som `rubrik` och `ingress`, men varje mening ska gå att
+   * härleda ur `ja_innebar`/`nej_innebar` för samma förslagspunkt. Fälten är
+   * obligatoriska: en tionde fråga utan dem kompilerar inte.
+   */
+  ja_kort: string
+  nej_kort: string
   forslagspunkt: number
   /**
    * Den andra voteringen i samma sakfråga, när det finns en.
@@ -74,6 +104,10 @@ export const FRAGOR: Fraga[] = [
     rubrik: 'Skulle Sverige gå med i Nato?',
     ingress:
       'Anslutningen till Nato, Natos statusavtal och de lagändringar som följde av medlemskapet — allt avgjordes i en och samma punkt.',
+    ja_kort:
+      'Sverige går med i Nato. Anslutningen, Natos statusavtal och lagen om immunitet för organisationen godkänns.',
+    nej_kort:
+      'Sverige står utanför. Anslutningen och statusavtalet avslås, och Sverige fortsätter vara militärt alliansfritt.',
     forslagspunkt: 4022,
   },
   {
@@ -82,6 +116,10 @@ export const FRAGOR: Fraga[] = [
     rubrik: 'Vilka regler ska gälla för permanent uppehållstillstånd?',
     ingress:
       'Vad som ska krävas för permanent uppehållstillstånd, och vad som ska räcka för att neka uppehållstillstånd eller utvisa någon.',
+    ja_kort:
+      'Reglerna ändras inte. Riksdagen ger regeringen inga nya uppdrag om uppehållstillstånd eller utvisning.',
+    nej_kort:
+      'Två nya uppdrag till regeringen: språk- och samhällskunskapskrav för permanent uppehållstillstånd, och att bristande vandel aldrig ensamt ska räcka för att utvisa någon eller neka uppehållstillstånd — det ska alltid krävas brottsliga handlingar.',
     forslagspunkt: 3557,
   },
   {
@@ -90,6 +128,10 @@ export const FRAGOR: Fraga[] = [
     rubrik: 'Skulle utredningen om statlig sjukvård stoppas?',
     ingress:
       'Om riksdagen skulle uppmana regeringen att avstå från att utreda ett statligt övertagande av sjukvården från regionerna.',
+    ja_kort:
+      'Riksdagen lägger sig inte i. Ingen uppmaning går till regeringen, och utredningen om ett statligt övertagande stoppas alltså inte.',
+    nej_kort:
+      'Utredningen stoppas. Regeringen uppmanas att avstå från att utreda ett statligt övertagande, och att i stället se över och stärka vårdens kapacitet.',
     forslagspunkt: 3107,
   },
   {
@@ -98,6 +140,10 @@ export const FRAGOR: Fraga[] = [
     rubrik: 'Ska kommunerna kunna stoppa vindkraft?',
     ingress:
       'Om kommunerna ska få behålla möjligheten att stoppa en vindkraftsetablering på sin mark.',
+    ja_kort:
+      'Vetot behålls. Kommunen kan även i fortsättningen stoppa en vindkraftsetablering på sin mark.',
+    nej_kort:
+      'Vetot avskaffas. Kommunen ska höras tidigt och dess synpunkter väga tungt, men den ska inte kunna blockera en etablering.',
     forslagspunkt: 2932,
   },
   {
@@ -106,6 +152,10 @@ export const FRAGOR: Fraga[] = [
     rubrik: 'Skulle avverkning i värdefull skog stoppas i lag?',
     ingress:
       'Om avverkning i skogar med höga naturvärden ska stoppas genom lagstiftning, och hur fjällnära skog ska få långsiktigt skydd.',
+    ja_kort:
+      'Ingen ny lag och ingen ny strategi. Både avverkning i skogar med höga naturvärden och skyddet av fjällnära skog fortsätter att regleras som i dag.',
+    nej_kort:
+      'Regeringen ska ta fram en lag som stoppar avverkning i skogar med höga naturvärden, och en strategi med pengar för att skydda fjällnära skog långsiktigt.',
     forslagspunkt: 2716,
     syskon: 'friluftsskog',
   },
@@ -115,6 +165,10 @@ export const FRAGOR: Fraga[] = [
     rubrik: 'Ska de reserverade föräldradagarna vara kvar?',
     ingress:
       'Om de dagar i föräldraförsäkringen som är reserverade för vardera föräldern ska behållas, avskaffas eller fördelas om.',
+    ja_kort:
+      'Dagarna är kvar. Reglerna i föräldraförsäkringen ändras inte.',
+    nej_kort:
+      'De reserverade dagarna avskaffas helt. Föräldrarna fördelar själva samtliga föräldrapenningdagar mellan sig.',
     forslagspunkt: 5463,
   },
   {
@@ -123,6 +177,10 @@ export const FRAGOR: Fraga[] = [
     rubrik: 'Skulle permanenta utländska baser uteslutas?',
     ingress:
       'Om riksdagen skulle slå fast att DCA-avtalet med USA inte får leda till permanenta utländska baser eller stadigvarande allierad trupp i Sverige i fredstid.',
+    ja_kort:
+      'Inget besked. Riksdagen slår inte fast något om utländska baser i Sverige i fredstid.',
+    nej_kort:
+      'Regeringen ska slå fast att Sverige inte tillåter permanenta utländska militärbaser eller stadigvarande allierad trupp i fredstid.',
     forslagspunkt: 4674,
   },
   {
@@ -131,6 +189,10 @@ export const FRAGOR: Fraga[] = [
     rubrik: 'Skulle åldersgränsen för avgiftsfri tandvård sänkas?',
     ingress:
       'Om regeringens förslag att sänka åldersgränserna för avgiftsfri tandvård och för statligt tandvårdsstöd skulle antas.',
+    ja_kort:
+      'Åldersgränserna sänks enligt regeringens förslag — både för avgiftsfri tandvård och för det statliga tandvårdsstödet.',
+    nej_kort:
+      'Åldersgränserna ligger kvar. Ändringen ska inte göras för sig, utan vänta på en större tandvårdsreform med ett nytt högkostnadsskydd för tandvård.',
     forslagspunkt: 2254,
   },
   {
@@ -139,6 +201,10 @@ export const FRAGOR: Fraga[] = [
     rubrik: 'Ska friluftsskog prövas innan den avverkas?',
     ingress:
       'Om skog som är särskilt viktig för friluftsliv och rekreation ska prövas inför avverkning — och om avverkning i höga naturvärden ska stoppas i lag.',
+    ja_kort:
+      'Ingen ny prövning. Skogsvårdslagen ändras inte, och avverkning i värdefull skog regleras som i dag.',
+    nej_kort:
+      'Skog med stora värden för friluftsliv ska prövas inför avverkning och kunna undantas, och avverkning i höga naturvärden stoppas i lag.',
     forslagspunkt: 8659,
     syskon: 'skydd-av-skog',
   },
@@ -382,15 +448,13 @@ export async function hamtaRostning(): Promise<Rostningsfraga[]> {
   const punkter = await rader<{
     forslagspunkt_id: number
     sakfraga: string
-    ja_innebar: string
-    nej_innebar: string
     amne: string
     forslagspunkt: any
   }>(
     klient
       .from('punkt_klartext')
       .select(
-        'forslagspunkt_id, sakfraga, ja_innebar, nej_innebar, amne, forslagspunkt!inner(votering_id, betankande!inner(datum))',
+        'forslagspunkt_id, sakfraga, amne, forslagspunkt!inner(votering_id, betankande!inner(datum))',
       )
       .in('forslagspunkt_id', FRAGOR.map((f) => f.forslagspunkt)),
   )
@@ -401,8 +465,6 @@ export async function hamtaRostning(): Promise<Rostningsfraga[]> {
     return {
       id: p.forslagspunkt_id,
       sakfraga: p.sakfraga,
-      ja_innebar: p.ja_innebar,
-      nej_innebar: p.nej_innebar,
       amne: p.amne,
       votering_id: f.votering_id as string | null,
       datum: (b?.datum ?? '') as string,
@@ -434,8 +496,8 @@ export async function hamtaRostning(): Promise<Rostningsfraga[]> {
       amne: p.amne,
       datumtext: datum(p.datum),
       sakfraga: p.sakfraga,
-      ja_innebar: p.ja_innebar,
-      nej_innebar: p.nej_innebar,
+      ja_kort: f.ja_kort,
+      nej_kort: f.nej_kort,
       roster: rad,
       mening: { Ja: mening(rad, 'Ja'), Nej: mening(rad, 'Nej') },
     }

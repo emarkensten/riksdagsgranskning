@@ -182,6 +182,7 @@ export default async function Fragesida({ params }: { params: Promise<{ slug: st
       <section className="grid border-y sm:grid-cols-2" style={{ borderColor: 'var(--linje)' }}>
         <Innebord
           etikett="Ett ja innebar"
+          kort={f.ja_kort}
           text={d.ja_innebar}
           farg="var(--ja)"
           vann={u.utskottetVann}
@@ -190,6 +191,7 @@ export default async function Fragesida({ params }: { params: Promise<{ slug: st
         />
         <Innebord
           etikett="Ett nej innebar"
+          kort={f.nej_kort}
           text={d.nej_innebar}
           farg="var(--nej)"
           vann={u.rostades && !u.utskottetVann && !u.oavgjort}
@@ -311,8 +313,18 @@ function utfallsmening(roster: Parameters<typeof utfall>[0]) {
 }
 
 /** En cell i "vad ett ja/nej innebar". Samma form som på voteringssidan. */
-function Innebord({ etikett, text, farg, vann, ikon, delare = false }: {
+/**
+ * `kort` först, `text` under.
+ *
+ * Klarspråkssvaret bär samma jobb här som i quizet — det säger vad
+ * voteringen ledde till — men här står förfarandetexten kvar under det.
+ * Sidan visar rösterna ändå, så partiattributionen i `text` avslöjar
+ * ingenting som inte redan står på skärmen. I quizet gör den det, och där
+ * skickas den därför inte alls.
+ */
+function Innebord({ etikett, kort, text, farg, vann, ikon, delare = false }: {
   etikett: string
+  kort: string
   text: string
   farg: string
   vann: boolean
@@ -329,7 +341,10 @@ function Innebord({ etikett, text, farg, vann, ikon, delare = false }: {
         <span className="etikett" style={{ color: farg }}>{etikett}</span>
         {vann && <span className="etikett" style={{ color: 'var(--accent)' }}>· vann</span>}
       </div>
-      <p className="mt-3.5 max-w-[46ch] text-[16.5px] leading-[1.55]" style={{ color: 'var(--black-mjuk)' }}>
+      <p className="mt-3.5 max-w-[44ch] text-[18px] font-semibold leading-[1.45]">
+        {kort}
+      </p>
+      <p className="mt-3 max-w-[46ch] text-[15.5px] leading-[1.55]" style={{ color: 'var(--black-svag)' }}>
         {text}
       </p>
     </div>

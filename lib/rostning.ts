@@ -33,8 +33,23 @@ export type Rostningsfraga = {
   datumtext: string
   /** Vad voteringen gällde, i klarspråk. */
   sakfraga: string
-  ja_innebar: string
-  nej_innebar: string
+  /**
+   * Utfallet av ett ja respektive ett nej, i en mening. Se `ja_kort` i
+   * lib/fragor.ts för reglerna bakom texten.
+   *
+   * **Databasens `ja_innebar`/`nej_innebar` skickas medvetet inte hit.** De
+   * inleds med vems reservation nej-alternativet var — nio av nio — och det
+   * är en upplysning som hör till facit.
+   *
+   * Att den inte heller hamnar i sidans HTML är en bieffekt och inte poängen.
+   * `roster` ligger där för alla nio frågorna redan innan besökaren svarat,
+   * eftersom jämförelsen görs i webbläsaren just för att svaren inte ska
+   * skickas någonstans — den som öppnar utvecklarverktygen ser alltså facit,
+   * och det är ett medvetet byte av spoilerskydd mot integritet. Skyddet
+   * gäller det som går att läsa av misstag, alltså prosan på skärmen.
+   */
+  ja_kort: string
+  nej_kort: string
   roster: PartiRad[]
   /** Den härledda meningen under etiketterna, en per möjligt svar. */
   mening: Record<Svar, string>
